@@ -6,6 +6,7 @@
     "build:werewolf": "npm --prefix web run build",
     "typecheck:werewolf": "npm --prefix web run typecheck",
     "test:werewolf": "npm --prefix web exec vitest -- run --root web --no-file-parallelism",
+    "e2e:werewolf": "npm --prefix web run e2e",
     "smoke:werewolf": "npm --prefix web exec vitest -- run --root web tests/me-view.test.ts tests/route-privacy.test.ts --no-file-parallelism",
     "smoke:supabase": "node scripts/supabase-smoke.mjs --skip-missing-env",
     "smoke:supabase:rpc": "node scripts/supabase-smoke.mjs --rpc-flow",

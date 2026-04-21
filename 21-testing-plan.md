@@ -60,6 +60,7 @@ npm run test:werewolf
 - `npm run typecheck:werewolf`
 - `npm run smoke:werewolf`
 - `npm run test:werewolf`
+- `npm run e2e:werewolf`
 - `npm run build:werewolf`
 - `npm run check:audio`
 - `npm run smoke:supabase`
@@ -72,5 +73,5 @@ npm run test:werewolf
 - `next-pwa` 已移除，生产依赖审计当前为 0 vulnerabilities；PWA 仍需用真实移动浏览器验证安装、缓存更新和弱网行为。
 - PWA 已提供 SVG 与 192px/512px PNG 图标；首页已用 390x844 移动视口做浏览器 smoke，无横向溢出；仍需用真实移动浏览器验证安装体验。
 - Supabase 创建房间、加入房间、开始游戏、夜间行动、夜晚结算、白天宣告推进、猎人开枪、白天投票、重开房间已通过 RPC 事务化。
-- 还没有自动化 Playwright 手机视口测试。
+- 已增加 Playwright 手机视口测试，覆盖首页关键入口、横向溢出与 PWA manifest 图标。
 - 已增加浏览器在线状态与 `/api/keepalive` 服务探测；仍需定义房间级超时策略（例如主持人离线多久提示、夜晚阶段是否允许超时跳过）。

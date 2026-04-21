@@ -7,7 +7,8 @@
     "start": "next start",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:werewolf": "vitest run"
+    "test:werewolf": "vitest run",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
@@ -21,6 +22,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^25.2.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

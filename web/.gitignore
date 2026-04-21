@@ -1,3 +1,5 @@
 .next/
 public/workbox-*.js
+test-results/
+playwright-report/
 .vercel
