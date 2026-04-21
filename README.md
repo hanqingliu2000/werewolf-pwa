@@ -1,25 +1,93 @@
-# Werewolf PWA 项目文档包
+# Werewolf PWA
 
-本文件夹用于“线下狼人杀主持 PWA”项目的 AI 友好文档集合。目标：让 AI 能直接推进开发，同时便于人类快速审阅与修改。
+Werewolf PWA is a mobile-friendly web host for offline Werewolf games. It replaces the manual moderator role for night phases, private actions, death resolution, and win-condition checks while leaving daytime discussion to the players.
 
-## 文档结构
-- `01-brief.md` — 一句话目标 + 范围边界
-- `02-requirements.md` — 需求清单（MVP/可选）
-- `03-rules-config.md` — 游戏规则与可配置项
-- `04-state-machine.md` — 流程状态机（夜/白）
-- `05-data-model.md` — 数据结构/表设计草案
-- `06-api-contract.md` — 前后端接口契约
-- `07-ux-notes.md` — 交互/界面要点
-- `08-security-privacy.md` — 权限/隐私/公平性
-- `09-deployment.md` — 部署/环境建议
-- `10-backlog.md` — 任务拆解与里程碑
-- `11-testing.md` — 测试要点
-- `12-risks.md` — 风险与缓解
-- `21-testing-plan.md` — 自动化/集成/实战测试方案
+The app is intended for small in-person groups: a host creates a room, players join from their phones, roles are assigned privately, and the system guides the table through each phase.
 
-## 使用方式（给 AI/人类）
-- 先读 `01-brief.md` 与 `02-requirements.md`。
-- 变更需求时先更新 `03-rules-config.md` 与 `04-state-machine.md`。
-- 任何开发前改动都应同步 `05/06`。
+## What It Does
 
-> 约定：所有文档尽量保持“短段落 + 明确列表”，避免大段叙述。
+- Creates game rooms with player and role configuration.
+- Lets players join by room code and nickname.
+- Privately reveals each player's role.
+- Guides the night sequence for guard, werewolves, seer, and witch.
+- Collects private night actions through player sessions.
+- Resolves guard, kill, save, poison, and hunter interactions.
+- Lets the host record daytime eliminations or no-elimination outcomes.
+- Computes win conditions for villagers and werewolves.
+- Supports memory-mode development and Supabase-backed persistence.
+
+## Tech Stack
+
+- Next.js App Router
+- React
+- TypeScript
+- Vitest
+- Supabase client support
+- PWA manifest and service worker shell
+
+## Repository Structure
+
+```text
+web/                 Next.js application, API routes, UI, tests, and assets
+db/migrations/       Supabase schema and transactional RPC migrations
+scripts/             Smoke checks and asset utilities
+assets/              Shared copywriting data
+tts/                 Host narration materials and generation helpers
+frontend-handoff/    UI redesign handoff notes
+*.md                 Product, rules, API, security, testing, and deployment docs
+```
+
+## Local Development
+
+Install dependencies from the repository root:
+
+```bash
+npm --prefix web install
+```
+
+Run the web app:
+
+```bash
+npm run dev:werewolf
+```
+
+Run checks:
+
+```bash
+npm run typecheck:werewolf
+npm run test:werewolf
+npm run smoke:werewolf
+```
+
+Build:
+
+```bash
+npm run build:werewolf
+```
+
+## Persistence Modes
+
+When Supabase environment variables are absent, the app uses an in-memory store for local development. With Supabase configured, API routes use database-backed room lifecycle RPCs.
+
+Environment variables:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+## Documentation
+
+The root Markdown files describe the rules, API shape, data model, deployment, risks, and testing strategy. The most useful entry points are:
+
+- `01-brief.md`
+- `02-requirements.md`
+- `03-rules-config.md`
+- `04-state-machine.md`
+- `06-api-contract.md`
+- `08-security-privacy.md`
+- `21-testing-plan.md`
+
+## Privacy Notes
+
+Player session tokens are private runtime values. Do not commit live room data, deployment URLs, or Supabase credentials. The repository includes only code, migrations, test fixtures, and public documentation.
