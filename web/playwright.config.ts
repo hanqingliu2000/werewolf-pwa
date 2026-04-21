@@ -11,10 +11,10 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev -- --hostname 127.0.0.1 --port 3100',
+    command: 'npm run build && npm run start:e2e',
     url: 'http://127.0.0.1:3100',
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,
   },
   projects: [
     {

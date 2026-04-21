@@ -5,6 +5,7 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
+    "start:e2e": "next start --hostname 127.0.0.1 --port 3100",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:werewolf": "vitest run",
