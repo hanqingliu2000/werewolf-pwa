@@ -1,0 +1,161 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+
+  --bg-0: #0b1020;
+  --bg-1: #121a2b;
+  --panel: rgba(18, 26, 43, 0.88);
+  --panel-soft: rgba(148, 163, 184, 0.08);
+  --border: rgba(148, 163, 184, 0.28);
+  --text: #e5e7eb;
+  --text-muted: #94a3b8;
+  --primary: #7c8cff;
+  --primary-press: #6576f7;
+  --accent: #f2b544;
+  --success: #34d399;
+  --danger: #f87171;
+  --radius: 14px;
+  --shadow: 0 12px 36px rgba(2, 6, 23, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(124, 140, 255, 0.2), transparent 36%),
+    radial-gradient(circle at 86% 10%, rgba(242, 181, 68, 0.14), transparent 32%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 55%, #111827);
+}
+
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 14px 28px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(2px);
+}
+
+.kicker {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+h1, h2, h3 { margin: 0 0 12px; }
+p { margin: 6px 0 10px; }
+
+input,
+select {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  color: var(--text);
+  outline: none;
+  transition: border-color 180ms ease-out, box-shadow 180ms ease-out;
+}
+
+input:focus,
+select:focus,
+button:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 140, 255, 0.28);
+}
+
+button {
+  min-height: 44px;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 160ms ease-out, background 160ms ease-out, opacity 160ms ease-out;
+}
+
+button:hover { background: var(--primary-press); }
+button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.secondary { background: #334155; }
+button.danger { background: var(--danger); }
+button.warn { background: var(--accent); color: #1e293b; }
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+.panel-muted {
+  background: rgba(148, 163, 184, 0.07);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.toast {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  font-weight: 600;
+}
+.toast.error { background: rgba(248, 113, 113, 0.14); border-color: rgba(248, 113, 113, 0.45); color: #fecaca; }
+.toast.success { background: rgba(52, 211, 153, 0.14); border-color: rgba(52, 211, 153, 0.45); color: #a7f3d0; }
+.toast.info { background: rgba(124, 140, 255, 0.14); border-color: rgba(124, 140, 255, 0.45); color: #c7d2fe; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 2px 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.progress-track {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.progress-step {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: rgba(15, 23, 42, 0.55);
+}
+.progress-step.active { color: #fff; border-color: var(--primary); background: rgba(124, 140, 255, 0.22); }
+.progress-step.done { color: #d1fae5; border-color: var(--success); background: rgba(52, 211, 153, 0.18); }
+
+.fixed-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: linear-gradient(180deg, rgba(11, 16, 32, 0), rgba(11, 16, 32, 0.95) 30%);
+  padding-top: 12px;
+}
+
+ul { margin: 8px 0; padding-left: 18px; }
+code { background: rgba(148, 163, 184, 0.2); padding: 2px 6px; border-radius: 6px; }
+
+@media (min-width: 900px) {
+  main { padding: 24px 18px 32px; }
+}

@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "locale": "zh-CN",
+    "version": "1.0.0",
+    "description": "狼人杀主持文案：中性版 + 沉浸版"
+  },
+  "neutral": {
+    "broadcast": {
+      "lobby_ready": "所有玩家已就绪，游戏即将开始。",
+      "night_start": "天黑请闭眼，夜晚阶段开始。",
+      "day_start": "天亮了，请睁眼，白天阶段开始。",
+      "phase_switch": "当前阶段已结束，请下一位角色行动。",
+      "announce_deaths": "昨夜结果如下：{death_list}。",
+      "announce_no_death": "昨夜无人出局。",
+      "day_input_prompt": "请房主录入白天结果：淘汰一名玩家或无人出局。",
+      "game_end_good": "游戏结束：好人阵营获胜。",
+      "game_end_wolf": "游戏结束：狼人阵营获胜。"
+    },
+    "hint": {
+      "werewolf_action": "你是狼人，请选择今晚的目标。",
+      "guard_action": "你是守卫，请选择今晚守护的玩家。",
+      "seer_action": "你是预言家，请选择要查验的玩家。",
+      "seer_result_good": "查验结果：该玩家属于好人阵营。",
+      "seer_result_wolf": "查验结果：该玩家属于狼人阵营。",
+      "witch_save": "你是女巫，是否使用解药救人？",
+      "witch_poison": "你是女巫，是否使用毒药？",
+      "hunter_shot": "你是猎人，符合规则时可选择是否开枪。",
+      "waiting": "请耐心等待，当前不是你的行动阶段。",
+      "submitted": "操作已提交，等待系统结算。"
+    },
+    "error": {
+      "phase_mismatch": "当前阶段不可执行该操作。",
+      "forbidden": "你无权执行该操作。",
+      "already_eliminated": "你已出局，无法继续操作。",
+      "duplicate_action": "本阶段你已提交过同类操作。",
+      "invalid_target": "目标无效，请重新选择。",
+      "network_retry": "网络波动，正在重试。"
+    },
+    "system": {
+      "reconnect": "已恢复连接，正在同步最新进度。",
+      "syncing": "正在同步房间状态…",
+      "host_only": "仅房主可执行该操作。"
+    }
+  },
+  "immersive": {
+    "broadcast": {
+      "lobby_ready": "夜幕将临，众人就位。命运的齿轮开始转动。",
+      "night_start": "天黑请闭眼。风起林间，暗影开始行动。",
+      "day_start": "天亮了，请睁眼。昨夜的答案，正在浮出水面。",
+      "phase_switch": "这一轮已落幕，下一位请悄然行动。",
+      "announce_deaths": "昨夜，{death_list} 倒在了黎明之前。",
+      "announce_no_death": "昨夜风平浪静，无人倒下。",
+      "day_input_prompt": "请房主记录白天结果：逐出一人，或无人出局。",
+      "game_end_good": "尘埃落定：好人阵营守住了村庄。",
+      "game_end_wolf": "夜色吞没一切：狼人阵营取得胜利。"
+    },
+    "hint": {
+      "werewolf_action": "你潜伏于夜色之中。请选择今晚的猎物。",
+      "guard_action": "你是最后的防线。请选择今晚守护的人。",
+      "seer_action": "命运之眼已开启。请选择要查验的目标。",
+      "seer_result_good": "你看见了光：此人属于好人阵营。",
+      "seer_result_wolf": "你看见了影：此人属于狼人阵营。",
+      "witch_save": "药瓶在你手中。是否动用解药，扭转今夜结局？",
+      "witch_poison": "黑雾已起。是否使用毒药，执行你的裁决？",
+      "hunter_shot": "你仍握着最后一发子弹。是否开枪？",
+      "waiting": "请静候时机。夜还未轮到你发声。",
+      "submitted": "你的选择已落定，等待命运结算。"
+    },
+    "error": {
+      "phase_mismatch": "时机不对。此刻无法执行该行动。",
+      "forbidden": "这不是你的权限范围。",
+      "already_eliminated": "你已离场，只能旁观这场博弈。",
+      "duplicate_action": "你的抉择已提交，无需重复。",
+      "invalid_target": "目标不成立，请重新锁定。",
+      "network_retry": "信号受扰，正在重连命运链路。"
+    },
+    "system": {
+      "reconnect": "你已重返牌桌，进度同步完成。",
+      "syncing": "局势更新中，请稍候…",
+      "host_only": "此项操作仅房主可执行。"
+    }
+  }
+}

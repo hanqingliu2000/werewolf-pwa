@@ -1,0 +1,15 @@
+{
+  "name": "werewolf-pwa",
+  "private": true,
+  "scripts": {
+    "dev:werewolf": "npm --prefix web run dev",
+    "build:werewolf": "npm --prefix web run build",
+    "typecheck:werewolf": "npm --prefix web run typecheck",
+    "test:werewolf": "npm --prefix web exec vitest -- run --root web --no-file-parallelism",
+    "smoke:werewolf": "npm --prefix web exec vitest -- run --root web tests/me-view.test.ts tests/route-privacy.test.ts --no-file-parallelism",
+    "smoke:supabase": "node scripts/supabase-smoke.mjs --skip-missing-env",
+    "smoke:supabase:rpc": "node scripts/supabase-smoke.mjs --rpc-flow",
+    "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
+    "check:audio": "node scripts/check-host-audio.mjs"
+  }
+}

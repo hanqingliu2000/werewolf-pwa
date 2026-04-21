@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Werewolf Host</title>
+  <desc id="desc">A moonlit game host badge for the Werewolf Host PWA.</desc>
+  <rect width="512" height="512" rx="96" fill="#121417"/>
+  <circle cx="356" cy="140" r="74" fill="#f2e7b6"/>
+  <path d="M142 338c18-84 51-144 98-180 12 31 37 55 75 73-6 60-33 111-80 153 16 4 32 5 48 2-31 23-66 34-105 34-44 0-81-14-111-43 27 5 52 4 75-2z" fill="#d8dde2"/>
+  <path d="M214 188c31 34 67 55 108 62-13 46-39 83-78 112-39-27-61-67-66-121 11-20 23-38 36-53z" fill="#2f8f7b"/>
+  <path d="M194 268l40-26 42 26-42 25-40-25z" fill="#111417"/>
+  <path d="M246 245l26-62 18 77-16 9-28-24zM215 245l-26-62-18 77 16 9 28-24z" fill="#f2e7b6"/>
+</svg>

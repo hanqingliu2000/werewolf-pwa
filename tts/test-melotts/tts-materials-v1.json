@@ -1,0 +1,142 @@
+{
+  "version": "1.0.0",
+  "locale": "zh-CN",
+  "policy": {
+    "publicNarrationOnly": true,
+    "forbidPrivateResultNarration": true,
+    "forbiddenPatterns": [
+      "查验结果",
+      "属于好人阵营",
+      "属于狼人阵营"
+    ]
+  },
+  "required": [
+    {
+      "file": "night_guard_open.mp3",
+      "text": "守卫请睁眼，请选择你要守护的玩家。",
+      "public": true
+    },
+    {
+      "file": "night_werewolf_open.mp3",
+      "text": "狼人请睁眼，请选择你们今晚的目标。",
+      "public": true
+    },
+    {
+      "file": "night_seer_open.mp3",
+      "text": "预言家请睁眼，请查验一名玩家。",
+      "public": true
+    },
+    {
+      "file": "night_witch_open.mp3",
+      "text": "女巫请睁眼，请决定是否使用药剂。",
+      "public": true
+    },
+    {
+      "file": "night_resolve.mp3",
+      "text": "夜晚操作结束，准备天亮。",
+      "public": true
+    },
+    {
+      "file": "day_announce.mp3",
+      "text": "天亮了，请所有玩家睁眼。",
+      "public": true
+    },
+    {
+      "file": "day_input.mp3",
+      "text": "请房主录入白天投票结果。",
+      "public": true
+    }
+  ],
+  "recommended": [
+    {
+      "file": "lobby_ready.mp3",
+      "text": "所有玩家已就绪，游戏即将开始。",
+      "public": true
+    },
+    {
+      "file": "night_start.mp3",
+      "text": "天黑请闭眼，夜晚阶段开始。",
+      "public": true
+    },
+    {
+      "file": "phase_switch.mp3",
+      "text": "当前阶段已结束，请下一位角色行动。",
+      "public": true
+    },
+    {
+      "file": "announce_no_death.mp3",
+      "text": "昨夜无人出局。",
+      "public": true
+    },
+    {
+      "file": "day_vote_confirm.mp3",
+      "text": "白天录入已完成，请等待系统判定。",
+      "public": true
+    },
+    {
+      "file": "hunter_reaction_open.mp3",
+      "text": "猎人反应阶段开始，请按规则决定是否开枪。",
+      "public": true
+    },
+    {
+      "file": "game_end_good.mp3",
+      "text": "游戏结束：好人阵营获胜。",
+      "public": true
+    },
+    {
+      "file": "game_end_wolf.mp3",
+      "text": "游戏结束：狼人阵营获胜。",
+      "public": true
+    },
+    {
+      "file": "network_retry.mp3",
+      "text": "网络波动，正在重试。",
+      "public": true
+    },
+    {
+      "file": "reconnect_done.mp3",
+      "text": "已恢复连接，正在同步最新进度。",
+      "public": true
+    }
+  ],
+  "privateTextOnly": [
+    {
+      "key": "seer_result_good",
+      "text": "查验结果：该玩家属于好人阵营。"
+    },
+    {
+      "key": "seer_result_wolf",
+      "text": "查验结果：该玩家属于狼人阵营。"
+    }
+  ],
+  "audioSpec": {
+    "format": "mp3",
+    "sampleRateHz": 44100,
+    "channels": 1,
+    "targetLoudnessLUFS": -16,
+    "rate": "0.95-1.0",
+    "style": "calm-neutral-host"
+  },
+  "items": [
+    {
+      "file": "night_guard_close.mp3",
+      "text": "守卫请闭眼。",
+      "public": true
+    },
+    {
+      "file": "night_werewolf_close.mp3",
+      "text": "狼人请闭眼。",
+      "public": true
+    },
+    {
+      "file": "night_seer_close.mp3",
+      "text": "预言家请闭眼。",
+      "public": true
+    },
+    {
+      "file": "night_witch_close.mp3",
+      "text": "女巫请闭眼。",
+      "public": true
+    }
+  ]
+}
