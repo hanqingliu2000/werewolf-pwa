@@ -82,4 +82,10 @@ test('mobile create and join flow stores player session', async ({ page }) => {
   expect(guestSession.token).toBeTruthy();
   expect(guestSession.player).not.toBe(hostSession.player);
   expect(guestSession.token).not.toBe(hostSession.token);
+
+  await page.goto(`/room/${roomId}/lobby`);
+  await expect(page.getByRole('heading', { name: '房间等待区' })).toBeVisible();
+  await expect(page.getByText('E2E Guest')).toBeVisible();
+  await expect(page.getByText('E2E Host（房主）')).toBeVisible();
+  await expect(page.getByRole('button', { name: '开始游戏' })).toHaveCount(0);
 });
