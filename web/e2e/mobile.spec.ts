@@ -134,7 +134,7 @@ test('mobile host can start a ready room and recover on play page', async ({ pag
   await expect(page.getByText('未找到你的玩家身份')).toHaveCount(0);
 });
 
-test('mobile first night guard action advances the live game phase', async ({ page, request }) => {
+test('mobile first night guard and wolf actions advance the live game phase', async ({ page, request }) => {
   const created = await request.post('/api/rooms', {
     data: {
       hostName: 'E2E Guard Host',
@@ -146,10 +146,13 @@ test('mobile first night guard action advances the live game phase', async ({ pa
   expect(created.status()).toBe(201);
   const { room, hostPlayer } = await created.json();
 
+  const joinedPlayers = [];
   for (const name of ['E2E Wolf', 'E2E Seer', 'E2E Villager']) {
     const joined = await request.post(`/api/rooms/${room.id}/join`, { data: { name } });
     expect(joined.status()).toBe(201);
+    joinedPlayers.push((await joined.json()).player);
   }
+  const wolfPlayer = joinedPlayers[0];
 
   const started = await request.post(`/api/rooms/${room.id}/start`, {
     data: { playerId: hostPlayer.id },
@@ -180,4 +183,34 @@ test('mobile first night guard action advances the live game phase', async ({ pa
   expect(state.status()).toBe(200);
   const body = await state.json();
   expect(body.room.currentPhase).toBe('NIGHT_WEREWOLF');
+
+  await page.goto('/');
+  await page.evaluate(({ roomId, playerId, token }) => {
+    localStorage.setItem(`ww:player:${roomId}`, playerId);
+    localStorage.setItem(`ww:token:${roomId}`, token);
+  }, {
+    roomId: room.id,
+    playerId: wolfPlayer.id,
+    token: wolfPlayer.sessionToken,
+  });
+
+  await page.goto(`/room/${room.id}/play`);
+  await expect(page.getByRole('heading', { name: '夜晚·狼人行动' })).toBeVisible();
+  await expect(page.getByText('你是 E2E Wolf（狼人）')).toBeVisible();
+  await expect(page.getByText('狼人协作进度：已选择 0 / 1')).toBeVisible();
+  await page.getByRole('button', { name: 'E2E Seer' }).click();
+  await page.getByRole('button', { name: '提交击杀' }).click();
+
+  await expect(page.getByText('已提交：击杀')).toBeVisible();
+  await expect(page.getByText('狼人协作进度：已选择 1 / 1')).toBeVisible();
+  await expect(page.getByText('已达成共识，可确认推进。')).toBeVisible();
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: '确认击杀并推进' }).click();
+  await expect(page.getByRole('heading', { name: '夜晚·预言家行动' })).toBeVisible();
+
+  const afterWolf = await request.get(`/api/rooms/${room.id}/state`);
+  expect(afterWolf.status()).toBe(200);
+  const afterWolfBody = await afterWolf.json();
+  expect(afterWolfBody.room.currentPhase).toBe('NIGHT_SEER');
 });

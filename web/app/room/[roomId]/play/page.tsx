@@ -370,7 +370,7 @@ export default function PlayPage() {
 
   useEffect(() => {
     if (ttsReady) return;
-    const unlock = () => setTtsReady(true);
+    const unlock = () => window.setTimeout(() => setTtsReady(true), 0);
     window.addEventListener('pointerdown', unlock, { once: true });
     window.addEventListener('keydown', unlock, { once: true });
     return () => {
