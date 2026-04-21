@@ -21,6 +21,8 @@ type StateView = {
   events?: Array<{ type: string; payload?: Record<string, unknown> }>;
 };
 
+type ToastMessage = { kind: 'error' | 'success' | 'info'; text: string };
+
 const phaseAction: Record<string, 'guard' | 'kill' | 'see' | 'save' | null> = {
   NIGHT_GUARD: 'guard',
   NIGHT_WEREWOLF: 'kill',
@@ -121,7 +123,8 @@ export default function PlayPage() {
   const [shotTargetId, setShotTargetId] = useState('');
   const [meView, setMeView] = useState<MeView | null>(null);
   const [stateView, setStateView] = useState<StateView | null>(null);
-  const [msg, setMsg] = useState<{ kind: 'error' | 'success' | 'info'; text: string } | null>(null);
+  const [msg, setMsg] = useState<ToastMessage | null>(null);
+  const [ttsMsg, setTtsMsg] = useState<ToastMessage | null>(null);
   const [ttsMode] = useState<HostTtsMode>('prebuilt');
   const [ttsAuto, setTtsAuto] = useState(true);
   const [ttsReady, setTtsReady] = useState(true);
@@ -318,14 +321,14 @@ export default function PlayPage() {
     if (!clips.length) return;
     try {
       for (const clip of clips) await playNarrationClip(clip);
-      setMsg({ kind: 'info', text: `主持播报：${clips.map((c) => c.text).join(' ')}` });
+      setTtsMsg({ kind: 'info', text: `主持播报：${clips.map((c) => c.text).join(' ')}` });
       lastNarratedPhaseRef.current = phase;
       prevPhaseRef.current = phase;
     } catch (e) {
       const reason = (e as Error).message === 'PRIVATE_NARRATION_BLOCKED'
         ? '命中隐私护栏：私密信息禁止公共播报'
         : (e as Error).message;
-      setMsg({ kind: 'error', text: `语音播报失败：${reason}（请点击“解锁语音播放”后重试）` });
+      setTtsMsg({ kind: 'error', text: `语音播报失败：${reason}（请点击“解锁语音播放”后重试）` });
       setTtsReady(false);
     }
   }
@@ -362,7 +365,7 @@ export default function PlayPage() {
     if (ttsMode === 'prebuilt') {
       preloadPrebuilt(Object.values(narrationCatalog).map((x) => x.key));
     }
-    setMsg({ kind: 'info', text: '语音主持已解锁，可开始播报。' });
+    setTtsMsg({ kind: 'info', text: '语音主持已解锁，可开始播报。' });
   }
 
   useEffect(() => {
@@ -600,6 +603,7 @@ export default function PlayPage() {
 
       {latestEvent ? <div className="card"><p>最近结果：{eventSummary(latestEvent)}</p></div> : null}
       {msg ? <div className={`toast ${msg.kind}`}>{msg.text}</div> : null}
+      {ttsMsg ? <div className={`toast ${ttsMsg.kind}`}>{ttsMsg.text}</div> : null}
     </main>
   );
 }

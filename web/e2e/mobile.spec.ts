@@ -174,6 +174,7 @@ test('mobile first night guard action advances the live game phase', async ({ pa
   await page.getByRole('button', { name: '提交守护' }).click();
 
   await expect(page.getByRole('heading', { name: '夜晚·狼人行动' })).toBeVisible();
+  await expect(page.getByText('已提交：守护')).toBeVisible();
 
   const state = await request.get(`/api/rooms/${room.id}/state`);
   expect(state.status()).toBe(200);
