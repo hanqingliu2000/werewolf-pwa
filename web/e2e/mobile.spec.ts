@@ -89,3 +89,47 @@ test('mobile create and join flow stores player session', async ({ page }) => {
   await expect(page.getByText('E2E Host（房主）')).toBeVisible();
   await expect(page.getByRole('button', { name: '开始游戏' })).toHaveCount(0);
 });
+
+test('mobile host can start a ready room and recover on play page', async ({ page, request }) => {
+  const created = await request.post('/api/rooms', {
+    data: {
+      hostName: 'E2E API Host',
+      roomName: 'E2E Ready Room',
+      targetPlayers: 4,
+      rolePlan: { werewolf: 1, seer: 1, villager: 2 },
+    },
+  });
+  expect(created.status()).toBe(201);
+  const { room, hostPlayer } = await created.json();
+
+  for (const name of ['E2E One', 'E2E Two', 'E2E Three']) {
+    const joined = await request.post(`/api/rooms/${room.id}/join`, { data: { name } });
+    expect(joined.status()).toBe(201);
+  }
+
+  await page.goto('/');
+  await page.evaluate(({ roomId, playerId, token }) => {
+    localStorage.setItem(`ww:player:${roomId}`, playerId);
+    localStorage.setItem(`ww:token:${roomId}`, token);
+  }, {
+    roomId: room.id,
+    playerId: hostPlayer.id,
+    token: hostPlayer.sessionToken,
+  });
+
+  await page.goto(`/room/${room.id}/lobby`);
+  await expect(page.getByRole('heading', { name: '房间等待区' })).toBeVisible();
+  await expect(page.getByText('E2E API Host（房主）')).toBeVisible();
+  await expect(page.getByText('E2E Three')).toBeVisible();
+  await expect(page.getByText('人数状态：已满足开局条件')).toBeVisible();
+  await page.getByRole('button', { name: '开始游戏' }).click();
+
+  await expect(page.getByText(/游戏已开始：NIGHT_/)).toBeVisible();
+  await page.getByRole('button', { name: '进入对局页' }).click();
+  await expect(page.getByText('你是 E2E API Host')).toBeVisible();
+  await expect(page.getByText('未找到你的玩家身份')).toHaveCount(0);
+
+  await page.goto(`/room/${room.id}/play`);
+  await expect(page.getByText('你是 E2E API Host')).toBeVisible();
+  await expect(page.getByText('未找到你的玩家身份')).toHaveCount(0);
+});
