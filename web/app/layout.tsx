@@ -1,5 +1,6 @@
 import './globals.css';
 import type { ReactNode } from 'react';
+import { ConnectionStatus } from './connection-status';
 import { ServiceWorkerRegister } from './service-worker-register';
 
 export const metadata = {
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="zh-CN">
       <body>
         {children}
+        <ConnectionStatus />
         <ServiceWorkerRegister />
       </body>
     </html>
