@@ -70,7 +70,7 @@ npm run test:werewolf
 ## 3. 当前缺口
 - Route handler 已覆盖内存模式完整一局，并补充了 Supabase RPC 写路径的关键错误码映射；已提供真实 Supabase RPC smoke 入口，仍需在测试库中实际执行并纳入发布前检查。
 - `next-pwa` 已移除，生产依赖审计当前为 0 vulnerabilities；PWA 仍需用真实移动浏览器验证安装、缓存更新和弱网行为。
-- PWA 已提供 SVG 与 192px/512px PNG 图标；仍需用真实移动浏览器验证安装体验。
+- PWA 已提供 SVG 与 192px/512px PNG 图标；首页已用 390x844 移动视口做浏览器 smoke，无横向溢出；仍需用真实移动浏览器验证安装体验。
 - Supabase 创建房间、加入房间、开始游戏、夜间行动、夜晚结算、白天宣告推进、猎人开枪、白天投票、重开房间已通过 RPC 事务化。
-- 还没有 Playwright 手机视口测试。
+- 还没有自动化 Playwright 手机视口测试。
 - 断线/超时策略尚未定义，暂不能自动验收。
