@@ -11,6 +11,14 @@
     "smoke:supabase": "node scripts/supabase-smoke.mjs --skip-missing-env",
     "smoke:supabase:rpc": "node scripts/supabase-smoke.mjs --rpc-flow",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
-    "check:audio": "node scripts/check-host-audio.mjs"
+    "check:audio": "node scripts/check-host-audio.mjs",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android",
+    "android:build": "cd android && ./gradlew assembleDebug"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1"
   }
 }
