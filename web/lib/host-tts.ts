@@ -1,5 +1,17 @@
 export type HostTtsMode = 'browser' | 'prebuilt';
 
+type NativeHostAudio = {
+  play?: (opts: { key: string }) => Promise<unknown>;
+};
+
+type NativeAudioWindow = Window & typeof globalThis & {
+  Capacitor?: {
+    Plugins?: {
+      HostAudio?: NativeHostAudio;
+    };
+  };
+};
+
 // 隐私护栏：严禁把私密查验结果播报为公共语音。
 const privateNarrationPattern = /(查验结果|属于好人阵营|属于狼人阵营)/;
 
@@ -86,6 +98,19 @@ export function speakByPrebuilt(key: string): Promise<void> {
       reject(new Error('AUDIO_UNAVAILABLE'));
       return;
     }
+    const nativeHostAudio = (window as NativeAudioWindow).Capacitor?.Plugins?.HostAudio;
+    if (nativeHostAudio?.play) {
+      nativeHostAudio.play({ key }).then(() => resolve()).catch(() => {
+        playByHtmlAudio(key).then(resolve).catch(reject);
+      });
+      return;
+    }
+    playByHtmlAudio(key).then(resolve).catch(reject);
+  });
+}
+
+function playByHtmlAudio(key: string): Promise<void> {
+  return new Promise((resolve, reject) => {
     const audio = new Audio(`/audio/host/${key}.mp3`);
     audio.preload = 'auto';
     audio.onended = () => resolve();

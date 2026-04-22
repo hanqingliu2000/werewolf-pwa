@@ -12,6 +12,10 @@ export default defineConfig({
   },
   webServer: {
     command: 'npm run build && npm run start:e2e',
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL: '',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: '',
+    },
     url: 'http://127.0.0.1:3100',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
