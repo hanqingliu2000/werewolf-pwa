@@ -181,7 +181,10 @@ export default function PlayPage() {
   );
 
   const aliveTargets = useMemo(() => (stateView?.players || []).filter((p) => p.alive && p.id !== playerId), [stateView, playerId]);
-  const latestEvent = useMemo(() => (stateView?.events || [])[0], [stateView]);
+  const latestEvent = useMemo(() => {
+    const events = stateView?.events || [];
+    return events[events.length - 1];
+  }, [stateView]);
   const requiredRole = phaseActorRole[stateView?.room.currentPhase || ''];
   const requiredRoleZh = roleZh[requiredRole || ''] || '其他身份';
 

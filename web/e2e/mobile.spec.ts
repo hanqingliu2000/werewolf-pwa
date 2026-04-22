@@ -275,7 +275,8 @@ test('mobile first night guard wolf and seer actions advance the live game phase
 
   await expect(page.getByText('游戏结束：好人胜')).toBeVisible();
   await expect(page.getByRole('heading', { name: '对局结束' })).toBeVisible();
-  await expect(page.getByText('游戏结束：好人阵营获胜')).toBeVisible();
+  await expect(page.getByText('最近结果：游戏结束：好人阵营获胜')).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: '游戏结束：好人阵营获胜' })).toBeVisible();
   await expect(page.getByText('E2E Wolf · 未分配 · 出局（禁用）')).toBeVisible();
 
   const afterVote = await request.get(`/api/rooms/${room.id}/state`);
