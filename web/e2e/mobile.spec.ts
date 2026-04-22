@@ -242,4 +242,30 @@ test('mobile first night guard wolf and seer actions advance the live game phase
   const afterSeerBody = await afterSeer.json();
   expect(afterSeerBody.room.currentPhase).toBe('NIGHT_RESOLVE');
   expect(afterSeerBody.players.find((player: { name: string }) => player.name === 'E2E Wolf')?.role).toBeNull();
+
+  await page.goto('/');
+  await page.evaluate(({ roomId, playerId, token }) => {
+    localStorage.setItem(`ww:player:${roomId}`, playerId);
+    localStorage.setItem(`ww:token:${roomId}`, token);
+  }, {
+    roomId: room.id,
+    playerId: hostPlayer.id,
+    token: hostPlayer.sessionToken,
+  });
+
+  await page.goto(`/room/${room.id}/play`);
+  await expect(page.getByText('你是 E2E Guard Host（守卫）')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '白天公布' })).toBeVisible();
+  await expect(page.getByText('最近结果：昨夜出局：E2E Seer')).toBeVisible();
+  await expect(page.getByText('E2E Seer · 未分配 · 出局（禁用）')).toBeVisible();
+  await page.getByRole('button', { name: '进入白天录入' }).click();
+
+  await expect(page.getByRole('heading', { name: '白天录入', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '白天录入（房主）' })).toBeVisible();
+
+  const afterAnnounce = await request.get(`/api/rooms/${room.id}/state`);
+  expect(afterAnnounce.status()).toBe(200);
+  const afterAnnounceBody = await afterAnnounce.json();
+  expect(afterAnnounceBody.room.currentPhase).toBe('DAY_INPUT');
+  expect(afterAnnounceBody.players.find((player: { name: string }) => player.name === 'E2E Seer')?.alive).toBe(false);
 });
