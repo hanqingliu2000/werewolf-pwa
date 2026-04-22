@@ -4,9 +4,13 @@ import path from 'node:path';
 const dir = path.resolve('web/public/audio/host');
 const required = [
   'night_guard_open.mp3',
+  'night_guard_close.mp3',
   'night_werewolf_open.mp3',
+  'night_werewolf_close.mp3',
   'night_seer_open.mp3',
+  'night_seer_close.mp3',
   'night_witch_open.mp3',
+  'night_witch_close.mp3',
   'night_resolve.mp3',
   'day_announce.mp3',
   'day_input.mp3',

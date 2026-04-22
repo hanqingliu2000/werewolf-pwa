@@ -389,11 +389,6 @@ export default function PlayPage() {
     }
   }, [ttsMode, ttsAuto, ttsReady]);
 
-  useEffect(() => {
-    if (!stateView) return;
-    if (!prevPhaseRef.current) prevPhaseRef.current = stateView.room.currentPhase;
-  }, [stateView]);
-
   const resolvingRef = useRef(false);
   useEffect(() => {
     if (!stateView) return;
