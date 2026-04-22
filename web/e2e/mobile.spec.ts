@@ -268,4 +268,20 @@ test('mobile first night guard wolf and seer actions advance the live game phase
   const afterAnnounceBody = await afterAnnounce.json();
   expect(afterAnnounceBody.room.currentPhase).toBe('DAY_INPUT');
   expect(afterAnnounceBody.players.find((player: { name: string }) => player.name === 'E2E Seer')?.alive).toBe(false);
+
+  await page.locator('select').first().selectOption({ label: 'E2E Wolf' });
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: '录入淘汰' }).click();
+
+  await expect(page.getByText('游戏结束：好人胜')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '对局结束' })).toBeVisible();
+  await expect(page.getByText('游戏结束：好人阵营获胜')).toBeVisible();
+  await expect(page.getByText('E2E Wolf · 未分配 · 出局（禁用）')).toBeVisible();
+
+  const afterVote = await request.get(`/api/rooms/${room.id}/state`);
+  expect(afterVote.status()).toBe(200);
+  const afterVoteBody = await afterVote.json();
+  expect(afterVoteBody.room.status).toBe('end');
+  expect(afterVoteBody.room.currentPhase).toBe('END');
+  expect(afterVoteBody.players.find((player: { name: string }) => player.name === 'E2E Wolf')?.alive).toBe(false);
 });
