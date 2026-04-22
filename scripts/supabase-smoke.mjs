@@ -1,10 +1,30 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
 import { createRequire } from 'node:module';
+import path from 'node:path';
 
 const require = createRequire(new URL('../web/package.json', import.meta.url));
+loadLocalEnv();
+
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const args = new Set(process.argv.slice(2));
+
+function loadLocalEnv() {
+  for (const file of ['.env.local', path.join('web', '.env.local')]) {
+    if (!fs.existsSync(file)) continue;
+    const content = fs.readFileSync(file, 'utf8');
+    for (const rawLine of content.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith('#')) continue;
+      const idx = line.indexOf('=');
+      if (idx <= 0) continue;
+      const key = line.slice(0, idx).trim();
+      const value = line.slice(idx + 1).trim().replace(/^['"]|['"]$/g, '');
+      process.env[key] ||= value;
+    }
+  }
+}
 
 if (!url || !key) {
   const message = 'Missing env: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY';
