@@ -134,7 +134,7 @@ test('mobile host can start a ready room and recover on play page', async ({ pag
   await expect(page.getByText('未找到你的玩家身份')).toHaveCount(0);
 });
 
-test('mobile first night guard and wolf actions advance the live game phase', async ({ page, request }) => {
+test('mobile first night guard wolf and seer actions advance the live game phase', async ({ page, request }) => {
   const created = await request.post('/api/rooms', {
     data: {
       hostName: 'E2E Guard Host',
@@ -153,6 +153,7 @@ test('mobile first night guard and wolf actions advance the live game phase', as
     joinedPlayers.push((await joined.json()).player);
   }
   const wolfPlayer = joinedPlayers[0];
+  const seerPlayer = joinedPlayers[1];
 
   const started = await request.post(`/api/rooms/${room.id}/start`, {
     data: { playerId: hostPlayer.id },
@@ -213,4 +214,32 @@ test('mobile first night guard and wolf actions advance the live game phase', as
   expect(afterWolf.status()).toBe(200);
   const afterWolfBody = await afterWolf.json();
   expect(afterWolfBody.room.currentPhase).toBe('NIGHT_SEER');
+
+  await page.goto('/');
+  await page.evaluate(({ roomId, playerId, token }) => {
+    localStorage.setItem(`ww:player:${roomId}`, playerId);
+    localStorage.setItem(`ww:token:${roomId}`, token);
+  }, {
+    roomId: room.id,
+    playerId: seerPlayer.id,
+    token: seerPlayer.sessionToken,
+  });
+
+  await page.goto(`/room/${room.id}/play`);
+  await expect(page.getByRole('heading', { name: '夜晚·预言家行动' })).toBeVisible();
+  await expect(page.getByText('你是 E2E Seer（预言家）')).toBeVisible();
+  await expect(page.getByText('暂无查验记录')).toBeVisible();
+  await page.locator('select').first().selectOption({ label: 'E2E Wolf' });
+  await page.getByRole('button', { name: '提交查验' }).click();
+
+  await expect(page.getByText('已提交：查验')).toBeVisible();
+  await expect(page.getByText('第 1 夜：E2E Wolf（狼人阵营）')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '夜晚结算' })).toBeVisible();
+  await expect(page.getByText('E2E Wolf · 未分配 · 存活')).toBeVisible();
+
+  const afterSeer = await request.get(`/api/rooms/${room.id}/state`);
+  expect(afterSeer.status()).toBe(200);
+  const afterSeerBody = await afterSeer.json();
+  expect(afterSeerBody.room.currentPhase).toBe('NIGHT_RESOLVE');
+  expect(afterSeerBody.players.find((player: { name: string }) => player.name === 'E2E Wolf')?.role).toBeNull();
 });
