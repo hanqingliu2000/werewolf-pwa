@@ -1,4 +1,4 @@
-# macOS
+# OS files
 .DS_Store
 
 # Node.js
@@ -9,7 +9,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Next.js / build output
+# Generated build and test output
 .next/
 out/
 dist/
@@ -22,13 +22,10 @@ playwright-report/
 # Environment / local config
 .env
 .env.*
-!.env.example
+.local-archive/
 
 # Vercel local metadata
 .vercel/
-
-# Generated PWA assets
-web/public/workbox-*.js
 
 # Local archives / handoff bundles
 *.tar.gz

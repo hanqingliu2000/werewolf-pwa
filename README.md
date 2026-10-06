@@ -1,93 +1,38 @@
-# Werewolf PWA
+# 狼人杀自动主持：网页版重构基线
 
-Werewolf PWA is a mobile-friendly web host for offline Werewolf games. It replaces the manual moderator role for night phases, private actions, death resolution, and win-condition checks while leaving daytime discussion to the players.
+这是一个面向朋友线下聚会的狼人杀主持工具：每个人都能参与游戏，系统组织夜晚秘密行动、结算与胜负判断，白天讨论留在桌边。
 
-The app is intended for small in-person groups: a host creates a room, players join from their phones, roles are assigned privately, and the system guides the table through each phase.
+截至 2026-10-06，本仓库只包含产品与开发准备文档、参考素材和 Git 归档历史。旧实现已经移除，新实现尚未开始。
 
-## What It Does
+## 当前范围
 
-- Creates game rooms with player and role configuration.
-- Lets players join by room code and nickname.
-- Privately reveals each player's role.
-- Guides the night sequence for guard, werewolves, seer, and witch.
-- Collects private night actions through player sessions.
-- Resolves guard, kill, save, poison, and hunter interactions.
-- Lets the host record daytime eliminations or no-elimination outcomes.
-- Computes win conditions for villagers and werewolves.
-- Supports memory-mode development and Supabase-backed persistence.
+- 只开发响应式网页版，手机浏览器优先。
+- Android 和 iOS 用户都通过浏览器加入，不开发原生 App 或 WebView 壳。
+- 普通玩家使用个人手机；一台指定设备打开网页承担公共播报。
+- 首版需要联网，重点支持刷新、短时断线和音频失败后的恢复。
+- 优先验证小范围熟人局，不扩展复杂社交、付费体系或远程匹配。
 
-## Tech Stack
+## 文档导航
 
-- Next.js App Router
-- React
-- TypeScript
-- Vitest
-- Supabase client support
-- PWA manifest and service worker shell
+| 文档 | 内容 |
+| --- | --- |
+| [00 产品愿景](docs/00-product-vision.md) | 用户、场景、价值与范围决定 |
+| [01 产品需求](docs/01-product-requirements.md) | 首版必需能力、增强项与验收目标 |
+| [02 规则与待决事项](docs/02-rules-and-decisions.md) | 六角色规则、候选默认值、实施前需确定的分支 |
+| [03 对局流程与隐私](docs/03-gameplay-and-privacy.md) | 完整一局、信息边界、主持节奏与故障恢复 |
+| [04 UX 与页面地图](docs/04-ux-and-screens.md) | 玩家、房主与公共视角的交互设计 |
+| [05 播报与素材](docs/05-narration-and-assets.md) | 语音脚本、素材需求与保留材料的使用条件 |
+| [06 网页与开发原则](docs/06-web-and-development.md) | 浏览器边界、共享规则、版本与技术选型原则 |
+| [07 验证与重构路线](docs/07-validation-and-roadmap.md) | 阶段交付、质量门槛与真实对局验证 |
+| [08 归档与保留记录](docs/08-archive-and-retention.md) | 存档提交、资料取舍、本地备份与恢复方式 |
+| [参考素材说明](materials/README.md) | 材料目录、状态和完整性清单 |
 
-## Repository Structure
+建议先阅读 00 至 04，再审阅规则决策表。标记为“建议”或“待确认”的内容尚不是已验证、已确定的规则。
 
-```text
-web/                 Next.js application, API routes, UI, tests, and assets
-db/migrations/       Supabase schema and transactional RPC migrations
-scripts/             Smoke checks and asset utilities
-assets/              Shared copywriting data
-tts/                 Host narration materials and generation helpers
-frontend-handoff/    UI redesign handoff notes
-*.md                 Product, rules, API, security, testing, and deployment docs
-```
+## 归档
 
-## Local Development
+- 归档提交：`1416abd20e88befed14a0e8a4e66f8d19ec43e66`。
+- 归档标签：`archive/pre-rewrite-2026-10-06`。
+- 原实现、旧文档和锁文件均可从标签恢复；归档不代表发布或规则认可。
 
-Install dependencies from the repository root:
-
-```bash
-npm --prefix web install
-```
-
-Run the web app:
-
-```bash
-npm run dev:werewolf
-```
-
-Run checks:
-
-```bash
-npm run typecheck:werewolf
-npm run test:werewolf
-npm run smoke:werewolf
-```
-
-Build:
-
-```bash
-npm run build:werewolf
-```
-
-## Persistence Modes
-
-When Supabase environment variables are absent, the app uses an in-memory store for local development. With Supabase configured, API routes use database-backed room lifecycle RPCs.
-
-Environment variables:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-```
-
-## Documentation
-
-The root Markdown files describe the rules, API shape, data model, deployment, risks, and testing strategy. The most useful entry points are:
-
-- `01-brief.md`
-- `02-requirements.md`
-- `03-rules-config.md`
-- `04-state-machine.md`
-- `06-api-contract.md`
-- `08-security-privacy.md`
-- `21-testing-plan.md`
-
-## Privacy Notes
-
-Player session tokens are private runtime values. Do not commit live room data, deployment URLs, or Supabase credentials. The repository includes only code, migrations, test fixtures, and public documentation.
+本次仅进行本地存档与文档重置，没有推送或部署。当前没有安装依赖、启动应用或构建的命令，也不应从旧归档直接恢复框架来替代新方案设计。

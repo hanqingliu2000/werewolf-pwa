@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "createdOn": "2026-10-06",
+  "purpose": "Retained reference materials, not a runtime or release manifest.",
+  "archiveTag": "archive/pre-rewrite-2026-10-06",
+  "archiveCommit": "1416abd20e88befed14a0e8a4e66f8d19ec43e66",
+  "licenseReview": "pending",
+  "assets": [
+    {
+      "path": "materials/audio/zh-CN/host/announce_no_death.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/announce_no_death.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 14463,
+      "sha256": "00ca3240314556399bd9b035d16c93fc0a0a304d23980eaeb1ccb8b3b53a897f"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/day_announce.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/day_announce.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 27264,
+      "sha256": "1c9646161a7a52059b6bf3e3a2804ab079c0ec3f659ddae53b0b4f4812e74880"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/day_input.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/day_input.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 9153,
+      "sha256": "f51767c5a1f51954ab791fe3cebcb0f0f5880523ec32b835f7f28d1b15917163"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/day_vote_confirm.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/day_vote_confirm.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 35946,
+      "sha256": "a11af6afd16a34c34ecc6f75eeedcffd91877649ee11ff4cb80025309ea96639"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/game_end_good.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/game_end_good.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 29430,
+      "sha256": "bc658df0ba32bde0a4bc434a101375cbc424fe7ca0c5350a85976a1ec78de7d0"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/game_end_wolf.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/game_end_wolf.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 28724,
+      "sha256": "8738ab094f11f667c9fa2f98ebb73068191e9b96023d34c95efdd74111460fb1"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/hunter_reaction_open.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/hunter_reaction_open.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 47447,
+      "sha256": "ccd84f29839c30c90245d94aef604bf35c37ed38018f4f906648d95d91079c0c"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/lobby_ready.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/lobby_ready.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 37176,
+      "sha256": "30cc0c6674f3ec287d987b1e80deb7a2b7ccdc4a0fb6164f42d06e42aa1d89c9"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/network_retry.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/network_retry.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 24831,
+      "sha256": "414b9ef7048962f93021549816dfe6363850122842256b12964a61fdde41e7b1"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_guard_close.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_guard_close.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 15714,
+      "sha256": "68c6f72b9110000211f126d4ed50c0814a031885a062a6ce25fbd3be54a1652c"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_guard_open.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_guard_open.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 39418,
+      "sha256": "2191c67757bf060ef9956692cef84c139426d264ea63ab9b5fa1ab8c741fde4d"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_resolve.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_resolve.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 29923,
+      "sha256": "980b96287686ed417321f3d42286a6efdc43323268ac98ae59c385c6ccf23971"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_seer_close.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_seer_close.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 6137,
+      "sha256": "3d861b49652f4f5fe986aa14e3480b0bd1c97297241ba0c9c39e3dbc9e7f8f54"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_seer_open.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_seer_open.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 33083,
+      "sha256": "a7edeac9128e8ac2f9275b26d9b339bdc76e3a632106e9eae7ecc789c46f19e3"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_start.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_start.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 31932,
+      "sha256": "1eab621bf3e228e1e97c1953be9a69fe35c2b071f170e3909218525fd1605053"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_werewolf_close.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_werewolf_close.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 5305,
+      "sha256": "f3bbe84136ef40d363e571149cf4d745d81a813287a4abef200279eaec434d47"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_werewolf_open.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_werewolf_open.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 35374,
+      "sha256": "88ae3ec9be8591fce092614e9972ff340270adef2387e6b855dad94eabf64952"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_witch_close.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_witch_close.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 5409,
+      "sha256": "395dcd647aef9a477971e39a2957ef99e29c053cc655d2b7eba158e59178e6c7"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/night_witch_open.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/night_witch_open.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 11649,
+      "sha256": "93b3fef7ad9928452345efc33f7a0f754a4adaf094db6678e6e3f0cfe76de238"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/phase_switch.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/phase_switch.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 38892,
+      "sha256": "623038c6558c04df2583d886db2d83a17a0393784642495d327627ce02159adb"
+    },
+    {
+      "path": "materials/audio/zh-CN/host/reconnect_done.mp3",
+      "kind": "narration-audio",
+      "status": "reference-only",
+      "sourcePath": "web/public/audio/host/reconnect_done.mp3",
+      "sourceWasGitTracked": true,
+      "bytes": 11233,
+      "sha256": "07b41189fb3dd22519dff58e415d338f0b45ff54ef7620b645815ce0cb760a60"
+    },
+    {
+      "path": "materials/audio/zh-CN/legacy-test/day_announce.mp3",
+      "kind": "test-audio",
+      "status": "reference-only",
+      "sourcePath": "tts/test-melotts/out/day_announce.mp3",
+      "sourceWasGitTracked": false,
+      "bytes": 25961,
+      "sha256": "aef293e6b4b380212bbd9fe5a443592a225b81847d15857eed712add629ccdfc"
+    },
+    {
+      "path": "materials/audio/zh-CN/legacy-test/day_input.mp3",
+      "kind": "test-audio",
+      "status": "reference-only",
+      "sourcePath": "tts/test-melotts/out/day_input.mp3",
+      "sourceWasGitTracked": false,
+      "bytes": 8945,
+      "sha256": "f69dc74e917022ef2fc64b21c27eeca066545ce037793074e9611b94699ff7ce"
+    },
+    {
+      "path": "materials/audio/zh-CN/legacy-test/night_guard_open.mp3",
+      "kind": "test-audio",
+      "status": "reference-only",
+      "sourcePath": "tts/test-melotts/out/night_guard_open.mp3",
+      "sourceWasGitTracked": false,
+      "bytes": 37747,
+      "sha256": "ffcc1292abb657ebaa14c27f62998b5dd30ad96db211bf044b0a85b4af7c7fb3"
+    },
+    {
+      "path": "materials/audio/zh-CN/legacy-test/night_resolve.mp3",
+      "kind": "test-audio",
+      "status": "reference-only",
+      "sourcePath": "tts/test-melotts/out/night_resolve.mp3",
+      "sourceWasGitTracked": false,
+      "bytes": 28229,
+      "sha256": "5cc939b5309eadc0432d75952de033b38fbae9bf59f21c37c7c3b6aa32673463"
+    },
+    {
+      "path": "materials/audio/zh-CN/legacy-test/night_seer_open.mp3",
+      "kind": "test-audio",
+      "status": "reference-only",
+      "sourcePath": "tts/test-melotts/out/night_seer_open.mp3",
+      "sourceWasGitTracked": false,
+      "bytes": 31364,
+      "sha256": "19e503cd1577f2a447ac5099026cd9a1b6892ba737ddaaa59dd9d4354494f1e6"
+    },
+    {
+      "path": "materials/audio/zh-CN/legacy-test/night_werewolf_open.mp3",
+      "kind": "test-audio",
+      "status": "reference-only",
+      "sourcePath": "tts/test-melotts/out/night_werewolf_open.mp3",
+      "sourceWasGitTracked": false,
+      "bytes": 33809,
+      "sha256": "876448d745255934491eee68cc6345dc5bb69b91484c2fd4cf89d88782b78b51"
+    },
+    {
+      "path": "materials/audio/zh-CN/legacy-test/night_witch_open.mp3",
+      "kind": "test-audio",
+      "status": "reference-only",
+      "sourcePath": "tts/test-melotts/out/night_witch_open.mp3",
+      "sourceWasGitTracked": false,
+      "bytes": 10921,
+      "sha256": "19ea717f4d2a75e52cf7abc28d03b9292d705311b81265df0e626e41e0dbc018"
+    },
+    {
+      "path": "materials/branding/legacy-icon-192.png",
+      "kind": "brand-reference",
+      "status": "reference-only",
+      "sourcePath": "web/public/icon-192.png",
+      "sourceWasGitTracked": true,
+      "bytes": 1297,
+      "sha256": "bae388237fc80d3e24fc51a5f7878c1b94412f0c1e0a25c8d1521efada9ab970"
+    },
+    {
+      "path": "materials/branding/legacy-icon-512.png",
+      "kind": "brand-reference",
+      "status": "reference-only",
+      "sourcePath": "web/public/icon-512.png",
+      "sourceWasGitTracked": true,
+      "bytes": 4294,
+      "sha256": "d2fd33a12a2bba66a6a54212f3f183b6c8cb96625d1737e221c11c548900744e"
+    },
+    {
+      "path": "materials/reference/legacy-copywriting-zh-CN.json",
+      "kind": "copy-reference",
+      "status": "reference-only",
+      "sourcePath": "assets/docs/copywriting-zh-CN.json",
+      "sourceWasGitTracked": true,
+      "bytes": 4264,
+      "sha256": "776b5a47b4a511b216d4ce2223c4f743ea0700e20ca6a6ce444de3498ffb2edf"
+    },
+    {
+      "path": "materials/reference/legacy-narration-catalog.json",
+      "kind": "narration-reference",
+      "status": "reference-only",
+      "sourcePath": "tts/tts-materials-v1.json",
+      "sourceWasGitTracked": true,
+      "bytes": 2519,
+      "sha256": "f42f6cad92a5d647dcf301b735f08628970dd3ca17728a8f8d7d49f5ed2da0c3"
+    },
+    {
+      "path": "materials/reference/legacy-test-narration-catalog.json",
+      "kind": "narration-reference",
+      "status": "reference-only",
+      "sourcePath": "tts/test-melotts/tts-materials-v1.json",
+      "sourceWasGitTracked": true,
+      "bytes": 3382,
+      "sha256": "240064d2ddce330133a8945dfde5164c30c97cb4f9ac56b2b84e8803265ddf6d"
+    }
+  ]
+}

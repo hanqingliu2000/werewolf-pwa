@@ -1,9 +1,0 @@
-{
-  "appId": "com.hanqliu.werewolfhost",
-  "appName": "Werewolf Host",
-  "webDir": "web/public",
-  "server": {
-    "url": "https://werewolf-pwa.vercel.app",
-    "cleartext": false
-  }
-}
