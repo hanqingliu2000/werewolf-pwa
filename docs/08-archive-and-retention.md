@@ -13,7 +13,9 @@
 
 归档是可恢复快照，不是发布，也不证明旧实现或测试结果正确。最初归档与文档重置时没有推送到远端、更新线上服务、修改云数据库或清理系统开发工具。
 
-2026-10-06 后续按用户要求，将旧归档历史、`archive/pre-rewrite-2026-10-06` 标签和文档变动推送到 [已有 GitHub 仓库](https://github.com/hanqingliu2000/werewolf-pwa)。推送前做了针对私钥、服务端 JWT 和私人配置路径的检查；`.local-archive/` 未进入提交。云数据库备份与清空属于 [09](09-phased-development-plan.md) 的后续阶段，不是此次 Git 推送的一部分。
+2026-10-06 后续按用户要求，将旧归档历史、`archive/pre-rewrite-2026-10-06` 标签和文档变动推送到 [已有 GitHub 仓库](https://github.com/hanqingliu2000/werewolf-pwa)。推送前做了针对私钥、服务端 JWT 和私人配置路径的检查；`.local-archive/` 未进入提交。
+
+此后按用户单独授权提前清理旧云端，并把范围从“只清空记录”改为“删除旧表和游戏函数”。92条记录与结构在本地备份、恢复校验后，4张游戏表和14个函数以带指纹保护的事务删除；`public`业务对象归零，Auth、Storage等平台结构保留，旧项目恢复暂停。备份、校验和执行记录保存在被忽略的 `.local-archive/2026-10-06-cloud-cleanup-mux9nd1k/`，未上传GitHub。
 
 ## 资料取舍
 
@@ -64,4 +66,4 @@ git archive --format=tar --output=../werewolf-pwa-legacy-2026-10-06.tar archive/
 
 ## 新基线的意义
 
-当前有效文档是 README 和 `docs/`，参考素材位于 `materials/`。后续实施应从新范围和已选规则出发；历史代码可用于了解问题和场景，但不自动恢复为实现起点。
+当前有效文档是 README 和 `docs/`，新应用骨架与规则核心位于 `web/`，参考素材位于 `materials/`。新代码没有恢复旧实现；历史代码可用于了解问题和场景，但不自动作为实现起点。
