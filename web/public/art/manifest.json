@@ -1,0 +1,84 @@
+{
+  "assets": [
+    {
+      "name": "forest",
+      "path": "public/art/forest.webp",
+      "bytes": 201398,
+      "width": 1600,
+      "height": 900,
+      "sha256": "25724291185b88a334ac1d50b5155b0f9e1857edbe5351b3bdd7ed9f5aa3fe6b",
+      "source": "built-in image_gen",
+      "generatedOn": "2026-10-07"
+    },
+    {
+      "name": "cardback",
+      "path": "public/art/cardback.webp",
+      "bytes": 218174,
+      "width": 720,
+      "height": 960,
+      "sha256": "348abc312217afb065c6959a8f40ab56d856165f0153dd70e7fbbe1f59a45f26",
+      "source": "built-in image_gen",
+      "generatedOn": "2026-10-07"
+    },
+    {
+      "name": "werewolf",
+      "path": "public/art/werewolf.webp",
+      "bytes": 160020,
+      "width": 720,
+      "height": 960,
+      "sha256": "f80152e0512214ce00b4c74cc33e98c10e72e2214636b26341fbdc722c1efeef",
+      "source": "built-in image_gen",
+      "generatedOn": "2026-10-07"
+    },
+    {
+      "name": "seer",
+      "path": "public/art/seer.webp",
+      "bytes": 147764,
+      "width": 720,
+      "height": 960,
+      "sha256": "b43eedaa896beedacf6086e37e1be512bb0668749735957a7f91c2afd1b990c9",
+      "source": "built-in image_gen",
+      "generatedOn": "2026-10-07"
+    },
+    {
+      "name": "witch",
+      "path": "public/art/witch.webp",
+      "bytes": 135544,
+      "width": 720,
+      "height": 960,
+      "sha256": "f670aae366cce35eadf51f91d3deda0cafa114adbb9c6e91b7bb7eeaa6776baf",
+      "source": "built-in image_gen",
+      "generatedOn": "2026-10-07"
+    },
+    {
+      "name": "guard",
+      "path": "public/art/guard.webp",
+      "bytes": 173298,
+      "width": 720,
+      "height": 960,
+      "sha256": "d002ae068bcbb0c396971250cb692c42270a34b0e16717ce6042f9daa890b701",
+      "source": "built-in image_gen",
+      "generatedOn": "2026-10-07"
+    },
+    {
+      "name": "hunter",
+      "path": "public/art/hunter.webp",
+      "bytes": 132646,
+      "width": 720,
+      "height": 960,
+      "sha256": "cbb1127b2ad3e050bbb0af5d41c4032135b4a3f482eedeb93196917bfe9bcea3",
+      "source": "built-in image_gen",
+      "generatedOn": "2026-10-07"
+    },
+    {
+      "name": "villager",
+      "path": "public/art/villager.webp",
+      "bytes": 137908,
+      "width": 720,
+      "height": 960,
+      "sha256": "a1976d968f3009398df961869cd4ecccc8870eea7a6c924ed3d86e9aa6f57b79",
+      "source": "built-in image_gen",
+      "generatedOn": "2026-10-07"
+    }
+  ]
+}

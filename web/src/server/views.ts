@@ -56,6 +56,7 @@ export function privateView(room: Room, member: Member) {
   };
   return {
     ...result,
+    epochId: epochId(room), windowId: room.flowId,
     ...(own?.role === "guard" ? { previousGuardTargetId: game!.lastGuardTargetId } : {}),
     ...(own?.role === "seer" ? { reports: seerReports(game!, member.id) } : {}),
     ...(own?.role === "witch" && visibleAlive ? { witch: {
@@ -75,7 +76,7 @@ export function privateView(room: Room, member: Member) {
 
 export function hostView(room: Room, member: Member) {
   requireRule(member.id === room.hostId, "FORBIDDEN");
-  return { playerId: member.id, narrationMode: "text" as const,
+  return { playerId: member.id, epochId: epochId(room), windowId: room.flowId, narrationMode: "text" as const,
     canStart: !room.game && room.members.length === Object.values(room.config.roles).reduce((a, b) => a + b, 0)
       && room.members.every((p) => p.ready),
     canBeginNight: room.game?.phase === "reveal" && !room.game.paused

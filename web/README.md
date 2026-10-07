@@ -1,6 +1,6 @@
 # 新应用规则核心与本地房间服务
 
-已完成骨架、六角色规则核心、本地 SQLite、原浏览器会话与权限接口，流程设计见 [12](../docs/12-web-flow-design.md)。尚无正式游戏页面、美术音频或线上部署，不是可多人试玩的产品界面。
+已完成骨架、规则核心、SQLite、原浏览器会话、权限与完整文字网页，新美术已制作。正式声音与线上部署未完成，验收见 [14](../docs/14-web-design-and-acceptance.md)。
 
 ## 安装与验收
 
@@ -11,6 +11,8 @@ npm ci
 npm run check
 npm run build
 npm run smoke
+npx playwright install chromium webkit
+npm run test:ui
 ```
 
 `check` 包含类型、代码检查、规则、保存权限及 HTTP 防护测试和覆盖率门槛。`smoke` 在空闲端口使用隔离数据库，检查独立会话、并发加入、角色过滤与真正服务重启恢复；结束后关闭服务器并删除测试数据，不接触云端。
@@ -21,7 +23,7 @@ npm run smoke
 npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-健康状态位于 `/api/health`，根路径仍返回健康状态。游戏服务位于 `/api/v2`，完整契约见 [13](../docs/13-room-service-contract.md)；端口被占用时另选空闲端口。
+根路径为创建或加入，房间位于 `/r/房间号`，复盘为 `/r/房间号/recap/对局编号`。健康状态在 `/api/health`，游戏服务在 `/api/v2`；契约见 [13](../docs/13-room-service-contract.md)。端口占用时另选空闲端口。
 
 默认文件为 `.data/rooms.sqlite`，目录不进入 Git。可用 `WEREWOLF_DB_PATH` 指定本地文件；非 localhost 请求必须配置准确的 `WEREWOLF_ORIGIN`。不要公开部署 SQLite 版本，也不要把数据文件加入生产资源追踪。
 
@@ -34,6 +36,6 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 - 条件更新与回执在同一 SQLite 事务提交，内部写版本不作为公开进度。新对局、公开窗口、狼队提议和白天草案都检查过期上下文。
 - 房主心跳和服务端截止时间控制暂停及恢复；当前仅支持文字指令确认协议，真实播放器仍未实现。
 - 不使用云端凭据，不提供客户端注入角色、随机种子或完整权威状态的入口。
-- 原生 App、音频和完整玩家界面不属于本轮范围；旧源码及旧素材没有复制进来。
+- 当前网页提供文字主持与新视觉；原生 App、正式声音和线上发布不属于本轮。旧源码与旧素材没有复制进来。
 
-当前 169 项测试包括原规则矩阵、两个数据库连接的条件更新、原浏览器恢复、过期清理、权限隔离和 8 人及 12 人持久化完整对局。验收及未验证项见 [11](../docs/11-persistence-and-permissions-acceptance.md)。
+当前 175 项测试包含规则、存储、权限与浏览器请求；另有 Chromium、WebKit 共6项真实页面检查，覆盖8人、12人对局、复盘、新局与手机尺寸。测试只在隔离库压缩窗口，不改变生产时间与限额。截图和报告在 `test-results/`，不进入 Git。

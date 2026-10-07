@@ -56,7 +56,11 @@ async function api(path, cookie, input) {
 }
 try {
   await ready(server);
-  for (const endpoint of ["/", "/api/health"]) {
+  const homepage = await globalThis.fetch(base);
+  assert.equal(homepage.status, 200);
+  assert.match(homepage.headers.get("content-type"), /text\/html/);
+  assert.match(await homepage.text(), /狼人杀/);
+  for (const endpoint of ["/api/health"]) {
     const result = await globalThis.fetch(base + endpoint);
     assert.equal(result.status, 200);
     assert.match(result.headers.get("cache-control"), /no-store/);
