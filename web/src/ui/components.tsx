@@ -12,13 +12,13 @@ export function IconButton({ icon: Icon, label, ...props }: { icon: LucideIcon; 
   return <button type="button" className="icon-button" title={label} aria-label={label} {...props}><Icon size={20} strokeWidth={1.6} aria-hidden /></button>;
 }
 export function Brand({ back }: { back?: string }) {
-  return <header className="site-header"><Link href={back ?? "/"} className="brand">{back ? <ArrowLeft size={20} aria-hidden /> : <Moon size={22} strokeWidth={1.4} aria-hidden />}<span>狼人杀</span></Link><span className="wordmark" aria-hidden>WEREWOLF</span></header>;
+  return <header className="site-header"><Link href={back ?? "/"} className="brand">{back ? <ArrowLeft size={20} aria-hidden /> : <Moon size={22} strokeWidth={1.4} aria-hidden />}<span>狼人杀</span></Link></header>;
 }
 export function Modal({ open, title, onClose, children, privatePanel = false }: { open: boolean; title: string; onClose: () => void; children: React.ReactNode; privatePanel?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null); const titleId = useId();
   useEffect(() => { if (open) dialog.current?.showModal(); else dialog.current?.close(); }, [open]);
   return <dialog ref={dialog} aria-labelledby={titleId} className={`modal ${privatePanel ? "private-modal" : ""}`} onCancel={(e) => { e.preventDefault(); onClose(); }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-    <div className="modal-header"><h2 id={titleId}>{title}</h2><IconButton icon={X} label="关闭面板" onClick={onClose} /></div><div className="modal-body">{children}</div>
+    <div className="modal-header"><h2 id={titleId} hidden={privatePanel}>{title}</h2><IconButton icon={X} label="关闭面板" onClick={onClose} /></div><div className="modal-body">{children}</div>
   </dialog>;
 }
 export function RuleList({ config }: { config: RuleConfig }) {
