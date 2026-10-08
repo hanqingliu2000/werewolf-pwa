@@ -35,5 +35,6 @@ const messages: Record<string, string> = {
   ANNOUNCEMENT_PENDING: "公开公告尚未完成", STALE_CUE: "播报阶段已更新，请重新确认",
   AUDIO_TRIAL_REQUIRED: "请完成试音并确认听清", PAUSE_BEFORE_MODE_CHANGE: "请先暂停对局，再切换主持方式",
   STALE_AUDIO: "播报资源已更新，请刷新页面后重新试音",
+  ORIGIN_REJECTED: "请求来源与当前网址不一致", ORIGIN_NOT_CONFIGURED: "当前网址尚未配置",
 };
 export function errorText(error: unknown) { return error instanceof ApiError ? messages[error.code] ?? "当前状态不允许这项操作" : "操作未完成，请重试"; }

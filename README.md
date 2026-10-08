@@ -39,6 +39,7 @@
 | [18 计时与死亡角色验收](docs/18-timing-and-dead-role-acceptance.md) | 15/10秒窗口、死亡角色播报与前台自动行动面板 |
 | [19 云端部署](docs/19-cloud-deployment.md) | 免费资源、私有schema、维护与正式部署、预览验收和恢复 |
 | [20 试玩前流程修复](docs/20-pre-play-flow-fixes.md) | 紧凑行动窗、播报回执重试、白天改选防误发布和局部回归 |
+| [21 单屏行动与流程验收](docs/21-single-screen-action-acceptance.md) | 五角色一屏目标、180个布局组合、完整文字流程和本机来源修正 |
 | [本地语音生成](scripts/README.md) | 锁定环境、模型版本、生成参数与声音复核 |
 | [视觉规范](design-system/werewolf-web/MASTER.md) | 全站色彩、文字、控件与页面应用 |
 | [新应用运行说明](web/README.md) | 安装、检查、构建、健康入口与规则核心边界 |

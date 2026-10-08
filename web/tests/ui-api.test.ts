@@ -36,3 +36,7 @@ it("forwards cancellation for reads without changing ordinary command requests",
 it("uses a neutral fallback for unexpected errors", async () => {
   const api = await import("../src/ui/api"); expect(api.errorText(new Error("raw private state"))).toBe("操作未完成，请重试"); expect(api.errorText(new api.ApiError("UNKNOWN"))).toBe("当前状态不允许这项操作");
 });
+it("describes a rejected origin without echoing addresses or request headers", async () => {
+  const api = await import("../src/ui/api");
+  expect(api.errorText(new api.ApiError("ORIGIN_REJECTED"))).toBe("请求来源与当前网址不一致");
+});

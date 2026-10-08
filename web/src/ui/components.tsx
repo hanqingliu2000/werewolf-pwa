@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Moon, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleX, Moon, X, type LucideIcon } from "lucide-react";
 import type { RuleConfig, Role } from "../game/types";
 import { ROLES } from "../game/types";
 import { preset } from "../game/config";
@@ -36,16 +36,17 @@ export function ConfigEditor({ value, onChange }: { value: RuleConfig; onChange:
     <details className="advanced"><summary>自定义配比</summary><div className="custom-counts">{ROLES.map((role) => <label key={role}>{roleNames[role]}<input aria-label={`${roleNames[role]}数量`} type="number" min="0" max={["seer", "witch", "guard", "hunter"].includes(role) ? 1 : 12} value={value.roles[role]} onChange={(e) => onChange({ ...value, roles: { ...value.roles, [role]: Number(e.target.value) } })} /></label>)}</div></details>
   </div>;
 }
-export function SeatGrid({ players, capacity, selected, ownId, onSelect, disabled, mode = "public" }: {
+export function SeatGrid({ players, capacity, selected, ownId, onSelect, disabled, mode = "public", action = false }: {
   players: { id: string; seat: number; name: string; alive?: boolean; ready?: boolean; revealedRole?: Role | null }[];
   capacity?: number; selected?: string | null; ownId?: string; onSelect?: (id: string | null, seat: number) => void;
-  disabled?: (id: string) => boolean; mode?: "public" | "target" | "lobby";
+  disabled?: (id: string) => boolean; mode?: "public" | "target" | "lobby"; action?: boolean;
 }) {
   const slots: { id: string | null; seat: number; name: string; alive?: boolean; ready?: boolean; revealedRole?: Role | null }[] = Array.from({ length: capacity ?? players.length }, (_, i) => players.find((p) => p.seat === i + 1) ?? { id: null, seat: i + 1, name: "空座位" });
-  return <div className={`seat-grid ${mode}`} role={onSelect ? "group" : undefined} aria-label="玩家座位">{slots.map((p) => {
+  return <div className={`seat-grid ${mode}${action ? " action-targets" : ""}`} role={onSelect ? "group" : undefined} aria-label="玩家座位">{slots.map((p) => {
     const unavailable = p.id !== null && (p.alive === false || disabled?.(p.id));
-    const content = <><span className="seat-no">{String(p.seat).padStart(2, "0")}</span><span className="seat-name">{p.name}</span><span className="seat-status">{p.id === ownId ? "本人 · " : ""}{p.id === null ? "待入场" : p.alive === false ? "已出局" : mode === "lobby" ? p.ready ? "已准备" : "未准备" : p.revealedRole ? roleNames[p.revealedRole] : "存活"}</span>{p.id === selected && <Check className="seat-check" size={18} aria-hidden />}</>;
-    return onSelect ? <button type="button" key={p.seat} className="seat" aria-label={`${p.seat}号 ${p.name}`} aria-pressed={p.id !== null && selected === p.id} disabled={mode === "lobby" ? p.id !== null && p.id !== ownId : p.id === null || unavailable} onClick={() => onSelect(p.id, p.seat)}>{content}</button>
+    const content = action ? <><span className="action-seat-top"><span className="seat-no">{String(p.seat).padStart(2, "0")}</span>{p.id === selected ? <Check size={16} aria-hidden /> : p.alive === false ? <CircleX size={16} aria-hidden /> : p.id === ownId ? <span>本人</span> : null}</span><span className="seat-name">{p.name}</span></>
+      : <><span className="seat-no">{String(p.seat).padStart(2, "0")}</span><span className="seat-name">{p.name}</span><span className="seat-status">{p.id === ownId ? "本人 · " : ""}{p.id === null ? "待入场" : p.alive === false ? "已出局" : mode === "lobby" ? p.ready ? "已准备" : "未准备" : p.revealedRole ? roleNames[p.revealedRole] : "存活"}</span>{p.id === selected && <Check className="seat-check" size={18} aria-hidden />}</>;
+    return onSelect ? <button type="button" key={p.seat} className="seat" aria-label={`${p.seat}号 ${p.name}`} title={action ? `${p.seat}号 ${p.name}${p.alive === false ? " · 已出局" : ""}` : undefined} aria-description={action && p.alive === false ? "已出局" : undefined} aria-pressed={p.id !== null && selected === p.id} disabled={mode === "lobby" ? p.id !== null && p.id !== ownId : p.id === null || unavailable} onClick={() => onSelect(p.id, p.seat)}>{content}</button>
       : <div key={p.seat} className={`seat ${p.alive === false ? "eliminated" : ""}`}>{content}</div>;
   })}</div>;
 }

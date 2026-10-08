@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createHttpHandler } from "../src/server/http";
 import { fixture } from "./server-helpers";
 import { config } from "./helpers";
+import { NextRequest } from "next/server";
 
 const fixtures: Awaited<Awaited<ReturnType<typeof fixture>>>[] = [];
 async function setup() {
@@ -17,9 +18,38 @@ async function setup() {
   };
   return { ...f, handler, call };
 }
-afterEach(() => { vi.restoreAllMocks(); while (fixtures.length) fixtures.pop()!.close(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); while (fixtures.length) fixtures.pop()!.close(); });
 
 describe("HTTP identity and security", () => {
+  it.each(["127.0.0.1", "[::1]"])("accepts only the configured loopback origin after NextURL normalizes %s", async (host) => {
+    vi.stubEnv("__NEXT_NO_MIDDLEWARE_URL_NORMALIZE", "");
+    const f = await setup(); const declared = `http://${host}:3117`;
+    const handler = createHttpHandler(f.service, declared);
+    const request = new NextRequest(`${declared}/api/v2/session`, { method: "POST", body: "{}", headers: { origin: declared, "content-type": "application/json", "sec-fetch-site": "same-origin" } });
+    expect(new URL(request.url).hostname).toBe("localhost");
+    const result = await handler(request); expect(result.status).toBe(200); expect(await result.json()).toEqual({ ok: true });
+    expect(result.headers.get("set-cookie")).toContain("HttpOnly");
+  });
+
+  it.each(["http://localhost:3117", "http://127.0.0.1:3118", "https://127.0.0.1:3117", "http://other.localhost:3117", "https://evil.example", "null"])("rejects an unconfigured or mismatched loopback declaration %s", async (declared) => {
+    const f = await setup(); const handler = createHttpHandler(f.service, "http://127.0.0.1:3117");
+    const result = await handler(new NextRequest("http://localhost:3117/api/v2/session", { method: "POST", body: "{}", headers: { origin: declared, "content-type": "application/json" } }));
+    expect(result.status).toBe(403);
+  });
+
+  it("still rejects cross-site loopback requests and different trusted deployment origins", async () => {
+    const f = await setup(); const handler = createHttpHandler(f.service, "http://127.0.0.1:3117");
+    for (const site of ["cross-site", "same-site"]) expect((await handler(new NextRequest("http://localhost:3117/api/v2/session", { method: "POST", body: "{}", headers: { origin: "http://127.0.0.1:3117", "content-type": "application/json", "sec-fetch-site": site } }))).status).toBe(403);
+    const cloud = createHttpHandler(f.service, ["https://game.example", "https://preview.example.vercel.app"]);
+    expect((await cloud(new NextRequest("https://preview.example.vercel.app/api/v2/session", { method: "POST", body: "{}", headers: { origin: "https://game.example", "content-type": "application/json" } }))).status).toBe(403);
+  });
+
+  it.each(["http://127.0.0.1:3118", "https://127.0.0.1:3117"])("rejects a loopback scheme or port mismatch even when %s is configured", async (declared) => {
+    const f = await setup(); const handler = createHttpHandler(f.service, declared);
+    const result = await handler(new NextRequest("http://localhost:3117/api/v2/session", { method: "POST", body: "{}", headers: { origin: declared, "content-type": "application/json" } }));
+    expect(result.status).toBe(403);
+  });
+
   it("bootstraps a HttpOnly host-only cookie without returning credentials", async () => {
     const f = await setup();
     const result = await f.call("session", "POST", {}, { cookie: "" });

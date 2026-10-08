@@ -22,8 +22,18 @@ function token(request: NextRequest) {
 function origin(request: NextRequest, configuredOrigin?: string | readonly string[]) {
   const url = new URL(request.url);
   const allowed = typeof configuredOrigin === "string" ? [configuredOrigin] : configuredOrigin;
-  if (!configuredOrigin) requireRule(["localhost", "127.0.0.1", "[::1]"].includes(url.hostname), "ORIGIN_NOT_CONFIGURED");
-  requireRule((!allowed || allowed.includes(url.origin)) && request.headers.get("origin") === url.origin, "ORIGIN_REJECTED");
+  const loopback = (value: URL) => ["localhost", "127.0.0.1", "[::1]"].includes(value.hostname);
+  if (!configuredOrigin) requireRule(loopback(url), "ORIGIN_NOT_CONFIGURED");
+  const declared = request.headers.get("origin");
+  let sameOrigin = declared === url.origin;
+  if (!sameOrigin && declared) {
+    try {
+      const source = new URL(declared);
+      // NextURL canonicalizes loopback hosts; keep aliases bound to the configured Origin, scheme and port.
+      sameOrigin = source.origin === declared && loopback(url) && loopback(source) && source.protocol === url.protocol && source.port === url.port;
+    } catch { /* Malformed origins are rejected below. */ }
+  }
+  requireRule(sameOrigin && (!allowed || (declared !== null && allowed.includes(declared))), "ORIGIN_REJECTED");
   requireRule(!["cross-site", "same-site"].includes(request.headers.get("sec-fetch-site") ?? ""), "ORIGIN_REJECTED");
 }
 
