@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Moon, X, type LucideIcon } from "lucide-react";
 import type { RuleConfig, Role } from "../game/types";
 import { ROLES } from "../game/types";
 import { preset } from "../game/config";
 import { roleNames, roleRules } from "./content";
+import type { PublicRoom } from "./contracts";
 
 export function IconButton({ icon: Icon, label, ...props }: { icon: LucideIcon; label: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" className="icon-button" title={label} aria-label={label} {...props}><Icon size={20} strokeWidth={1.6} aria-hidden /></button>;
@@ -50,4 +51,15 @@ export function SeatGrid({ players, capacity, selected, ownId, onSelect, disable
 }
 export function NextButton({ children, busy, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean }) {
   return <button className="button primary" {...props} disabled={busy || props.disabled}><span>{busy ? "正在保存" : children}</span><ArrowRight size={19} aria-hidden /></button>;
+}
+
+export function WindowCountdown({ view, receivedAt, compact = false }: {
+  view: Pick<PublicRoom, "window" | "paused" | "serverTime">; receivedAt: number; compact?: boolean;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(timer); }, []);
+  if (!view.window) return null;
+  const remaining = view.paused ? view.window.remainingMs ?? 0
+    : Math.max(0, view.window.deadline - view.serverTime - Math.max(0, now - receivedAt));
+  return <div className={`countdown${compact ? " compact" : ""}`} role="timer" aria-live="off" aria-label="窗口剩余时间">{Math.ceil(remaining / 1000).toString().padStart(2, "0")}<span>秒</span></div>;
 }

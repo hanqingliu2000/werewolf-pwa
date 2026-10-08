@@ -12,6 +12,7 @@ export function useNarration(controller: RoomController) {
   const [status, setStatus] = useState<"idle" | "loading" | "testing" | "confirm" | "ready" | "playing" | "failed">("idle");
   const [problem, setProblem] = useState<string | null>(null); const [caption, setCaption] = useState("");
   const [volume, setVolume] = useState(80); const [generation, setGeneration] = useState(0);
+  const [completionRetry, setCompletionRetry] = useState(false);
   const completed = useRef<{ plan: Plan; envelope: { requestId: string; epochId: string; windowId: string; operation: Operation } } | null>(null);
   const delivering = useRef(false);
   const attempted = useRef<string | null>(null); const wasPaused = useRef(false); const ambientDone = useRef<string | null>(null);
@@ -20,6 +21,7 @@ export function useNarration(controller: RoomController) {
   const fail = useRef<(error: unknown) => void>(() => undefined);
   fail.current = (error) => {
     sequence.current++; player.current?.cancel(); verified.current = false; completed.current = null;
+    setCompletionRetry(false);
     setStatus("failed"); setProblem(error instanceof PlaybackError ? error.code : "AUDIO_BLOCKED");
     if (latest.current.view?.narration.mode === "voice") void latest.current.reportAudio(false);
   };
@@ -64,7 +66,7 @@ export function useNarration(controller: RoomController) {
     setStatus("playing"); setProblem(null);
     void instance.play(resumed ? ["resume", ...currentPlan.clips] : currentPlan.clips, (id) => setCaption(script.clips[id])).then(() => {
       if (cancelled) return;
-      completed.current = { plan: currentPlan, envelope }; setStatus("ready"); setGeneration((n) => n + 1);
+      completed.current = { plan: currentPlan, envelope }; setCompletionRetry(false); setStatus("ready"); setGeneration((n) => n + 1);
     }).catch((error) => { if (!cancelled && !(error instanceof PlaybackError && error.code === "PLAYBACK_CANCELLED")) fail.current(error); });
     return () => { cancelled = true; instance.cancel(); };
   }, [plan?.id, v?.windowId, v?.paused, v?.self.isHost, controller.leader, mode, generation]);
@@ -72,13 +74,24 @@ export function useNarration(controller: RoomController) {
   // Completion retains the original request and phase rather than using a newer poll.
   useEffect(() => {
     const item = completed.current;
+    if (item && (item.envelope.epochId !== v?.epochId || item.envelope.windowId !== v.windowId)) { completed.current = null; setCompletionRetry(false); return; }
     if (!item || controller.busy || controller.pending || delivering.current || attempted.current === item.envelope.requestId || !controller.leader || mode !== "voice" || v?.paused) return;
-    if (item.envelope.epochId !== v?.epochId || item.envelope.windowId !== v.windowId) { completed.current = null; return; }
     delivering.current = true; attempted.current = item.envelope.requestId;
     void controller.sendCaptured(item.envelope).then((accepted) => {
-      if (accepted && completed.current === item) completed.current = null;
+      if (completed.current === item) {
+        if (accepted) completed.current = null;
+        setCompletionRetry(!accepted);
+      }
     }).finally(() => { delivering.current = false; });
   }, [generation, controller.busy, controller.pending, controller.leader, v?.windowId, v?.paused, mode]);
+
+  function retryCompletion() {
+    const c = latest.current; const item = completed.current;
+    if (!item || c.busy || c.pending || delivering.current || !c.leader || c.view?.paused
+      || c.view?.narration.mode !== "voice" || item.envelope.epochId !== c.view.epochId || item.envelope.windowId !== c.view.windowId) return;
+    attempted.current = null;
+    setCompletionRetry(false); setGeneration((n) => n + 1);
+  }
 
   useEffect(() => {
     if (!controller.leader && player.current) {
@@ -89,6 +102,7 @@ export function useNarration(controller: RoomController) {
   async function trial() {
     if (!latest.current.leader) return;
     const trialSequence = ++sequence.current; verified.current = false; completed.current = null;
+    setCompletionRetry(false);
     player.current ??= new NarrationPlayer(() => fail.current(new PlaybackError("AUDIO_INTERRUPTED")));
     player.current.cancel(); setStatus("loading"); setProblem(null);
     const preparation = player.current.prepare();
@@ -120,7 +134,10 @@ export function useNarration(controller: RoomController) {
   }
   function changeVolume(value: number) { setVolume(value); player.current?.setVolume(value / 100); }
   const textPlan = v ? narrationPlan({ ...v, paused: false }) : null;
+  const item = completed.current;
   return { mode, status, problem, caption, volume, ready: mode === "text" || (verified.current && !!player.current?.ready),
+    completionRetry: completionRetry && !!item && controller.leader && !v?.paused && mode === "voice"
+      && item.envelope.epochId === v?.epochId && item.envelope.windowId === v?.windowId, retryCompletion,
     text: textPlan ? captions(textPlan.clips) : "", version: NARRATION_VERSION, trial, confirmTrial, textMode, changeVolume };
 }
 export type VoiceController = ReturnType<typeof useNarration>;

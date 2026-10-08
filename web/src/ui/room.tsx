@@ -6,7 +6,7 @@ import { ArrowRight, BookOpen, Copy, Eye, History, LogOut, Radio, Settings, Shar
 import { useRouter } from "next/navigation";
 import { useRoom } from "./use-room";
 import { useNarration } from "./use-narration";
-import { Brand, ConfigEditor, IconButton, Modal, NextButton, RuleList, SeatGrid } from "./components";
+import { Brand, ConfigEditor, IconButton, Modal, NextButton, RuleList, SeatGrid, WindowCountdown } from "./components";
 import { HostControls } from "./host-controls";
 import { PrivateTask } from "./private-task";
 import { errorText, request } from "./api";
@@ -27,25 +27,21 @@ export function RoomScreen({ roomId }: { roomId: string }) {
   const [pane, setPane] = useState<"rules" | "invite" | "rename" | "config" | "history" | null>(null);
   const [name, setName] = useState(""); const [config, setConfig] = useState<RuleConfig>(preset(8));
   const [history, setHistory] = useState<{ gameId: string; winner: string | null; aborted: boolean }[]>([]);
-  const [now, setNow] = useState(0);
-  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(timer); }, []);
   useEffect(() => { if (v) localStorage.setItem("ww:recent-room", roomId); }, [v, roomId]);
   if (!v) return <main className="room-page"><Brand back="/" /><div className="loading-page"><span className="eyebrow">ROOM / {roomId}</span><h1>{c.error ? "暂未入席" : "回到这一桌"}</h1>{c.error ? <><p className="error" role="alert">{errorText(c.error)}</p><Link className="button primary" href={`/join?room=${roomId}`}>加入房间<ArrowRight size={18} aria-hidden /></Link><button className="text-link" onClick={() => { c.setError(null); void c.sync().catch(c.setError); }}>重新连接</button></> : <p role="status">正在同步对局</p>}</div></main>;
   const capacity = Object.values(v.config.roles).reduce((a, b) => a + b, 0);
   const own = v.players.find((p) => p.id === v.self.playerId)!;
   const isReady = "ready" in own && own.ready;
   const seat = (id: string) => `${v.players.find((p) => p.id === id)?.seat ?? "?"} 号`;
-  const remaining = v.paused ? v.window?.remainingMs ?? 0 : v.window ? Math.max(0, v.window.deadline - v.serverTime - Math.max(0, now - c.receivedAt)) : 0;
-  const countdown = Math.ceil(remaining / 1000);
   const cue = v.paused ? "对局已暂停" : v.narration.pending ? "公共公告" : v.nightRole ? `${roleNames[v.nightRole]}${v.phase === "night_close" ? "请闭眼" : v.phase === "night_open" ? "请睁眼" : "行动窗口"}` : phaseNames[v.phase];
   const blocked = c.busy || !!c.pending;
   async function openHistory() { try { const data = await request<{ games: typeof history }>(`rooms/${roomId}/recaps`); setHistory(data.games); setPane("history"); } catch (e) { c.setError(e); } }
   return <main className={`room-page ${v.phase === "lobby" ? "is-lobby" : ""}`}><Brand back="/" /><div className="room-top"><div><span className="eyebrow">THE TABLE / {v.phase === "lobby" ? "ASSEMBLE" : `ROUND ${v.nightNo || "00"}`}</span><h1>{v.phase === "lobby" ? "入席，等夜来" : v.phase === "end" ? winnerName(v.winner, v.aborted) : "这一桌"}</h1></div><div className="room-code"><span>房间号</span><strong>{roomId}</strong><IconButton icon={Share2} label="邀请朋友" onClick={() => setPane("invite")} /></div></div>
-    {!c.revealed && !c.hostOpen && !!c.error && <div className="error-banner" role="alert">{c.pending ? "有一项请求等待确认" : "状态暂未更新"}<button className="text-link" disabled={c.busy} onClick={() => { if (c.pending) void c.send(); else { c.setError(null); void c.sync().catch(c.setError); } }}>{c.pending ? "重试原请求" : "重新同步"}</button></div>}
+    {!c.revealed && !c.hostOpen && !!c.error && <div className="error-banner" role="alert">{c.pending ? "有一项请求等待确认" : "状态暂未更新"}<button className="text-link" disabled={c.busy} onClick={() => { if (c.pending) void c.send(); else if (voice.completionRetry) voice.retryCompletion(); else { c.setError(null); void c.sync().catch(c.setError); } }}>{c.pending ? "重试原请求" : voice.completionRetry ? "重试播报确认" : "重新同步"}</button></div>}
     <div className="room-layout"><section className="room-main">{v.phase === "lobby" ? <><div className="section-heading"><h2>席位</h2><span><Users size={17} aria-hidden />{v.players.length} / {capacity} 人</span></div><SeatGrid players={v.players} capacity={capacity} ownId={own.id} selected={own.id} mode="lobby" onSelect={(_, n) => { if (!blocked) void c.send({ type: "seat", seat: n }); }} />
       <div className="lobby-actions"><NextButton busy={c.busy} disabled={blocked} onClick={() => void c.send({ type: "ready", ready: !isReady })}>{isReady ? "取消准备" : "准备好了"}</NextButton><IconButton icon={UserRoundPen} label="修改昵称" onClick={() => { setName(own.name); setPane("rename"); }} /></div>
       {v.self.isHost && <button className="button secondary full-width" onClick={() => void c.showHost()}><Radio size={18} aria-hidden />主持控制</button>}</> : <>
-      <div className="public-stage"><div className="stage-line"><span className="eyebrow">{v.nightNo ? `第 ${v.nightNo} 夜` : "身份确认"}</span><span className="stage-status">{v.paused ? "暂停" : phaseNames[v.phase]}</span></div><h2>{cue}</h2>{v.window && <div className="countdown" aria-label="窗口剩余时间">{v.paused ? Math.ceil(remaining / 1000).toString().padStart(2, "0") : countdown.toString().padStart(2, "0")}<span>秒</span></div>}
+      <div className="public-stage"><div className="stage-line"><span className="eyebrow">{v.nightNo ? `第 ${v.nightNo} 夜` : "身份确认"}</span><span className="stage-status">{v.paused ? "暂停" : phaseNames[v.phase]}</span></div><h2>{cue}</h2><WindowCountdown view={v} receivedAt={c.receivedAt} />
         {v.phase !== "end" && <div className="neutral-identity"><div className="back-art" aria-hidden /><button className="button secondary" onClick={() => void c.showPrivate()}><Eye size={18} aria-hidden />{v.phase === "reveal" ? "查看身份" : "查看当前任务"}</button></div>}
         {v.phase === "end" && <div className="end-actions"><Link className="button primary" href={`/r/${roomId}/recap/${v.epochId}`}>查看本局复盘<ArrowRight size={18} aria-hidden /></Link>{v.self.isHost && <button className="button secondary" disabled={blocked || !c.leader || !!v.narration.pending} onClick={() => void c.send({ type: "restart" })}>下一局</button>}</div>}
       </div><div className="section-heading"><h2>这一桌的人</h2><span>{own.seat} 号 · 本人</span></div><SeatGrid players={v.players} ownId={own.id} />
