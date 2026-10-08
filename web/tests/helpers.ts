@@ -21,7 +21,6 @@ export function roleId(game: Game, role: Role): string {
 export function revealed(winMode: RuleConfig["winMode"] = "edge"): Game {
   let game = createGame({ ...config, winMode }, seats, "p1", "test-game");
   game = command(game, { type: "deal", actorId: "p1" });
-  for (const p of game.players) game = command(game, { type: "acknowledge", actorId: p.id });
   return game;
 }
 

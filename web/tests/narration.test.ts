@@ -14,7 +14,6 @@ const announce = async (f: Awaited<Awaited<ReturnType<typeof fixture>>>) => awai
 const cue = async (f: Awaited<Awaited<ReturnType<typeof fixture>>>) => await f.act({ type: "cue_ack", cueId: f.state().flowId, version: NARRATION_VERSION });
 async function begin(f: Awaited<Awaited<ReturnType<typeof fixture>>>) {
   await enable(f); await f.start(); await announce(f);
-  for (let i = 0; i < 8; i++) await f.act({ type: "acknowledge" }, i);
   await f.act({ type: "begin_night" });
 }
 
@@ -37,12 +36,13 @@ describe("public narration contract", () => {
   it("gates public announcements and opens the clock only after a matching completed cue", async () => {
     const f = await setup(); await enable(f); await f.start();
     const pending = f.state().narration!.pending!;
-    for (let i = 0; i < 8; i++) await f.act({ type: "acknowledge" }, i);
+    expect((await f.service.view(f.id, f.tokens[0]!, "host")).canBeginNight).toBe(false);
     await expect(f.act({ type: "begin_night" })).rejects.toThrow("ANNOUNCEMENT_PENDING");
     await expect(f.act({ type: "announcement_done", cueId: randomUUID() })).rejects.toThrow("STALE_CUE");
     const envelope = f.envelope({ type: "announcement_done", cueId: pending.id, version: NARRATION_VERSION });
     const receipt = await f.service.mutate(f.id, f.tokens[0]!, envelope);
     expect(await f.service.mutate(f.id, f.tokens[0]!, envelope)).toEqual(receipt);
+    expect((await f.service.view(f.id, f.tokens[0]!, "host")).canBeginNight).toBe(true);
     await f.act({ type: "begin_night" });
     expect(f.state().game!.window).toBeNull();
     await expect(f.act({ type: "cue_ack", version: NARRATION_VERSION })).rejects.toThrow("STALE_CUE");
@@ -122,9 +122,9 @@ describe("public narration contract", () => {
     expect(f.state().game!.window!.deadline).toBe(f.time.now + 56_000);
   });
 
-  it("requires a new trial after a bank upgrade and rejects old completed callbacks", async () => {
+  it.each(["host-zh-v2", "before-upgrade"])("requires a new trial after upgrading from %s and rejects old callbacks", async (version) => {
     const f = await setup(); await begin(f); await cue(f); await f.act({ type: "guard", targetId: null }, 4);
-    f.patch((room) => { room.narration!.version = "before-upgrade"; });
+    f.patch((room) => { room.narration!.version = version; });
     const phase = await f.service.view(f.id, f.tokens[0]!);
     expect(phase.paused).toBe(true);
     const preserved = structuredClone(f.state().game!);
@@ -133,7 +133,7 @@ describe("public narration contract", () => {
     await enable(f); expect(f.state().game).toEqual(preserved); await f.act({ type: "resume" });
     await f.act({ type: "abort" });
     const cueId = f.state().narration!.pending!.id;
-    await expect(f.act({ type: "announcement_done", cueId, version: "before-upgrade" })).rejects.toThrow("STALE_AUDIO");
+    await expect(f.act({ type: "announcement_done", cueId, version })).rejects.toThrow("STALE_AUDIO");
     await expect(f.act({ type: "announcement_done", cueId })).rejects.toThrow("STALE_AUDIO");
     await announce(f); await f.act({ type: "restart" }); await announce(f);
   });

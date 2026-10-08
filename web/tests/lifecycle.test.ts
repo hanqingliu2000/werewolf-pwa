@@ -57,7 +57,6 @@ describe("public windows and timing", () => {
   it("does not call unconfigured roles", () => {
     let game = createGame(preset(8), seats, "p1");
     game = command(game, { type: "deal", actorId: "p1" });
-    for (const p of game.players) game = command(game, { type: "acknowledge", actorId: p.id });
     game = command(game, { type: "begin_night", actorId: "p1" });
     expect(game.nightRole).toBe("werewolf");
     expect(game.config.roles.guard).toBe(0);
@@ -65,11 +64,21 @@ describe("public windows and timing", () => {
 });
 
 describe("daytime and host controls", () => {
-  it("requires all role acknowledgements", () => {
-    let game = command(createGame(config, seats, "p1"), { type: "deal", actorId: "p1" });
-    expect(() => command(game, { type: "begin_night", actorId: "p1" })).toThrow("PLAYERS_NOT_READY");
-    game = command(game, { type: "acknowledge", actorId: "p1" });
-    expect(command(game, { type: "acknowledge", actorId: "p1" }).roleAcknowledgements).toEqual(["p1"]);
+  it("lets only the host begin the first night without identity acknowledgements", () => {
+    const game = command(createGame(config, seats, "p1"), { type: "deal", actorId: "p1" });
+    expect(game).not.toHaveProperty("roleAcknowledgements");
+    expect(() => command(game, { type: "begin_night", actorId: "p2" })).toThrow("FORBIDDEN");
+    const night = command(game, { type: "begin_night", actorId: "p1" });
+    expect(night).toMatchObject({ phase: "night_open", nightNo: 1, window: null });
+    expect(night.players).toEqual(game.players);
+  });
+  it("treats legacy identity acknowledgements as no-ops, including old unconfirmed snapshots", () => {
+    const game = command(createGame(config, seats, "p1"), { type: "deal", actorId: "p1" });
+    const acknowledged = command(game, { type: "acknowledge", actorId: "p1" });
+    expect(acknowledged).toEqual(game);
+    expect(command(acknowledged, { type: "acknowledge", actorId: "p1" })).toEqual(game);
+    const legacy = Object.assign(structuredClone(game), { roleAcknowledgements: [] });
+    expect(command(legacy, { type: "begin_night", actorId: "p1" }).phase).toBe("night_open");
   });
   it("publishes only a confirmed draft and permits edits until publication", () => {
     let game = day(started());
@@ -134,7 +143,6 @@ describe("daytime and host controls", () => {
     const profiles = Array.from({ length: 12 }, (_, i) => ({ id: `p${i + 1}`, seat: i + 1, name: `P${i + 1}` }));
     let game = createGame(preset(12), profiles, "p1", "twelve-player-game");
     game = command(game, { type: "deal", actorId: "p1" });
-    for (const p of game.players) game = command(game, { type: "acknowledge", actorId: p.id });
     game = command(game, { type: "begin_night", actorId: "p1" });
     game = day(game, { guard: "p7", kill: "p12", witch: { choice: "save", targetId: "p12" }, see: "p1" });
     expect(game.nights[0]!.wolfConfirmations).toHaveLength(4);

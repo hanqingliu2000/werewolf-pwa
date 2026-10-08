@@ -16,11 +16,11 @@ python3.12 -m venv .local-generation/venv
 
 ## 生成和复核
 
-台词来自 `web/src/narration/script.json`，当前音频版本为 `host-zh-v2`，规则仍为 `werewolf-web-v1`。生成只写 `.local-generation/banks/host-zh-v2`；完成复核后 `--publish` 校验完整清单和复核指纹，再复制到本机网页目录。它不执行 TTS，不代表云端发布，也不代表完整真机听感验收。
+台词来自 `web/src/narration/script.json`，当前音频版本为 `host-zh-v3`，规则仍为 `werewolf-web-v1`。生成只写 `.local-generation/banks/host-zh-v3`；完成复核后 `--publish` 校验完整清单和复核指纹，再复制到本机网页目录。它不执行 TTS，不代表云端发布，也不代表完整真机听感验收。
 
 ```sh
 .local-generation/venv/bin/python scripts/generate-host-audio.py
-.local-generation/venv/bin/python scripts/verify-host-audio.py --bank host-zh-v2 --staged
+.local-generation/venv/bin/python scripts/verify-host-audio.py --bank host-zh-v3 --staged
 .local-generation/venv/bin/python scripts/generate-host-audio.py --publish
 npm --prefix web run check
 npm --prefix web run build
@@ -29,7 +29,15 @@ npm --prefix web run test:ui
 
 先确认样音，再生成完整银行；复核异常片段后才验收网页。重复生成不能和浏览器验收同时进行，避免资源与清单暂时不一致。已经发布的音频版本保持不可变；修改台词或文件必须升级版本并更新契约。
 
-复核工具使用本地 [MLX Whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper)，模型为 `mlx-community/whisper-small-mlx`，revision `45f3915923c7a79a5a5b5a7d909d39aeb0e5630e`。当前报告在 `.local-generation/host-zh-v2-verification.json`，不上传音频；转写只辅助发现重复、漏读或失控生成，不把同音字和繁简转换当成音质结论，也不替代人耳试听。
+复核工具使用本地 [MLX Whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper)，模型为 `mlx-community/whisper-small-mlx`，revision `45f3915923c7a79a5a5b5a7d909d39aeb0e5630e`。当前报告在 `.local-generation/host-zh-v3-verification.json`，不上传音频；转写只辅助发现重复、漏读或失控生成，不把同音字和繁简转换当成音质结论，也不替代人耳试听。
+
+V3 取消发牌台词中的身份确认要求，沿用已选平直播报声线与参数。只重做这一句时，可用 `--reuse host-zh-v2` 复用文本、声线、生成参数和复核指纹完全匹配的其他片段；已修改的台词不能复用。`--offline` 只使用本机缓存的固定 revision，不下载模型或发送内容。
+
+```sh
+.local-generation/venv/bin/python scripts/generate-host-audio.py --only roles_dealt --reuse host-zh-v2 --offline
+.local-generation/venv/bin/python scripts/verify-host-audio.py --bank host-zh-v3 --only roles_dealt --staged --offline
+.local-generation/venv/bin/python scripts/generate-host-audio.py --publish
+```
 
 V2 全部使用 B 样音的同一风格指令、temperature 0.7、maxTokens 512、topK 50、topP 1、repetitionPenalty 1.05，种子从2026100801按目录顺序递增。异常时最多3次有界重试，实际种子记录在清单。本轮40段均在首个种子生成完成。浮点 WAV 保留原始幅度，再交由 FFmpeg 归一化，避免先写整数 WAV 时硬限幅。
 
@@ -52,4 +60,4 @@ V2 全部使用 B 样音的同一风格指令、temperature 0.7、maxTokens 512�
 .local-generation/venv/bin/python scripts/verify-host-audio.py --bank host-zh-calm-pilot
 ```
 
-对比页仍在 `/audio/host-zh-calm-pilot/index.html`，当前整套试听为 `/audio/host-zh-v2/index.html`，均不自动发声。风格方向已确认，但整套真机听感仍待验收；不把提示词或转写通过当作全部声音已符合人耳预期。
+对比页仍在 `/audio/host-zh-calm-pilot/index.html`，当前整套试听为 `/audio/host-zh-v3/index.html`，均不自动发声。风格方向已确认，但整套真机听感仍待验收；不把提示词或转写通过当作全部声音已符合人耳预期。

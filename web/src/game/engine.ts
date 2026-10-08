@@ -28,7 +28,7 @@ export function createGame(configInput: unknown, seatsInput: unknown, hostId: st
   requireRule(Number.isSafeInteger(now) && now >= 0, "CLOCK_INVALID");
   return {
     id, hostId, config: validateConfig(configInput, seats.length), phase: "lobby",
-    players: seats.map((seat) => ({ ...seat, role: null, alive: true })), roleAcknowledgements: [],
+    players: seats.map((seat) => ({ ...seat, role: null, alive: true })),
     nightNo: 0, nightRole: null, window: null, paused: false, currentNight: null, nights: [],
     lastGuardTargetId: null, witchPotions: { save: true, poison: true }, seerReports: {},
     pendingDeaths: [], pendingHunter: null, dayDraft: null, publicEvents: [], winner: null, aborted: false, updatedAt: now,
@@ -102,13 +102,12 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       game.publicEvents.push({ type: "roles_dealt" });
       break;
     case "acknowledge":
+      // Legacy clients can finish an in-flight request; identity viewing is no longer tracked.
       phase(game, "reveal");
-      if (!game.roleAcknowledgements.includes(actorId)) game.roleAcknowledgements.push(actorId);
       break;
     case "begin_night":
       host(game, actorId);
       phase(game, "reveal");
-      requireRule(game.roleAcknowledgements.length === game.players.length, "PLAYERS_NOT_READY");
       beginNight(game);
       break;
     case "open_window":

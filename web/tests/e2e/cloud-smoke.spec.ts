@@ -49,7 +49,6 @@ test("cloud smoke: enrollment, refresh, real trial and first private action only
     await expect.poll(async () => (await view()).narration.mode).toBe("voice"); await host.keyboard.press("Escape");
     for (let i = 0; i < 8; i++) if (i !== 1) await act(i, { type: "ready", ready: true });
     await act(0, { type: "start" });
-    for (let i = 0; i < 8; i++) await act(i, { type: "acknowledge" });
     await expect.poll(async () => (await view()).narration.pending).toBeNull();
     await act(0, { type: "begin_night" });
     await expect.poll(async () => (await view()).phase, { timeout: 60_000 }).toBe("night_action");

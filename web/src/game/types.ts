@@ -43,7 +43,6 @@ export interface Game {
   config: RuleConfig;
   phase: Phase;
   players: Player[];
-  roleAcknowledgements: string[];
   nightNo: number;
   nightRole: NightRole | null;
   window: Window | null;

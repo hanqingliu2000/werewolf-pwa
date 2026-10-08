@@ -50,7 +50,8 @@ export function privateView(room: Room, member: Member) {
   const knowledge = game?.currentNight?.witchKnowledge;
   const result = {
     playerId: member.id, role: own?.role ?? null, alive: visibleAlive,
-    acknowledged: game?.roleAcknowledgements.includes(member.id) ?? false,
+    // Preserve the v2 response shape without requiring legacy clients to confirm identity.
+    acknowledged: own?.role != null,
     action: active && !completed && !(own?.role === "werewolf" && game!.currentNight!.killLocked) ? game!.nightRole : null,
     completed,
     acceptedAction: game?.currentNight?.actions.find((a) => a.actorId === member.id) ?? null,
@@ -82,8 +83,7 @@ export function hostView(room: Room, member: Member) {
   return { playerId: member.id, epochId: epochId(room), windowId: room.flowId, narrationMode: room.narration?.mode ?? "text",
     canStart: !room.game && room.members.length === Object.values(room.config.roles).reduce((a, b) => a + b, 0)
       && room.members.every((p) => p.ready),
-    canBeginNight: room.game?.phase === "reveal" && !room.game.paused && !room.narration?.pending
-      && room.game.roleAcknowledgements.length === room.members.length,
+    canBeginNight: room.game?.phase === "reveal" && !room.game.paused && !room.narration?.pending,
     dayDraft: room.game?.phase === "day" ? room.game.dayDraft : null, draftId: room.draftId,
     cueId: room.game && ["night_open", "night_close", "dawn"].includes(room.game.phase) ? room.flowId : null,
   };

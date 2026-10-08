@@ -18,9 +18,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="Comma-separated clip ids; omit for the complete bank")
     parser.add_argument("--force", action="store_true", help="Regenerate only the selected clips")
+    parser.add_argument("--reuse", choices=["host-zh-v2"], help="Reuse unchanged verified clips from a published bank")
+    parser.add_argument("--offline", action="store_true", help="Use only the pinned model in the local cache")
     parser.add_argument("--seed-offset", type=int, default=0)
     parser.add_argument("--publish", action="store_true", help="Promote the fully verified staging bank; does not synthesize")
     args = parser.parse_args()
+    if args.offline:
+        os.environ["HF_HUB_OFFLINE"] = "1"
     script = json.loads((ROOT / "web/src/narration/script.json").read_text())
     voice = json.loads((ROOT / "web/src/narration/voice.json").read_text())
     destination = ROOT / f".local-generation/banks/{voice['version']}"
@@ -52,8 +56,8 @@ def main():
     import imageio_ffmpeg
 
     model_id = voice["model"]
-    revision = model_info(model_id, revision=voice["revision"]).sha
-    model_path = snapshot_download(model_id, revision=revision)
+    revision = voice["revision"] if args.offline else model_info(model_id, revision=voice["revision"]).sha
+    model_path = snapshot_download(model_id, revision=revision, local_files_only=args.offline)
     model = load_model(model_path)
     selected = args.only.split(",") if args.only else list(script["clips"])
     if any(key not in script["clips"] for key in selected):
@@ -62,6 +66,26 @@ def main():
     raw_dir = ROOT / f".local-generation/raw/{voice['version']}"
     raw_dir.mkdir(parents=True, exist_ok=True)
     records = json.loads(manifest_path.read_text())["clips"] if manifest_path.exists() else {}
+    if args.reuse:
+        previous_dir = ROOT / f"web/public/audio/{args.reuse}"
+        previous = json.loads((previous_dir / "manifest.json").read_text())
+        if previous["revision"] != revision or previous["style"] != voice["style"] or previous["speaker"] != script["speaker"] or previous["generationDefaults"] != voice["generation"]:
+            raise ValueError("Only reuse identical model, voice, style and generation settings")
+        previous_report = json.loads((ROOT / f".local-generation/{args.reuse}-verification.json").read_text())
+        report_path = ROOT / f".local-generation/{voice['version']}-verification.json"
+        report = json.loads(report_path.read_text()) if report_path.exists() else {**previous_report, "clips": {}}
+        for key, text in script["clips"].items():
+            entry = previous["clips"].get(key)
+            if key in selected or not entry or entry["text"] != text:
+                continue
+            actual = hashlib.sha256((previous_dir / f"{key}.mp3").read_bytes()).hexdigest()
+            reviewed = previous_report["clips"].get(key, {})
+            if actual != entry["sha256"] or reviewed.get("sha256") != actual or reviewed.get("peakDb", 0) >= 0:
+                raise ValueError(f"Cannot reuse an unverified clip: {key}")
+            shutil.copyfile(previous_dir / f"{key}.mp3", destination / f"{key}.mp3")
+            records[key] = entry
+            report["clips"][key] = reviewed
+        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     if manifest_path.exists():
         existing = json.loads(manifest_path.read_text())
         if existing["revision"] != revision or existing["style"] != voice["style"] or existing["speaker"] != script["speaker"]:

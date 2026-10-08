@@ -15,9 +15,12 @@ os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="Verify selected replacement clips")
-    parser.add_argument("--bank", choices=["host-zh-v1", "host-zh-v2", "host-zh-calm-pilot"], default="host-zh-v2")
+    parser.add_argument("--bank", choices=["host-zh-v1", "host-zh-v2", "host-zh-v3", "host-zh-calm-pilot"], default="host-zh-v3")
     parser.add_argument("--staged", action="store_true")
+    parser.add_argument("--offline", action="store_true", help="Use only the pinned ASR model in the local cache")
     args = parser.parse_args()
+    if args.offline:
+        os.environ["HF_HUB_OFFLINE"] = "1"
     import numpy as np
     import mlx.core as mx
     import imageio_ffmpeg
@@ -26,8 +29,10 @@ def main():
     bank = ROOT / (f".local-generation/banks/{args.bank}" if args.staged else f"web/public/audio/{args.bank}")
     manifest = json.loads((bank / "manifest.json").read_text())
     model_id = "mlx-community/whisper-small-mlx"
-    revision = model_info(model_id, revision="45f3915923c7a79a5a5b5a7d909d39aeb0e5630e").sha
-    model_path = snapshot_download(model_id, revision=revision)
+    revision = "45f3915923c7a79a5a5b5a7d909d39aeb0e5630e"
+    if not args.offline:
+        revision = model_info(model_id, revision=revision).sha
+    model_path = snapshot_download(model_id, revision=revision, local_files_only=args.offline)
     report_path = ROOT / (".local-generation/verification.json" if args.bank == "host-zh-v1" else f".local-generation/{args.bank}-verification.json")
     results = json.loads(report_path.read_text())["clips"] if report_path.exists() else {}
     for key, entry in manifest["clips"].items():

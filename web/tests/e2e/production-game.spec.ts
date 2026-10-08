@@ -120,7 +120,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
     await expect(settings.getByRole("button", { name: "开始发牌", exact: true })).toBeEnabled(); await settings.getByRole("button", { name: "开始发牌", exact: true }).click(); await close(host.page);
     for (const actor of actors) {
       const panel = await privatePanel(actor); actor.role = names[(await panel.locator(".identity h3").innerText()).trim()] ?? null; expect(actor.role).not.toBeNull();
-      await panel.getByRole("button", { name: "确认身份", exact: true }).click(); await expect(panel.getByText("身份已确认", { exact: true })).toBeVisible(); await close(actor.page);
+      await expect(panel.getByRole("button", { name: "确认身份", exact: true })).toHaveCount(0); await close(actor.page);
       await expect(actor.page.locator(".identity")).toHaveCount(0);
     }
     report.gameId = (await view()).epochId;

@@ -95,9 +95,6 @@ test("real MP3 trial, ended clock, interruption, reload and explicit text fallba
     await act(context, room, { type: "ready", ready: true });
     panel = await controls(page); await expect(panel.getByRole("button", { name: "开始发牌" })).toBeEnabled();
     await panel.getByRole("button", { name: "开始发牌" }).click(); await close(page);
-    await page.getByRole("button", { name: "查看身份", exact: true }).click();
-    await page.getByRole("button", { name: "确认身份", exact: true }).click(); await close(page);
-    for (const other of otherContexts) await act(other, room, { type: "acknowledge" });
     await expect.poll(async () => (await view(context, room)).narration.pending, { timeout: 20_000 }).toBeNull();
     panel = await controls(page); await expect(panel.getByRole("button", { name: "开始首夜" })).toBeEnabled();
     await panel.getByRole("button", { name: "开始首夜" }).click(); await close(page);

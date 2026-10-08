@@ -24,7 +24,6 @@ describe("runtime command boundaries", () => {
     const profiles = seats.map((p, i) => ({ ...p, id: i === 2 ? "toString" : p.id }));
     let game = createGame(config, profiles, "p1", "prototype-test");
     game = command(game, { type: "deal", actorId: "p1" });
-    for (const p of game.players) game = command(game, { type: "acknowledge", actorId: p.id });
     game = command(game, { type: "begin_night", actorId: "p1" });
     expect(seerReports(game, "toString")).toEqual([]);
     game = toRole(game, "seer");

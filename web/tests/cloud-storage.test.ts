@@ -118,7 +118,6 @@ it("merges simultaneous wolf confirmations from two pg-backed service instances"
   let game = createGame(config, room.members.map(({ id, seat, name }) => ({ id, seat, name })), room.hostId, randomUUID(), live ? f.time.now - 30_020 : f.time.now);
   const command = (input: Parameters<typeof executeCommand>[1], now = game.updatedAt + 1) => { game = executeCommand(game, input, now, fixedRandom); };
   command({ type: "deal", actorId: room.hostId });
-  for (const p of game.players) command({ type: "acknowledge", actorId: p.id });
   command({ type: "begin_night", actorId: room.hostId }); command({ type: "open_window", actorId: room.hostId });
   command({ type: "guard", actorId: game.players.find(p => p.role === "guard")!.id, targetId: null });
   command({ type: "close_window", actorId: room.hostId }, game.window!.deadline);

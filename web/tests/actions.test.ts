@@ -4,7 +4,7 @@ import { actorForRole, seerReports, witchKnowledge } from "../src/game/engine";
 import { command, day, deepFreeze, finish, open, roleId, started, toRole, vote, wolves } from "./helpers";
 
 describe("role actions and confirmation", () => {
-  it("requires acknowledgements before opening the first night", () => {
+  it("rejects duplicate first-night starts and late legacy identity requests", () => {
     const game = started();
     expect(() => command(game, { type: "begin_night", actorId: "p1" })).toThrow("PHASE_MISMATCH");
     expect(() => command(game, { type: "acknowledge", actorId: "p1" })).toThrow("PHASE_MISMATCH");

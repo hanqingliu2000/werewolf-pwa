@@ -1,5 +1,5 @@
 {
-  "version": "host-zh-v2",
+  "version": "host-zh-v3",
   "sourceModel": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
   "model": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-4bit",
   "revision": "f35faf19b0cc2160865af64ecf0f22f83d335135",

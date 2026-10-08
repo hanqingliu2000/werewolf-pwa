@@ -1,11 +1,11 @@
 {
-  "version": "host-zh-v2",
+  "version": "host-zh-v3",
   "rulesVersion": "werewolf-web-v1",
   "speaker": "Uncle_Fu",
   "language": "Chinese",
   "clips": {
     "sample": "各位玩家，准备好了吗？天黑，请闭眼。",
-    "roles_dealt": "身份已经发放。请查看并确认本人的身份，然后收起私密信息。",
+    "roles_dealt": "身份已经发放。请查看本人的身份，然后收起私密信息。",
     "night_start": "天黑了，所有玩家请闭眼。",
     "guard_open": "守卫请睁眼。请选择守护目标，或选择本夜不守，并确认行动。",
     "guard_close": "守卫请闭眼。",

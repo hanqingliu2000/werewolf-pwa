@@ -16,7 +16,6 @@ describe("complete persisted games", () => {
     try {
       await f.act({ type: "narration_mode", mode: "voice", version: NARRATION_VERSION, trialConfirmed: true });
       await f.start(); await done();
-      for (let i = 0; i < count; i++) await f.act({ type: "acknowledge" }, i);
       await f.act({ type: "begin_night" });
       while (f.state().game!.phase !== "end") {
         while (f.state().game!.phase === "night_open") {
@@ -92,7 +91,8 @@ describe("complete persisted games", () => {
       await f.start();
       expect(f.state().game!.id).not.toBe(firstGameId);
       expect(f.state().game!).toMatchObject({ phase: "reveal", nightNo: 0, nights: [], seerReports: {},
-        lastGuardTargetId: null, witchPotions: { save: true, poison: true }, roleAcknowledgements: [] });
+        lastGuardTargetId: null, witchPotions: { save: true, poison: true } });
+      expect(f.state().game).not.toHaveProperty("roleAcknowledgements");
     } finally { f.close(); }
   });
 });

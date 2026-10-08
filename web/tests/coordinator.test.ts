@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
-import { mintSession, RETENTION_MS } from "../src/server/service";
+import { mintSession, RETENTION_MS, RoomService } from "../src/server/service";
 import { fixture } from "./server-helpers";
 import { config, command, nightToDawn } from "./helpers";
 
@@ -43,6 +43,30 @@ describe("lobby and idempotent coordinator", () => {
     await expect(f.act({ type: "start" })).rejects.toThrow("PLAYERS_NOT_READY");
   });
 
+  it("keeps identity viewing read-only and restores an unconfirmed deal without a start gate", async () => {
+    const f = await setup(); await f.start();
+    const before = f.store.load(f.id);
+    expect((await f.service.view(f.id, f.tokens[0]!, "host")).canBeginNight).toBe(true);
+    expect(await f.service.view(f.id, f.tokens[1]!, "private")).toMatchObject({ role: "werewolf", acknowledged: true });
+    expect(f.store.load(f.id)).toEqual(before);
+    expect(f.state().game).not.toHaveProperty("roleAcknowledgements");
+    const restored = new RoomService(f.store, () => f.time.now);
+    await restored.mutate(f.id, f.tokens[0]!, f.envelope({ type: "begin_night" }));
+    expect(f.state().game).toMatchObject({ phase: "night_open", nightNo: 1, window: null });
+  });
+
+  it("accepts and deduplicates legacy identity requests without tracking them", async () => {
+    const f = await setup(); await f.start(); const game = f.state().game;
+    const envelope = f.envelope({ type: "acknowledge" });
+    const receipt = await f.service.mutate(f.id, f.tokens[1]!, envelope);
+    expect(f.state().game).toEqual(game);
+    const before = f.store.load(f.id);
+    expect(await f.service.mutate(f.id, f.tokens[1]!, envelope)).toEqual(receipt);
+    expect(f.store.load(f.id)).toEqual(before);
+    await f.act({ type: "begin_night" });
+    await expect(f.act({ type: "acknowledge" }, 1)).rejects.toThrow("PHASE_MISMATCH");
+  });
+
   it("bounds CAS retries, and reloads a conflict without discarding facts", async () => {
     const f = await setup(1);
     const cas = f.store.compareAndSwap.bind(f.store);
@@ -70,7 +94,6 @@ describe("lobby and idempotent coordinator", () => {
     const old = f.envelope({ type: "ready", ready: true }); await f.start();
     await expect(f.service.mutate(f.id, f.tokens[1]!, old)).rejects.toThrow("STALE_GAME");
     const window = f.envelope({ type: "begin_night" });
-    for (let i = 0; i < 8; i++) await f.act({ type: "acknowledge" }, i);
     await f.act({ type: "begin_night" });
     await expect(f.service.mutate(f.id, f.tokens[0]!, window)).rejects.toThrow("STALE_WINDOW");
     await expect(f.service.mutate(f.id, f.tokens[0]!, { ...f.envelope({ type: "cue_ack" }), now: 0 })).rejects.toThrow("INPUT_INVALID");

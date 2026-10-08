@@ -91,6 +91,48 @@ test("entry, accessibility, real artwork and mobile layouts", async ({ page, req
   await page.getByLabel("房间号").fill("FFFFFFFF"); await expect(page.locator(".error[role=alert]")).toContainText("房间");
 });
 
+for (const count of [8, 12]) test(`${count} players can begin without viewing or confirming identity`, async ({ browser, baseURL }, info) => {
+  const { actors, room, consoleErrors } = await roomSetup(browser, baseURL!, count);
+  const organizer = actors[0]!; const identityRequests: string[] = [];
+  for (const actor of actors) actor.page.on("request", (request) => {
+    if (request.url().endsWith("/commands") && request.postDataJSON()?.operation?.type === "acknowledge") identityRequests.push(request.url());
+  });
+  try {
+    let control = await host(organizer.page);
+    await control.getByRole("button", { name: "开始发牌" }).click(); await close(organizer.page);
+    await expect.poll(async () => (await status(organizer, room)).phase).toBe("reveal");
+    for (const actor of actors) {
+      await expect(actor.page.getByRole("button", { name: "查看身份", exact: true })).toBeVisible();
+      await expect(actor.page.locator(".identity")).toHaveCount(0);
+      await expect(actor.page.getByText("身份确认", { exact: true })).toHaveCount(0);
+    }
+    control = await host(organizer.page);
+    await expect(control.getByRole("button", { name: "开始首夜" })).toBeEnabled(); await close(organizer.page);
+    // Refresh keeps the existing safety pause; resume is independent of identity viewing.
+    await organizer.page.reload();
+    await expect.poll(async () => (await status(organizer, room)).paused).toBe(true);
+    control = await host(organizer.page);
+    await expect(control.getByRole("button", { name: "恢复对局" })).toBeEnabled();
+    await control.getByRole("button", { name: "恢复对局" }).click();
+    await expect.poll(async () => (await status(organizer, room)).paused).toBe(false);
+    await expect(control.getByRole("button", { name: "开始首夜" })).toBeEnabled();
+    await control.getByRole("button", { name: "开始首夜" }).click(); await close(organizer.page);
+    await expect.poll(async () => (await status(organizer, room)).phase).toBe("night_open");
+    expect((await status(organizer, room)).window).toBeNull();
+    const actor = actors[1]!;
+    const panel = await reveal(actor.page);
+    await expect(panel.locator(".identity h3")).toBeVisible();
+    await expect(panel.getByRole("button", { name: "确认身份", exact: true })).toHaveCount(0);
+    await expect(panel.getByText("身份已确认", { exact: true })).toHaveCount(0);
+    await screenshot(actor.page, info, `identity-without-confirmation-${count}`); await close(actor.page);
+    await expect(actor.page.locator(".identity")).toHaveCount(0);
+    expect(identityRequests).toEqual([]); expect(consoleErrors).toEqual([]);
+    control = await host(organizer.page); await control.getByRole("button", { name: "中止本局", exact: true }).click();
+    await control.getByRole("button", { name: "确认中止", exact: true }).click();
+    await expect.poll(async () => (await status(organizer, room)).phase).toBe("end");
+  } finally { for (const actor of actors) await actor.context.close(); }
+});
+
 for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} isolated players complete a real ${voice ? "voice" : "text"} UI game and a new lobby`, async ({ browser, baseURL }, info) => {
   test.setTimeout(900_000);
   const { actors, room, consoleErrors } = await roomSetup(browser, baseURL!, count); const organizer = actors[0]!;
@@ -108,10 +150,10 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
     }
     await expect(maintenance.getByRole("button", { name: "开始发牌" })).toBeEnabled(); await maintenance.getByRole("button", { name: "开始发牌" }).click(); await close(organizer.page);
     for (const actor of actors) {
-      const panel = await reveal(actor.page); await expect(panel.getByRole("button", { name: "确认身份" })).toBeVisible();
+      const panel = await reveal(actor.page); await expect(panel.getByRole("button", { name: "确认身份" })).toHaveCount(0);
       const identity = await personal(actor, room); actor.role = identity.role;
       await expect(panel.locator(".identity img")).toHaveJSProperty("naturalWidth", 720);
-      await panel.getByRole("button", { name: "确认身份" }).click(); await expect(panel.getByText("身份已确认", { exact: true })).toBeVisible(); await close(actor.page);
+      await expect(panel.getByText("身份已确认", { exact: true })).toHaveCount(0); await close(actor.page);
       await expect(actor.page.locator(".identity")).toHaveCount(0);
     }
     const firstGame = (await status(organizer, room)).epochId;

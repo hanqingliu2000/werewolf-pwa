@@ -4,6 +4,8 @@
 
 截至2026-10-08，最新单屏行动版本已正式发布到 [werewolf-web-v2.vercel.app](https://werewolf-web-v2.vercel.app)。12个独立会话的正常计时线上语音局、复盘及重开通过，详见22。真实手机和聚会现场仍待验证，音频版本为 `host-zh-v2`。
 
+当前分支已取消逐人身份确认：默认遮蔽、可选私密查看，发牌播报结束后房主直接开始首夜。配套音频为 `host-zh-v3`，本次尚未提升到正式站；验收与兼容说明见23。推送不自动替换正式版本。
+
 ## 当前范围
 
 - 只开发响应式网页版，手机浏览器优先。
@@ -41,6 +43,7 @@
 | [20 试玩前流程修复](docs/20-pre-play-flow-fixes.md) | 紧凑行动窗、播报回执重试、白天改选防误发布和局部回归 |
 | [21 单屏行动与流程验收](docs/21-single-screen-action-acceptance.md) | 五角色一屏目标、180个布局组合、完整文字流程和本机来源修正 |
 | [22 正式语音整局验收](docs/22-production-voice-game-acceptance.md) | 正式部署、12个独立会话、正常计时3夜、复盘重开与验收边界 |
+| [23 取消身份确认](docs/23-identity-viewing-without-confirmation.md) | 可选私密查看、首夜推进、旧客户端兼容与V3发牌台词 |
 | [本地语音生成](scripts/README.md) | 锁定环境、模型版本、生成参数与声音复核 |
 | [视觉规范](design-system/werewolf-web/MASTER.md) | 全站色彩、文字、控件与页面应用 |
 | [新应用运行说明](web/README.md) | 安装、检查、构建、健康入口与规则核心边界 |

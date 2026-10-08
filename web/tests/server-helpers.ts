@@ -29,7 +29,6 @@ export async function fixture(count = 8, rules: RuleConfig = config) {
   };
   const begin = async () => {
     await start();
-    for (let i = 0; i < count; i++) await act({ type: "acknowledge" }, i);
     await act({ type: "begin_night" });
   };
   const advance = async () => {
