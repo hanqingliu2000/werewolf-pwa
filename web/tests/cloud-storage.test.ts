@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
@@ -12,7 +12,18 @@ import type { Receipt, RoomStore } from "../src/server/types";
 import { createGame, executeCommand } from "../src/game/engine";
 
 let db: PGlite, server: PGLiteSocketServer, pool: Pool, secondPool: Pool;
+const live = !!process.env.LIVE_POSTGRES_CREDENTIALS;
+const createdRooms: string[] = [];
 beforeAll(async () => {
+  if (live) {
+    const credentials = JSON.parse(readFileSync(process.env.LIVE_POSTGRES_CREDENTIALS!, "utf8"));
+    const url = new URL("postgresql://aws-0-us-east-1.pooler.supabase.com:6543/postgres");
+    url.username = "werewolf_preview_app.knkrwuquthqblnkoxdtn"; url.password = credentials.preview_password;
+    const settings = { connectionString: url.toString(), max: 1, ssl: { ca: readFileSync(process.env.LIVE_POSTGRES_CA!, "utf8"), rejectUnauthorized: true }, connectionTimeoutMillis: 5000 };
+    pool = new Pool(settings); secondPool = new Pool(settings);
+    expect((await pool.query("SELECT current_user AS role")).rows[0].role).toBe("werewolf_preview_app");
+    return;
+  }
   db = await PGlite.create();
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE ROLE authenticator;");
   await db.exec(readFileSync(new URL("../../supabase/migrations/20261008013215_cloud_room_store.sql", import.meta.url), "utf8"));
@@ -21,7 +32,10 @@ beforeAll(async () => {
   const settings = { host, port: Number(port), user: "postgres", database: "postgres", max: 1, connectionTimeoutMillis: 5000 };
   pool = new Pool(settings); secondPool = new Pool(settings);
 }, 30_000);
-afterAll(async () => { await pool?.end(); await secondPool?.end(); await server?.stop(); await db?.close(); });
+afterAll(async () => {
+  if (live && pool && createdRooms.length) await pool.query("DELETE FROM werewolf_preview.rooms WHERE id = ANY($1::text[])", [createdRooms]);
+  await pool?.end(); await secondPool?.end(); await server?.stop(); await db?.close();
+});
 
 async function backend(kind: "sqlite" | "postgres") {
   if (kind === "sqlite") {
@@ -31,6 +45,7 @@ async function backend(kind: "sqlite" | "postgres") {
   const store = new PostgresRoomStore(pool, "werewolf_preview"); const time = { now: Date.now() };
   const service = new RoomService(store, () => time.now, fixedRandom); const token = mintSession();
   const created = await service.create(token, { requestId: randomUUID(), name: "Host", config });
+  if (live) createdRooms.push(created.roomId);
   return { store: store as RoomStore, service, token, id: created.roomId, time, close: () => undefined };
 }
 
@@ -49,7 +64,7 @@ describe.each(["sqlite", "postgres"] as const)("%s storage contract", (kind) => 
       const bad = { ...receipt, key: randomUUID(), extra: 1n } as Receipt;
       await expect(Promise.resolve().then(() => f.store.compareAndSwap(changed, before.version, bad))).rejects.toThrow();
       expect(await f.store.load(f.id)).toEqual(before);
-      const copy = { ...changed, id: "ABCDEF99" }; const duplicate = { ...receipt, result: { ...receipt.result, roomId: copy.id } };
+      const copy = { ...changed, id: randomBytes(4).toString("hex").toUpperCase() }; const duplicate = { ...receipt, result: { ...receipt.result, roomId: copy.id } };
       expect(await f.store.insert(copy, duplicate)).toBe(false);
       expect(await f.store.load(copy.id)).toBeNull();
     } finally { f.close(); }
@@ -71,7 +86,7 @@ describe.each(["sqlite", "postgres"] as const)("%s storage contract", (kind) => 
     } finally { f.close(); }
   });
 
-  it("expires rooms and receipts, persists rate counts and resets at the minute boundary", async () => {
+  it.skipIf(live && kind === "postgres")("expires rooms and receipts, persists rate counts and resets at the minute boundary", async () => {
     const f = await backend(kind);
     try {
       const key = randomUUID(); expect(await f.store.rate(key, f.time.now, 1)).toBe(true);
@@ -100,7 +115,7 @@ it("merges simultaneous wolf confirmations from two pg-backed service instances"
   const { epochId } = await f.service.view(f.id, f.token);
   for (let i = 1; i < 8; i++) await f.service.join(f.id, tokens[i]!, { requestId: randomUUID(), epochId, name: `WolfFixture${i}` });
   const record = (await f.store.load(f.id))!; const room = record.room;
-  let game = createGame(config, room.members.map(({ id, seat, name }) => ({ id, seat, name })), room.hostId, randomUUID(), f.time.now);
+  let game = createGame(config, room.members.map(({ id, seat, name }) => ({ id, seat, name })), room.hostId, randomUUID(), live ? f.time.now - 30_020 : f.time.now);
   const command = (input: Parameters<typeof executeCommand>[1], now = game.updatedAt + 1) => { game = executeCommand(game, input, now, fixedRandom); };
   command({ type: "deal", actorId: room.hostId });
   for (const p of game.players) command({ type: "acknowledge", actorId: p.id });
@@ -123,7 +138,7 @@ it("merges simultaneous wolf confirmations from two pg-backed service instances"
   expect(night.killLocked).toBe(true); expect(night.wolfConfirmations).toHaveLength(wolves.length); expect(night.killTargetId).toBeNull();
 });
 
-it("isolates schemas, validates readiness, and rejects unavailable tables or unsupported state", async () => {
+it.skipIf(live)("isolates schemas, validates readiness, and rejects unavailable tables or unsupported state", async () => {
   const f = await backend("postgres"); const preview = new PostgresRoomStore(pool, "werewolf_preview"); const prod = new PostgresRoomStore(pool, "werewolf_prod");
   await preview.ready(); await prod.ready();
   expect(await prod.load(f.id)).toBeNull(); expect(await prod.receipt("missing")).toBeNull();
@@ -134,7 +149,7 @@ it("isolates schemas, validates readiness, and rejects unavailable tables or uns
   await expect(new PostgresRoomStore(broken, "werewolf_preview").load(f.id)).rejects.toThrow("STORAGE_VERSION_UNSUPPORTED");
 });
 
-it("enables RLS and denies anonymous, authenticated and opposite-environment access", async () => {
+it.skipIf(live)("enables RLS and denies anonymous, authenticated and opposite-environment access", async () => {
   const policies = await db.query<{ relrowsecurity: boolean }>("SELECT relrowsecurity FROM pg_class WHERE relnamespace IN ('werewolf_prod'::regnamespace, 'werewolf_preview'::regnamespace) AND relkind = 'r'");
   expect(policies.rows).toHaveLength(6); expect(policies.rows.every(r => r.relrowsecurity)).toBe(true);
   for (const role of ["anon", "authenticated", "service_role", "authenticator", "werewolf_preview_app"]) {
