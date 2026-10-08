@@ -65,6 +65,8 @@
 
 ## 本地验收
 
+临时 UI 评审服务见 [评审工具说明](scripts/ui-review/README.md)：`node scripts/ui-review/start.mjs` 组织14个真实组件示例，以左右按钮切换并提供固定编号供批注；默认本机3010端口，模拟数据独立于真实房间，不进入正式页面。
+
 ```sh
 npm --prefix web ci
 npm --prefix web run check

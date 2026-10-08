@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>狼人杀 UI 评审</title>
+  <style>
+    :root{color-scheme:dark;--bg:#161819;--text:#eeeae2;--muted:#a8b1ad;--line:#687470;--green:#91c8ae}
+    *{box-sizing:border-box;letter-spacing:0}body{margin:0;background:#0c1010;color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+    button,select{font:inherit;color:inherit}button{cursor:pointer}button,select{border:1px solid var(--line);background:var(--bg);border-radius:5px}
+    :focus-visible{outline:2px solid var(--green);outline-offset:3px}.workbench{height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr)}
+    .toolbar{display:grid;grid-template-columns:minmax(120px,1fr) auto minmax(160px,260px) auto auto;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid #333c3b;background:var(--bg)}
+    .brand{min-width:0}.brand span{font-size:12px;color:var(--muted)}.brand strong{display:block;font-size:16px;font-weight:500;overflow-wrap:anywhere}
+    .navigation,.modes{display:flex;align-items:center;gap:8px}.icon{width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.icon:hover{background:#292f30}
+    .icon[aria-pressed=true]{border-color:var(--green);color:var(--green)}#counter{width:62px;text-align:center;font-variant-numeric:tabular-nums;color:var(--muted)}
+    select{width:100%;min-width:0;min-height:44px;padding:8px 12px}.stage{overflow:auto;padding:20px;overscroll-behavior:contain}
+    .frame{position:relative;width:390px;max-width:100%;margin:0 auto;border:1px solid var(--line);background:var(--bg);border-radius:6px;overflow:hidden}
+    .frame.loading iframe{visibility:hidden;pointer-events:none}.loader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted)}.loader[hidden]{display:none}
+    .frame.desktop{width:min(1200px,100%)}iframe{display:block;width:100%;height:844px;border:0;background:var(--bg)}.desktop iframe{height:900px}
+    @media(max-width:760px){.toolbar{grid-template-columns:minmax(0,1fr) auto auto;gap:10px;padding:10px 12px}.brand{grid-column:1/3}.navigation{grid-column:3;grid-row:1}select{grid-column:1}.modes{grid-column:2}.reset{grid-column:3;justify-self:end}.stage{padding:12px}}
+    @media(max-width:420px){.toolbar{grid-template-columns:minmax(0,1fr) auto;gap:8px}.brand{grid-column:1}.navigation{grid-column:2}.modes{grid-column:1;grid-row:3}.reset{grid-column:2;grid-row:3}select{grid-column:1/3;grid-row:2}.stage{padding:8px}}
+  </style>
+</head>
+<body><main class="workbench">
+  <header class="toolbar">
+    <div class="brand"><span>狼人杀 · 本地 UI 评审</span><strong id="scene-name">正在加载</strong></div>
+    <nav class="navigation" aria-label="切换评审页面">
+      <button id="previous" class="icon" aria-label="上一页" title="上一页"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7M7 12h14"/></svg></button>
+      <span id="counter" role="status"></span>
+      <button id="next" class="icon" aria-label="下一页" title="下一页"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5 7 7-7 7M3 12h14"/></svg></button>
+    </nav>
+    <select id="scenes" aria-label="评审示例"></select>
+    <div class="modes" role="group" aria-label="预览尺寸">
+      <button id="phone" class="icon" aria-label="手机视图" title="手机视图" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg></button>
+      <button id="desktop" class="icon" aria-label="桌面视图" title="桌面视图" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M12 17v4M7 21h10"/></svg></button>
+    </div>
+    <button id="reset" class="icon reset" aria-label="重置当前示例" title="重置当前示例"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.7 7M3 4v7h7"/></svg></button>
+  </header>
+  <section class="stage" aria-label="当前网页预览"><div class="frame loading"><div class="loader" role="status">正在加载示例</div><iframe id="preview" title="UI 示例"></iframe></div></section>
+</main><script type="module">
+  const scenes=await(await fetch("/__review/scenes")).json();const select=document.getElementById("scenes"),frame=document.getElementById("preview"),shell=document.querySelector(".frame");
+  for(const scene of scenes){const option=document.createElement("option");option.value=scene.id;option.textContent=`${scene.id} · ${scene.name}`;select.append(option)}
+  const params=new URLSearchParams(location.search);let index=Math.max(0,scenes.findIndex(s=>s.id===params.get("scene")));let mode=params.get("mode")==="desktop"?"desktop":"phone";let navigation=0;
+  function labels(){const scene=scenes[index];select.value=scene.id;document.getElementById("scene-name").textContent=scene.name;document.getElementById("counter").textContent=`${scene.id.slice(1)} / ${scenes.length}`;
+    shell.classList.toggle("desktop",mode==="desktop");for(const key of["phone","desktop"])document.getElementById(key).setAttribute("aria-pressed",String(mode===key));
+    history.replaceState(null,"",`/?scene=${scene.id}&mode=${mode}`);frame.title=`${scene.id} · ${scene.name}`;document.title=`${scene.id} ${scene.name} · UI 评审`}
+  async function show(next=index){const ticket=++navigation;index=(next+scenes.length)%scenes.length;labels();shell.classList.add("loading");document.querySelector(".loader").hidden=false;const scene=scenes[index];await fetch("/__review/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({scene:scene.id})});if(ticket!==navigation)return;
+    const url=new URL(scene.path,location.origin);url.searchParams.set("reviewScene",scene.id);url.searchParams.set("reviewKey",String(ticket));frame.src=url.pathname+url.search}
+  document.getElementById("previous").onclick=()=>show(index-1);document.getElementById("next").onclick=()=>show(index+1);document.getElementById("reset").onclick=()=>show();select.onchange=()=>show(scenes.findIndex(s=>s.id===select.value));
+  for(const key of["phone","desktop"])document.getElementById(key).onclick=()=>{mode=key;labels()};
+  function step(event){if(!["ArrowLeft","ArrowRight"].includes(event.key)||event.metaKey||event.ctrlKey||event.altKey||event.shiftKey||event.target.closest("input,textarea,select,[contenteditable=true]"))return;event.preventDefault();void show(index+(event.key==="ArrowLeft"?-1:1))}
+  document.addEventListener("keydown",step);window.addEventListener("message",event=>{if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.key!==String(navigation))return;
+    if(event.data?.type==="ui-review:ready"&&event.data.scene===scenes[index].id){shell.classList.remove("loading");document.querySelector(".loader").hidden=true}
+    if(event.data?.type==="ui-review:step")void show(index+(event.data.direction===-1?-1:1));
+    if(event.data?.type==="ui-review:route"&&!shell.classList.contains("loading")){const found=scenes.findIndex(s=>new URL(s.path,location.origin).pathname===event.data.path);if(found>=0&&found!==index){index=found;labels()}}});
+  await show();
+</script></body></html>
