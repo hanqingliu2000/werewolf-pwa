@@ -48,6 +48,7 @@ export interface Game {
   nightRole: NightRole | null;
   window: Window | null;
   paused: boolean;
+  wolfDiscussionPaused?: boolean;
   currentNight: Night | null;
   nights: Night[];
   lastGuardTargetId: string | null;

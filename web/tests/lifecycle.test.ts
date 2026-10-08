@@ -5,11 +5,11 @@ import { GET } from "../src/app/api/health/route";
 import { config, seats, command, day, finish, open, started, toRole, vote } from "./helpers";
 
 describe("public windows and timing", () => {
-  it("uses 30-second ordinary and 45-second wolf windows", () => {
+  it("uses 30-second guard and 15-second wolf windows", () => {
     const guard = open(started());
     expect(guard.window!.deadline - guard.window!.openedAt).toBe(30_000);
     const wolf = toRole(started(), "werewolf");
-    expect(wolf.window!.deadline - wolf.window!.openedAt).toBe(45_000);
+    expect(wolf.window!.deadline - wolf.window!.openedAt).toBe(15_000);
   });
   it("does not close a public window early even after submission", () => {
     const game = command(open(started()), { type: "guard", actorId: "p5", targetId: null });

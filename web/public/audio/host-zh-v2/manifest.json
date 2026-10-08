@@ -1,0 +1,684 @@
+{
+  "version": "host-zh-v2",
+  "rulesVersion": "werewolf-web-v1",
+  "language": "Chinese",
+  "speaker": "Uncle_Fu",
+  "sourceModel": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "style": {
+    "id": "neutral",
+    "name": "平直播报",
+    "instruction": "清晰平直的普通话播报，语速正常，停顿简短，音量均匀，不夸张，不渲染情绪。",
+    "approvedPilotSha256": "3a0884136aa41e51d5cf91a3101f67e9e833d35f99c864e9a4bf9f077f2642ae",
+    "approvedAt": "2026-10-07"
+  },
+  "model": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-4bit",
+  "revision": "f35faf19b0cc2160865af64ecf0f22f83d335135",
+  "precision": "4-bit MLX conversion",
+  "license": "Apache-2.0",
+  "runtime": {
+    "mlx-audio": "0.5.8",
+    "mlx": "0.32.3",
+    "transformers": "5.19.0",
+    "imageio-ffmpeg": "0.6.0"
+  },
+  "generationDefaults": {
+    "temperature": 0.7,
+    "maxTokens": 512,
+    "topK": 50,
+    "topP": 1,
+    "repetitionPenalty": 1.05
+  },
+  "review": {
+    "styleSelection": "neutral pilot approved by user",
+    "signalAndAsr": "local signal and ASR review passed",
+    "humanPhoneListening": "pending"
+  },
+  "normalization": {
+    "integratedLufs": -18,
+    "truePeakDb": -1.5,
+    "sampleRate": 24000,
+    "bitrate": "96k"
+  },
+  "clips": {
+    "sample": {
+      "text": "各位玩家，准备好了吗？天黑，请闭眼。",
+      "sha256": "84bcfd100f533caabf7c89dd792ebd4e8e3899f20b5816e4de68df4f3ef69cd1",
+      "bytes": 68300,
+      "durationSeconds": 5.6,
+      "sourceSampleRate": 24000,
+      "seed": 2026100801,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 7.1
+    },
+    "roles_dealt": {
+      "text": "身份已经发放。请查看并确认本人的身份，然后收起私密信息。",
+      "sha256": "1a5ff206603911beac34674a4a11e9a00c4ef1eac4a8581228c1ad140f22197d",
+      "bytes": 127628,
+      "durationSeconds": 10.56,
+      "sourceSampleRate": 24000,
+      "seed": 2026100802,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 44.72
+    },
+    "night_start": {
+      "text": "天黑了，所有玩家请闭眼。",
+      "sha256": "51488261d9a15db27462dccbe033b9d2d38b365071696bf1fabea208d3485c37",
+      "bytes": 46988,
+      "durationSeconds": 3.84,
+      "sourceSampleRate": 24000,
+      "seed": 2026100803,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 32.49
+    },
+    "guard_open": {
+      "text": "守卫请睁眼。请选择守护目标，或选择本夜不守，并确认行动。",
+      "sha256": "1019436a7d7a2f1ef66c95b6f3eb922efdde61fffbc7b94b89c8ff8d59bc9bc5",
+      "bytes": 141164,
+      "durationSeconds": 11.68,
+      "sourceSampleRate": 24000,
+      "seed": 2026100804,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 31.91
+    },
+    "guard_close": {
+      "text": "守卫请闭眼。",
+      "sha256": "66921773e42d8c7a18cc91f4ad0432fcaaa3f355cc65e346bed102359f72c372",
+      "bytes": 19340,
+      "durationSeconds": 1.52,
+      "sourceSampleRate": 24000,
+      "seed": 2026100805,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 11.97
+    },
+    "werewolf_open": {
+      "text": "狼人请睁眼。请选择共同目标或空刀，所有存活狼人都需要确认。",
+      "sha256": "00bebe1dedbb62cc8c924156b8e6da1e14d930b946dbf7eced63d453e8227c8d",
+      "bytes": 117260,
+      "durationSeconds": 9.68,
+      "sourceSampleRate": 24000,
+      "seed": 2026100806,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 22.75
+    },
+    "werewolf_close": {
+      "text": "狼人请闭眼。",
+      "sha256": "b38b1dfa4262922079ea062f8d5f1ea89790bc6ef716d27e88a6ce3a58f863c0",
+      "bytes": 20204,
+      "durationSeconds": 1.6,
+      "sourceSampleRate": 24000,
+      "seed": 2026100807,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 17.48
+    },
+    "witch_open": {
+      "text": "女巫请睁眼。请选择使用一种药剂，或选择不用药，并确认行动。",
+      "sha256": "3cea5b50415560a2a097a591b5ae50f38ae7435882669ee9a2d5a977df1e238a",
+      "bytes": 152684,
+      "durationSeconds": 12.64,
+      "sourceSampleRate": 24000,
+      "seed": 2026100808,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 44.59
+    },
+    "witch_close": {
+      "text": "女巫请闭眼。",
+      "sha256": "c09354efbc68c639fc2a9bdbdee31252f4dfec90d54340e73ed909395620d220",
+      "bytes": 23084,
+      "durationSeconds": 1.84,
+      "sourceSampleRate": 24000,
+      "seed": 2026100809,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 12.46
+    },
+    "seer_open": {
+      "text": "预言家请睁眼。请选择查验目标，或选择本夜不查验，并确认行动。",
+      "sha256": "13baa4a13899666a9c72785ac5cd8ef0607c0457cc716593828ee38822900f6c",
+      "bytes": 129644,
+      "durationSeconds": 10.72,
+      "sourceSampleRate": 24000,
+      "seed": 2026100810,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 50.34
+    },
+    "seer_close": {
+      "text": "预言家请闭眼。",
+      "sha256": "4fd82a55309ff833098a36b5c3ad75576315e653fa6d262e22384a44dc5846b4",
+      "bytes": 27980,
+      "durationSeconds": 2.24,
+      "sourceSampleRate": 24000,
+      "seed": 2026100811,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 15.54
+    },
+    "dawn": {
+      "text": "天亮了，所有玩家请睁眼。现在公布本夜结果。",
+      "sha256": "9cd65b6f5cc0a0047a8d537bb70473a8050dc887f483c12a14a4218fbf773ecc",
+      "bytes": 114380,
+      "durationSeconds": 9.44,
+      "sourceSampleRate": 24000,
+      "seed": 2026100812,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 32.39
+    },
+    "no_death": {
+      "text": "昨夜是平安夜，没有玩家出局。",
+      "sha256": "3b84599b235677e21e1d0faa94f84d71960d9bd93f939331ed6078ddc62f81e9",
+      "bytes": 51884,
+      "durationSeconds": 4.24,
+      "sourceSampleRate": 24000,
+      "seed": 2026100813,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 14.53
+    },
+    "death_list": {
+      "text": "昨夜出局的玩家是：",
+      "sha256": "48adaae9d169f7d318e4fc408b280c10c2d0d5d6ab498d535312b594fd73b12c",
+      "bytes": 38348,
+      "durationSeconds": 3.12,
+      "sourceSampleRate": 24000,
+      "seed": 2026100814,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 7.32
+    },
+    "hunter_identity": {
+      "text": "身份为猎人。",
+      "sha256": "fd75bcca986ce885391ced49181ef3c5f4b06bc8e2f9256bd74eced705bea839",
+      "bytes": 20204,
+      "durationSeconds": 1.6,
+      "sourceSampleRate": 24000,
+      "seed": 2026100815,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.83
+    },
+    "hunter_open": {
+      "text": "请猎人选择开枪目标，或选择放弃开枪。",
+      "sha256": "a110219deec8d580f4dd8d800b8435ed2b4628ebac7d3ebdd8f8d022ef591bd2",
+      "bytes": 53900,
+      "durationSeconds": 4.4,
+      "sourceSampleRate": 24000,
+      "seed": 2026100816,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 6.37
+    },
+    "hunter_shot": {
+      "text": "猎人开枪，出局的玩家是：",
+      "sha256": "f30c7749178318ef24dde30dfb89a61a6643c3a890eb615b0aa7a2b1899b12f6",
+      "bytes": 41228,
+      "durationSeconds": 3.36,
+      "sourceSampleRate": 24000,
+      "seed": 2026100817,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 5.78
+    },
+    "hunter_pass": {
+      "text": "猎人选择放弃开枪。",
+      "sha256": "32da8f0a6a5d1acd345885f0212372d2006c183e0ee78f31e28faa18a18a2a49",
+      "bytes": 36620,
+      "durationSeconds": 2.96,
+      "sourceSampleRate": 24000,
+      "seed": 2026100818,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 5.0
+    },
+    "day": {
+      "text": "现在进入白天讨论。请在线下完成本轮投票。",
+      "sha256": "5e39645753b0b864daf18ae51723c4f79be7c18c684429210368941702e2247a",
+      "bytes": 61388,
+      "durationSeconds": 5.04,
+      "sourceSampleRate": 24000,
+      "seed": 2026100819,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 6.93
+    },
+    "vote_list": {
+      "text": "本轮白天投票，出局的玩家是：",
+      "sha256": "93d4063c9b9d24a19b5590bd9966771ad8a4b0d7e5b016e65c8bdbfe0f6ca30b",
+      "bytes": 38348,
+      "durationSeconds": 3.12,
+      "sourceSampleRate": 24000,
+      "seed": 2026100820,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 5.5
+    },
+    "vote_none": {
+      "text": "本轮白天投票，无人出局。",
+      "sha256": "e7fdf85cf4e5c2b0113ffa08920b8e1c3f4e6595855c8ac35781a803a2a45786",
+      "bytes": 45260,
+      "durationSeconds": 3.68,
+      "sourceSampleRate": 24000,
+      "seed": 2026100821,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 5.18
+    },
+    "good_win": {
+      "text": "游戏结束，好人阵营获胜。",
+      "sha256": "fdbfe4997176a3c619255e65a24467abaca39b63c61612bcefb4921a60c99a31",
+      "bytes": 49004,
+      "durationSeconds": 4.0,
+      "sourceSampleRate": 24000,
+      "seed": 2026100822,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 5.94
+    },
+    "wolf_win": {
+      "text": "游戏结束，狼人阵营获胜。",
+      "sha256": "9046290977ce320dcdbba8656093fc347d1d84b91db8597afd0ddcd31dafdd5d",
+      "bytes": 49868,
+      "durationSeconds": 4.08,
+      "sourceSampleRate": 24000,
+      "seed": 2026100823,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 7.58
+    },
+    "draw": {
+      "text": "游戏结束，双方全部出局，本局平局。",
+      "sha256": "63a253a9762e34338e7de06d83b81019daa18bc14a179aa1cfdb51ce004e5272",
+      "bytes": 80684,
+      "durationSeconds": 6.64,
+      "sourceSampleRate": 24000,
+      "seed": 2026100824,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 10.7
+    },
+    "abort": {
+      "text": "本局已经中止，没有胜负结果。",
+      "sha256": "6a0253339842ce6f49f0fc934f031ec55a04a4ee195e86cac6ba31176aaaa311",
+      "bytes": 52748,
+      "durationSeconds": 4.32,
+      "sourceSampleRate": 24000,
+      "seed": 2026100825,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 8.42
+    },
+    "pause": {
+      "text": "对局已暂停，请保持当前状态。",
+      "sha256": "a0a257edd1c7a1cff6f5ebd6db05efe077a979f2647252dfe4f909aadb9b56d6",
+      "bytes": 52748,
+      "durationSeconds": 4.32,
+      "sourceSampleRate": 24000,
+      "seed": 2026100826,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 10.31
+    },
+    "resume": {
+      "text": "对局继续，请按当前窗口完成操作。",
+      "sha256": "1bde656af27426538111e576fd0bf5697f128e86c168a10e81bb0d9977bea314",
+      "bytes": 55628,
+      "durationSeconds": 4.56,
+      "sourceSampleRate": 24000,
+      "seed": 2026100827,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 17.56
+    },
+    "new_lobby": {
+      "text": "新一局即将开始，请重新确认席位并准备。",
+      "sha256": "b2a6fda4d51b101041f17f08cadc7cee271363cf341f60f5ae3d1803b3bb4992",
+      "bytes": 77804,
+      "durationSeconds": 6.4,
+      "sourceSampleRate": 24000,
+      "seed": 2026100828,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 12.43
+    },
+    "seat_1": {
+      "text": "一号玩家。",
+      "sha256": "304310f51065bf69d60f9c0341a8571cabe38cef1aa984f52484dd91d78e9ab8",
+      "bytes": 20204,
+      "durationSeconds": 1.6,
+      "sourceSampleRate": 24000,
+      "seed": 2026100829,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 7.21
+    },
+    "seat_2": {
+      "text": "二号玩家。",
+      "sha256": "56d9387c8b36e0508b59b790b975a92cbaef89cddcea014f6dd8888bc25cc798",
+      "bytes": 17324,
+      "durationSeconds": 1.36,
+      "sourceSampleRate": 24000,
+      "seed": 2026100830,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.42
+    },
+    "seat_3": {
+      "text": "三号玩家。",
+      "sha256": "8fb5c5068e0f3341ccbbaf411370473faef317148473393079acb019c8267887",
+      "bytes": 20204,
+      "durationSeconds": 1.6,
+      "sourceSampleRate": 24000,
+      "seed": 2026100831,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.49
+    },
+    "seat_4": {
+      "text": "四号玩家。",
+      "sha256": "aebfd941bd9ebb45ee2ec8ae86291d1ed3d45cd823a24ed09b0d576ffef78e80",
+      "bytes": 19340,
+      "durationSeconds": 1.52,
+      "sourceSampleRate": 24000,
+      "seed": 2026100832,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.51
+    },
+    "seat_5": {
+      "text": "五号玩家。",
+      "sha256": "324c778d0f125c8f92a913f01b93fe0e204b35c2b01861e293f5a64ce35acf72",
+      "bytes": 18188,
+      "durationSeconds": 1.44,
+      "sourceSampleRate": 24000,
+      "seed": 2026100833,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.36
+    },
+    "seat_6": {
+      "text": "六号玩家。",
+      "sha256": "cf09050d88bda8dcc5d89a8e3c0201c9291b16bc3396511829cbb78176ee30a9",
+      "bytes": 18188,
+      "durationSeconds": 1.44,
+      "sourceSampleRate": 24000,
+      "seed": 2026100834,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 2.15
+    },
+    "seat_7": {
+      "text": "七号玩家。",
+      "sha256": "3f623b92a4a4c69cc3b203957a2bb5eecbcdf9135f79ba56d6b26ea6558de158",
+      "bytes": 19340,
+      "durationSeconds": 1.52,
+      "sourceSampleRate": 24000,
+      "seed": 2026100835,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.79
+    },
+    "seat_8": {
+      "text": "八号玩家。",
+      "sha256": "ce2018b347922555bbe21c041eef68ff3a131b204808b8fd905609055ddcbaca",
+      "bytes": 17324,
+      "durationSeconds": 1.36,
+      "sourceSampleRate": 24000,
+      "seed": 2026100836,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.57
+    },
+    "seat_9": {
+      "text": "九号玩家。",
+      "sha256": "74a783547fb248010f544a37113b308b64bd3fee7a57406288d3c09a177ae7e1",
+      "bytes": 16460,
+      "durationSeconds": 1.28,
+      "sourceSampleRate": 24000,
+      "seed": 2026100837,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.94
+    },
+    "seat_10": {
+      "text": "十号玩家。",
+      "sha256": "ec446edb0243dc8ac340372226adb08ec504ed95009a1ab6470a4a26685543d7",
+      "bytes": 17324,
+      "durationSeconds": 1.36,
+      "sourceSampleRate": 24000,
+      "seed": 2026100838,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 1.37
+    },
+    "seat_11": {
+      "text": "十一号玩家。",
+      "sha256": "768b845e47a957cac22a35815f3811d6b9e6046f2e5da33f3b49faee069a18d0",
+      "bytes": 23948,
+      "durationSeconds": 1.92,
+      "sourceSampleRate": 24000,
+      "seed": 2026100839,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 2.31
+    },
+    "seat_12": {
+      "text": "十二号玩家。",
+      "sha256": "a89df2009db85cf3d4e88d8d812dee436490f09e09f19eb0068871135a0f5082",
+      "bytes": 31724,
+      "durationSeconds": 2.56,
+      "sourceSampleRate": 24000,
+      "seed": 2026100840,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 512,
+        "topK": 50,
+        "topP": 1,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 3.36
+    }
+  }
+}

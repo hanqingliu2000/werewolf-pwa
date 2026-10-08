@@ -1,0 +1,41 @@
+{
+  "version": "host-zh-calm-pilot",
+  "status": "audition only; not enabled in game",
+  "speaker": "Uncle_Fu",
+  "language": "Chinese",
+  "sourceModel": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "model": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-4bit",
+  "revision": "f35faf19b0cc2160865af64ecf0f22f83d335135",
+  "modelLicense": "Apache-2.0",
+  "generation": {
+    "temperature": 0.7,
+    "maxTokens": 512,
+    "topK": 50,
+    "topP": 1,
+    "repetitionPenalty": 1.05
+  },
+  "runtime": {
+    "mlx-audio": "0.5.8",
+    "mlx": "0.32.3",
+    "transformers": "5.19.0",
+    "imageio-ffmpeg": "0.6.0"
+  },
+  "clips": {
+    "everyday": {
+      "text": "天黑，请闭眼。守卫请睁眼。请选择守护目标，确认后请闭眼。",
+      "instruction": "平静自然的普通话，像日常跟朋友说话，语速中等偏快，停顿简短，语气平淡，不拖长尾音。",
+      "seed": 2026100800,
+      "sha256": "1e5768a2358b58dc70bea5b6d80a54fa0ff279b484dddb11d70cff2ebbeea8c5",
+      "bytes": 146060,
+      "durationSeconds": 12.08
+    },
+    "neutral": {
+      "text": "天黑，请闭眼。守卫请睁眼。请选择守护目标，确认后请闭眼。",
+      "instruction": "清晰平直的普通话播报，语速正常，停顿简短，音量均匀，不夸张，不渲染情绪。",
+      "seed": 2026100801,
+      "sha256": "3a0884136aa41e51d5cf91a3101f67e9e833d35f99c864e9a4bf9f077f2642ae",
+      "bytes": 181484,
+      "durationSeconds": 15.04
+    }
+  }
+}

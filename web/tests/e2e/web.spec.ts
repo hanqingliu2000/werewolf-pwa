@@ -15,7 +15,14 @@ async function personal(actor: Actor, room: string) {
 }
 async function close(page: Page) { await page.keyboard.press("Escape"); await expect(page.locator("dialog[open]")).toHaveCount(0); }
 async function host(page: Page) { await page.getByRole("button", { name: "主持控制", exact: true }).click(); const panel = page.getByRole("dialog", { name: "主持控制" }); await expect(panel).toBeVisible(); return panel; }
-async function reveal(page: Page) { await page.getByRole("button", { name: /查看身份|查看当前任务/ }).click(); const panel = page.getByRole("dialog", { name: "本人私密视角" }); await expect(panel).toBeVisible(); return panel; }
+async function reveal(page: Page) {
+  const panel = page.getByRole("dialog", { name: "本人私密视角" });
+  if (!await panel.isVisible()) {
+    try { await page.getByRole("button", { name: /查看身份|查看当前任务/ }).click({ timeout: 1500 }); }
+    catch (error) { if (!await panel.isVisible()) throw error; }
+  }
+  await expect(panel).toBeVisible(); return panel;
+}
 async function roomSetup(browser: Browser, baseURL: string, count: number) {
   const actors: Actor[] = [];
   const consoleErrors: string[] = [];
@@ -84,14 +91,22 @@ test("entry, accessibility, real artwork and mobile layouts", async ({ page, req
   await page.getByLabel("房间号").fill("FFFFFFFF"); await expect(page.locator(".error[role=alert]")).toContainText("房间");
 });
 
-for (const count of [8, 12]) test(`${count} isolated players complete a real UI game and a new lobby`, async ({ browser, baseURL }, info) => {
+for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} isolated players complete a real ${voice ? "voice" : "text"} UI game and a new lobby`, async ({ browser, baseURL }, info) => {
+  test.setTimeout(900_000);
   const { actors, room, consoleErrors } = await roomSetup(browser, baseURL!, count); const organizer = actors[0]!;
   try {
     for (const width of [360, 390, 768, 1440]) { await organizer.page.setViewportSize({ width, height: 900 }); await screenshot(organizer.page, info, `lobby-${count}-${width}`); }
     await organizer.page.setViewportSize({ width: 390, height: 844 });
     const inviteButton = organizer.page.getByRole("button", { name: "邀请朋友" }); await inviteButton.click();
     await expect(organizer.page.getByRole("img", { name: /二维码/ })).toBeVisible(); await close(organizer.page);
-    const maintenance = await host(organizer.page); await expect(maintenance.getByRole("button", { name: "开始发牌" })).toBeEnabled(); await maintenance.getByRole("button", { name: "开始发牌" }).click(); await close(organizer.page);
+    const maintenance = await host(organizer.page);
+    if (voice) {
+      await maintenance.getByRole("button", { name: "语音", exact: true }).click();
+      await expect(maintenance.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 30_000 });
+      await maintenance.getByRole("button", { name: "已听清，启用语音" }).click();
+      await expect.poll(async () => (await status(organizer, room)).narration.mode).toBe("voice");
+    }
+    await expect(maintenance.getByRole("button", { name: "开始发牌" })).toBeEnabled(); await maintenance.getByRole("button", { name: "开始发牌" }).click(); await close(organizer.page);
     for (const actor of actors) {
       const panel = await reveal(actor.page); await expect(panel.getByRole("button", { name: "确认身份" })).toBeVisible();
       const identity = await personal(actor, room); actor.role = identity.role;
@@ -100,6 +115,7 @@ for (const count of [8, 12]) test(`${count} isolated players complete a real UI 
       await expect(actor.page.locator(".identity")).toHaveCount(0);
     }
     const firstGame = (await status(organizer, room)).epochId;
+    if (voice) await expect.poll(async () => (await status(organizer, room)).narration.pending, { timeout: 45_000 }).toBeNull();
     const returning = actors[1]!; await returning.page.goto(`/join?room=${room}`);
     await returning.page.waitForURL(new RegExp(`/r/${room}$`)); expect((await status(returning, room)).self.playerId).toBe(returning.id);
     await expect(returning.page.locator(".identity")).toHaveCount(0);
@@ -110,12 +126,25 @@ for (const count of [8, 12]) test(`${count} isolated players complete a real UI 
     while ((await status(organizer, room)).phase !== "end") {
       let publicState = await status(organizer, room);
       const hunter = actors.find((a) => a.role === "hunter")!;
-      const nightTarget = round === 1 ? count === 8 ? hunter : organizer : null;
+      const nightTarget = round === 1 ? count === 8 ? hunter : voice ? actors.find((a) => a.role === "seer")! : organizer : null;
       while (publicState.phase === "night_open") {
-        control = await host(organizer.page); await control.getByRole("button", { name: "当前指令完成" }).click(); await close(organizer.page);
-        await expect.poll(async () => (await status(organizer, room)).phase).toBe("night_action");
+        if (!voice) { control = await host(organizer.page); await control.getByRole("button", { name: "当前指令完成" }).click(); await close(organizer.page); }
+        await expect.poll(async () => (await status(organizer, room)).phase, { timeout: 45_000 }).toBe("night_action");
         const role = (await status(organizer, room)).nightRole;
         const active = actors.filter((a) => a.role === role && publicState.players.some((p) => p.id === a.id && "alive" in p && p.alive));
+        if (voice && count === 12 && round === 1 && role === "werewolf") {
+          await expect.poll(async () => (await status(organizer, room)).paused, { timeout: 20_000 }).toBe(true);
+          const panel = await reveal(active[0]!.page);
+          await expect(panel.getByText("等待全体共同确认", { exact: true })).toBeVisible();
+          await expect(panel.getByRole("button", { name: "暂停协商计时" })).toHaveCount(0);
+          await expect(panel.getByRole("button", { name: "本夜空刀" })).toBeEnabled();
+          await screenshot(active[0]!.page, info, "wolves-automatic-wait"); await close(active[0]!.page);
+        }
+        if (voice && role === "seer" && active.length === 0) {
+          const window = (await status(organizer, room)).window!;
+          expect(window.deadline - window.openedAt).toBe(10_000);
+          await screenshot(organizer.page, info, `dead-seer-night-${round}`);
+        }
         for (const actor of active) {
           const panel = await reveal(actor.page);
           if (round === 1 && (role === "guard" || role === "seer") && actor.id !== organizer.id) {
@@ -156,17 +185,20 @@ for (const count of [8, 12]) test(`${count} isolated players complete a real UI 
         }
         if (role === "werewolf") for (const actor of active) {
           const panel = await reveal(actor.page); await expect(panel.getByRole("button", { name: "共同确认" })).toBeEnabled(); await panel.getByRole("button", { name: "共同确认" }).click();
-          await expect.poll(async () => (await personal(actor, room)).wolves?.confirmations.includes(actor.id)).toBe(true);
+          if ((await status(organizer, room)).phase === "night_action") await expect.poll(async () => (await personal(actor, room)).wolves?.confirmations.includes(actor.id)).toBe(true);
           await close(actor.page);
         }
-        if (role === "werewolf" && active[0]) await expect.poll(async () => (await personal(active[0]!, room)).wolves?.locked).toBe(true);
+        if (role === "werewolf" && active[0] && (await status(organizer, room)).phase === "night_action") await expect.poll(async () => (await personal(active[0]!, room)).wolves?.locked).toBe(true);
         if (round === 1 && role === "guard" && active[0]) {
           const player = active.find((a) => a.id !== organizer.id);
           if (player) { await player.page.reload(); await expect(player.page.locator(".private-modal[open]")).toHaveCount(0); const panel = await reveal(player.page); await expect(panel.getByRole("heading", { name: "行动已确认" })).toBeVisible(); await close(player.page); }
         }
-        finishWindow(room);
-        await expect.poll(async () => (await status(organizer, room)).phase).toBe("night_close");
-        control = await host(organizer.page); await control.getByRole("button", { name: "当前指令完成" }).click(); await close(organizer.page);
+        if ((await status(organizer, room)).phase === "night_action") {
+          if (!(voice && role === "seer" && active.length === 0)) finishWindow(room);
+          await expect.poll(async () => (await status(organizer, room)).phase).toBe("night_close");
+        }
+        if (!voice) { control = await host(organizer.page); await control.getByRole("button", { name: "当前指令完成" }).click(); await close(organizer.page); }
+        else await expect.poll(async () => (await status(organizer, room)).phase, { timeout: 30_000 }).not.toBe("night_close");
         publicState = await status(organizer, room);
       }
       expect(publicState.phase).toBe("dawn");
@@ -174,7 +206,11 @@ for (const count of [8, 12]) test(`${count} isolated players complete a real UI 
         expect(publicState.players.every((p) => "alive" in p && p.alive)).toBe(true);
         const panel = await reveal(hunter.page); await expect(panel.getByRole("heading", { name: "最后一枪" })).toHaveCount(0); await close(hunter.page);
       }
-      control = await host(organizer.page); await control.getByRole("button", { name: "发布出局公告" }).click(); await close(organizer.page);
+      if (!voice) { control = await host(organizer.page); await control.getByRole("button", { name: "发布出局公告" }).click(); await close(organizer.page); }
+      else {
+        await expect.poll(async () => (await status(organizer, room)).phase, { timeout: 30_000 }).not.toBe("dawn");
+        await expect.poll(async () => (await status(organizer, room)).narration.pending, { timeout: 60_000 }).toBeNull();
+      }
       publicState = await status(organizer, room);
       if (publicState.phase === "hunter") {
         const panel = await reveal(hunter.page); await expect(panel.getByRole("heading", { name: "最后一枪" })).toBeVisible();
@@ -184,20 +220,42 @@ for (const count of [8, 12]) test(`${count} isolated players complete a real UI 
         await expect.poll(async () => (await status(organizer, room)).phase).toBe("day");
         if (await panel.isVisible()) await close(hunter.page);
       }
+      if (voice) await expect.poll(async () => (await status(organizer, room)).narration.pending, { timeout: 60_000 }).toBeNull();
       publicState = await status(organizer, room); expect(publicState.phase).toBe("day");
-      const wolf = actors.find((a) => a.role === "werewolf" && publicState.players.some((p) => p.id === a.id && "alive" in p && p.alive))!;
+      const wolf = voice && count === 12 && round === 1 ? hunter : actors.find((a) => a.role === "werewolf" && publicState.players.some((p) => p.id === a.id && "alive" in p && p.alive))!;
       control = await host(organizer.page); await control.getByRole("button", { name: new RegExp(`^${wolf.seat}号 `) }).click();
       await control.getByRole("button", { name: "保存草案" }).click(); await expect(control.getByText(`${wolf.seat} 号出局`, { exact: true })).toBeVisible();
       await control.getByRole("button", { name: "确认待发布" }).click(); await expect(control.getByText("已核对，等待发布")).toBeVisible();
       await control.getByRole("button", { name: "发布结果", exact: true }).click(); await control.getByRole("button", { name: "确认发布", exact: true }).click(); await close(organizer.page);
       await expect.poll(async () => (await status(organizer, room)).phase).not.toBe("day"); round++;
+      if (voice) await expect.poll(async () => (await status(organizer, room)).narration.pending, { timeout: 60_000 }).toBeNull();
+      if (voice && (await status(organizer, room)).phase === "hunter") {
+        const panel = await reveal(hunter.page);
+        await expect(panel.getByRole("heading", { name: "最后一枪" })).toBeVisible();
+        await panel.getByRole("button", { name: "放弃开枪" }).click();
+        await panel.getByRole("button", { name: "确认行动" }).click();
+        if (await panel.isVisible()) await close(hunter.page);
+        await expect.poll(async () => (await status(organizer, room)).narration.pending, { timeout: 60_000 }).toBeNull();
+      }
     }
     await expect(organizer.page.getByRole("heading", { name: "好人阵营获胜", exact: true })).toBeVisible();
     await organizer.page.getByRole("link", { name: "查看本局复盘" }).click(); await expect(organizer.page.getByRole("heading", { name: "揭开身份" })).toBeVisible();
     await screenshot(organizer.page, info, `recap-${count}`);
-    await organizer.page.getByRole("link", { name: "返回这一桌" }).click(); await organizer.page.getByRole("button", { name: "下一局" }).click();
+    await organizer.page.getByRole("link", { name: "返回这一桌" }).click();
+    if (voice) {
+      control = await host(organizer.page);
+      await control.getByRole("button", { name: "重新试音" }).click();
+      await expect(control.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 30_000 });
+      await control.getByRole("button", { name: "已听清，启用语音" }).click();
+      await close(organizer.page);
+    }
+    await organizer.page.getByRole("button", { name: "下一局" }).click();
     await expect(organizer.page.getByRole("heading", { name: "入席，等夜来" })).toBeVisible();
     expect((await status(organizer, room)).epochId).not.toBe(firstGame);
+    if (voice) {
+      await expect.poll(async () => (await status(organizer, room)).narration.pending, { timeout: 30_000 }).toBeNull();
+      expect((await status(organizer, room)).narration.mode).toBe("voice");
+    }
     expect(consoleErrors).toEqual([]);
   } finally { for (const actor of actors) await actor.context.close(); }
 });

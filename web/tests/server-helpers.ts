@@ -8,6 +8,7 @@ import type { Mutation } from "../src/server/input";
 import { epochId } from "../src/server/views";
 import { config, fixedRandom } from "./helpers";
 import type { RuleConfig } from "../src/game/types";
+import { NARRATION_VERSION } from "../src/narration/plan";
 
 export function fixture(count = 8, rules: RuleConfig = config) {
   const directory = mkdtempSync(join(tmpdir(), "werewolf-service-"));
@@ -34,7 +35,7 @@ export function fixture(count = 8, rules: RuleConfig = config) {
   const advance = () => {
     const deadline = state().game!.window!.deadline;
     time.now = deadline - 1;
-    service.heartbeat(id, tokens[0]!, { foreground: true, audioReady: true });
+    service.heartbeat(id, tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
     time.now = deadline;
     service.view(id, tokens[0]!);
   };

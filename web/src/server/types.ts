@@ -1,4 +1,5 @@
 import type { Game, RuleConfig, Seat } from "../game/types";
+import type { NarrationState } from "../narration/plan";
 
 export interface Member extends Seat { sessionHash: string; ready: boolean }
 export interface Archive { game: Game; members: Member[]; expiresAt: number }
@@ -17,6 +18,7 @@ export interface Room {
   draftId: string | null;
   heartbeatAt: number;
   hostAvailable: boolean;
+  narration?: NarrationState;
   pauseReason: "host_unavailable" | "window_incomplete" | "manual" | null;
   expiresAt: number;
 }

@@ -2,6 +2,7 @@ import { seerReports, recap } from "../game/engine";
 import { requireRule } from "../game/errors";
 import type { PublicEvent } from "../game/types";
 import type { Member, Room } from "./types";
+import { defaultNarration, NARRATION_VERSION } from "../narration/plan";
 
 export function epochId(room: Room) { return room.game?.id ?? room.lobbyId; }
 
@@ -30,6 +31,7 @@ export function publicView(room: Room) {
     roomId: room.id, epochId: epochId(room), windowId: room.flowId, revision: room.publicRevision,
     config: room.config, phase: game?.phase ?? "lobby", nightNo: game?.nightNo ?? 0,
     nightRole: game?.nightRole ?? null, paused: game?.paused ?? false, pauseReason: room.pauseReason,
+    narration: { ...(room.narration ?? defaultNarration()), version: NARRATION_VERSION },
     window: game?.window ? { openedAt: game.window.openedAt, deadline: game.window.deadline,
       remainingMs: game.window.remainingMs } : null,
     players: room.members.map(({ id, seat, name, ready }) => ({ id, seat, name,
@@ -43,7 +45,7 @@ export function privateView(room: Room, member: Member) {
   const own = game?.players.find((p) => p.id === member.id);
   const events = announced(game?.publicEvents ?? []);
   const visibleAlive = !events.dead.has(member.id);
-  const active = own?.alive && !game?.paused && game?.phase === "night_action" && own.role === game.nightRole;
+  const active = own?.alive && (!game?.paused || game.wolfDiscussionPaused) && game?.phase === "night_action" && own.role === game.nightRole;
   const completed = game?.currentNight?.completedActorIds.includes(member.id) ?? false;
   const knowledge = game?.currentNight?.witchKnowledge;
   const result = {
@@ -52,7 +54,7 @@ export function privateView(room: Room, member: Member) {
     action: active && !completed && !(own?.role === "werewolf" && game!.currentNight!.killLocked) ? game!.nightRole : null,
     completed,
     acceptedAction: game?.currentNight?.actions.find((a) => a.actorId === member.id) ?? null,
-    hunterReaction: game?.phase === "hunter" && !game.paused && game.pendingHunter?.playerId === member.id,
+    hunterReaction: game?.phase === "hunter" && !game.paused && !room.narration?.pending && game.pendingHunter?.playerId === member.id,
   };
   return {
     ...result,
@@ -68,6 +70,7 @@ export function privateView(room: Room, member: Member) {
     ...(own?.role === "werewolf" && visibleAlive ? {
       teammates: game!.players.filter((p) => p.role === "werewolf").map((p) => ({ id: p.id, seat: p.seat, name: p.name })),
       ...(active ? { wolves: { proposals: game!.currentNight!.wolfProposals,
+        discussionPaused: game!.wolfDiscussionPaused ?? false,
         confirmations: game!.currentNight!.wolfConfirmations, locked: game!.currentNight!.killLocked,
         consensusId: room.consensusId } } : {}),
     } : {}),
@@ -76,10 +79,10 @@ export function privateView(room: Room, member: Member) {
 
 export function hostView(room: Room, member: Member) {
   requireRule(member.id === room.hostId, "FORBIDDEN");
-  return { playerId: member.id, epochId: epochId(room), windowId: room.flowId, narrationMode: "text" as const,
+  return { playerId: member.id, epochId: epochId(room), windowId: room.flowId, narrationMode: room.narration?.mode ?? "text",
     canStart: !room.game && room.members.length === Object.values(room.config.roles).reduce((a, b) => a + b, 0)
       && room.members.every((p) => p.ready),
-    canBeginNight: room.game?.phase === "reveal" && !room.game.paused
+    canBeginNight: room.game?.phase === "reveal" && !room.game.paused && !room.narration?.pending
       && room.game.roleAcknowledgements.length === room.members.length,
     dayDraft: room.game?.phase === "day" ? room.game.dayDraft : null, draftId: room.draftId,
     cueId: room.game && ["night_open", "night_close", "dawn"].includes(room.game.phase) ? room.flowId : null,

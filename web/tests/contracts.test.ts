@@ -45,7 +45,7 @@ describe("runtime command boundaries", () => {
     game = vote(day(game, { witch: { choice: "poison", targetId: "p8" } }), null);
     game = toRole(game, "witch");
     expect(game.witchPotions).toEqual({ save: false, poison: false });
-    expect(game.window!.deadline - game.window!.openedAt).toBe(30_000);
+    expect(game.window!.deadline - game.window!.openedAt).toBe(10_000);
     game = command(game, { type: "close_window", actorId: game.hostId }, game.window!.deadline);
     expect(game.paused).toBe(false);
     expect(game.phase).toBe("night_close");

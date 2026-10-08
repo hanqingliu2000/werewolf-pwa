@@ -5,7 +5,7 @@ import { validateConfig } from "./config";
 import { requireRule, RuleError } from "./errors";
 import { movePhase, type PhaseEvent } from "./lifecycle";
 import { dealRoles, type RandomIndex } from "./random";
-import { actorIds, evaluateWin, hunterEligible, livingTarget, nightRoles, player, resolveDeaths, windowComplete } from "./rules";
+import { actionDuration, actorIds, evaluateWin, hunterEligible, livingTarget, nightRoles, player, resolveDeaths, windowComplete } from "./rules";
 import type { Game, Night, NightRole, Role, SeerReport } from "./types";
 
 const seatsSchema = z.array(z.strictObject({
@@ -40,6 +40,7 @@ function host(game: Game, actorId: string) { requireRule(actorId === game.hostId
 function phase(game: Game, expected: Game["phase"]) { requireRule(game.phase === expected, "PHASE_MISMATCH"); }
 
 function beginNight(game: Game) {
+  game.wolfDiscussionPaused = false;
   move(game, "BEGIN_NIGHT");
   game.nightNo++;
   game.nightRole = nightRoles(game)[0]!;
@@ -54,7 +55,7 @@ function beginNight(game: Game) {
 function activeRole(game: Game, actorId: string, role: NightRole, now: number): Night {
   phase(game, "night_action");
   requireRule(game.nightRole === role, "PHASE_MISMATCH");
-  requireRule(game.window && now < game.window.deadline, "WINDOW_ELAPSED");
+  requireRule(game.window && (game.wolfDiscussionPaused || now < game.window.deadline), "WINDOW_ELAPSED");
   const actor = player(game, actorId);
   requireRule(actor.alive, "ACTOR_ELIMINATED");
   requireRule(actor.role === role, "FORBIDDEN");
@@ -71,6 +72,7 @@ function finishGame(game: Game) {
 }
 
 function afterDeaths(game: Game, origin: "night" | "day") {
+  game.window = null;
   game.winner = evaluateWin(game);
   if (game.winner !== null) finishGame(game);
   else if (origin === "night") move(game, "DAY");
@@ -78,8 +80,9 @@ function afterDeaths(game: Game, origin: "night" | "day") {
 }
 
 function pause(game: Game, now: number) {
+  game.wolfDiscussionPaused = false;
   game.paused = true;
-  if (game.phase === "night_action") game.window!.remainingMs = Math.max(0, game.window!.deadline - now);
+  if (game.window) game.window.remainingMs ??= Math.max(0, game.window.deadline - now);
 }
 
 // The service supplies authenticated actorId and server time; neither is trusted from an HTTP body.
@@ -87,7 +90,8 @@ export function executeCommand(source: Game, input: unknown, now: number, random
   const command = parseCommand(input);
   requireRule(Number.isSafeInteger(now) && now >= source.updatedAt, "CLOCK_INVALID");
   player(source, command.actorId);
-  requireRule(!source.paused || ["resume", "abort"].includes(command.type), "GAME_PAUSED");
+  requireRule(!source.paused || ["resume", "abort", "open_hunter_window"].includes(command.type)
+    || (source.wolfDiscussionPaused && ["wolf_propose", "wolf_confirm", "pause"].includes(command.type)), "GAME_PAUSED");
   const game = structuredClone(source);
   const actorId = command.actorId;
   switch (command.type) {
@@ -110,7 +114,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
     case "open_window":
       host(game, actorId);
       move(game, "OPEN");
-      game.window = { openedAt: now, deadline: now + (game.nightRole === "werewolf" ? 45_000 : 30_000), remainingMs: null };
+      game.window = { openedAt: now, deadline: now + actionDuration(game.nightRole!), remainingMs: null };
       if (game.nightRole === "witch" && game.witchPotions.save) {
         const witch = game.players.find((p) => p.role === "witch" && p.alive);
         if (witch) game.currentNight!.witchKnowledge = { actorId: witch.id, targetId: game.currentNight!.killTargetId };
@@ -120,7 +124,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       host(game, actorId);
       phase(game, "night_action");
       requireRule(now >= game.window!.deadline, "WINDOW_STILL_OPEN");
-      if (!windowComplete(game)) pause(game, now);
+      if (!windowComplete(game)) { pause(game, now); game.wolfDiscussionPaused = game.nightRole === "werewolf"; }
       else { move(game, "CLOSE"); game.window = null; }
       break;
     case "finish_role": {
@@ -148,7 +152,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
         revealedHunters: deaths.filter((d) => player(game, d.playerId).role === "hunter").map((d) => d.playerId) });
       const hunter = hunterEligible(game, deaths);
       game.pendingDeaths = [];
-      if (hunter) { move(game, "HUNTER"); game.pendingHunter = { playerId: hunter, origin: "night" }; }
+      if (hunter) { move(game, "HUNTER"); game.pendingHunter = { playerId: hunter, origin: "night" }; game.window = { openedAt: now, deadline: now + 10_000, remainingMs: null }; }
       else afterDeaths(game, "night");
       break;
     }
@@ -187,6 +191,10 @@ export function executeCommand(source: Game, input: unknown, now: number, random
         night.wolfProposals = Object.fromEntries(actors.map((id) => [id, night.wolfProposals[id]!]));
         night.killLocked = true;
         night.killTargetId = targets[0]!;
+        if (game.wolfDiscussionPaused) {
+          game.wolfDiscussionPaused = false; game.paused = false;
+          move(game, "CLOSE"); game.window = null;
+        }
       }
       break;
     }
@@ -222,9 +230,20 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       night.completedActorIds.push(actorId);
       break;
     }
+    case "open_hunter_window":
+      host(game, actorId); phase(game, "hunter");
+      requireRule(!game.window, "ACTION_LOCKED");
+      game.window = { openedAt: now, deadline: now + 10_000, remainingMs: game.paused ? 10_000 : null };
+      break;
+    case "close_hunter_window":
+      host(game, actorId); phase(game, "hunter");
+      requireRule(game.window && now >= game.window.deadline, "WINDOW_STILL_OPEN");
+      pause(game, now);
+      break;
     case "hunter": {
       phase(game, "hunter");
       requireRule(game.pendingHunter?.playerId === actorId, "FORBIDDEN");
+      requireRule(game.window && now < game.window.deadline, "WINDOW_ELAPSED");
       const origin = game.pendingHunter.origin;
       if (command.targetId !== null) {
         requireRule(command.targetId !== actorId, "SELF_TARGET_FORBIDDEN");
@@ -261,7 +280,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       const isHunter = targetId !== null && player(game, targetId).role === "hunter";
       game.publicEvents.push({ type: "day_vote", nightNo: game.nightNo, playerId: targetId, revealedHunterId: isHunter ? targetId : null });
       game.dayDraft = null;
-      if (isHunter) { move(game, "HUNTER"); game.pendingHunter = { playerId: targetId, origin: "day" }; }
+      if (isHunter) { move(game, "HUNTER"); game.pendingHunter = { playerId: targetId, origin: "day" }; game.window = { openedAt: now, deadline: now + 10_000, remainingMs: null }; }
       else afterDeaths(game, "day");
       break;
     }
@@ -274,7 +293,8 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       host(game, actorId);
       requireRule(game.paused, "GAME_NOT_PAUSED");
       game.paused = false;
-      if (game.phase === "night_action") { game.window!.deadline = now + game.window!.remainingMs! + 30_000; game.window!.remainingMs = null; }
+      game.wolfDiscussionPaused = false;
+      if (game.window) { game.window.deadline = now + game.window.remainingMs! + Math.min(30_000, actionDuration(game.phase === "hunter" ? "hunter" : game.nightRole!)); game.window.remainingMs = null; }
       break;
     case "abort":
       host(game, actorId);
@@ -283,6 +303,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       game.winner = null;
       game.paused = false;
       game.window = null;
+      game.wolfDiscussionPaused = false;
       game.pendingHunter = null;
       game.nightRole = null;
       game.publicEvents.push({ type: "game_end", winner: null, aborted: true });

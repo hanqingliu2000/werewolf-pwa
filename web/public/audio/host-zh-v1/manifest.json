@@ -1,0 +1,417 @@
+{
+  "version": "host-zh-v1",
+  "rulesVersion": "werewolf-web-v1",
+  "language": "Chinese",
+  "speaker": "Uncle_Fu",
+  "sourceModel": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+  "model": "mlx-community/Qwen3-TTS-12Hz-0.6B-CustomVoice-4bit",
+  "revision": "08c72cad5e2fd0f41730c8bd1f28149585e46361",
+  "precision": "4-bit MLX conversion",
+  "license": "Apache-2.0",
+  "generationDefaults": {
+    "temperature": 0.9,
+    "maxTokens": 1024,
+    "topK": 50,
+    "topP": 1.0,
+    "repetitionPenalty": 1.05
+  },
+  "review": {
+    "signalAndAsr": "local candidate verification",
+    "humanPhoneListening": "pending"
+  },
+  "runtime": {
+    "mlx-audio": "0.5.8",
+    "mlx": "0.32.3",
+    "transformers": "5.19.0",
+    "imageio-ffmpeg": "0.6.0"
+  },
+  "normalization": {
+    "integratedLufs": -18,
+    "truePeakDb": -1.5,
+    "sampleRate": 24000,
+    "bitrate": "96k"
+  },
+  "clips": {
+    "sample": {
+      "text": "各位玩家，准备好了吗？天黑，请闭眼。",
+      "sha256": "a95c6f3fff9fa2a42b456422d400a2f382fa847ba9a63ff4b9f72cb324b110f4",
+      "bytes": 70028,
+      "durationSeconds": 5.76,
+      "sourceSampleRate": 24000,
+      "seed": 20261007,
+      "generationSeconds": 7.77
+    },
+    "roles_dealt": {
+      "text": "身份已经发放。请查看并确认本人的身份，然后收起私密信息。",
+      "sha256": "47464f3c57e06c762713343581e7e64132262cd2fe7bb39a8d480b090168ac31",
+      "bytes": 90188,
+      "durationSeconds": 7.44,
+      "sourceSampleRate": 24000,
+      "seed": 20261008,
+      "generationSeconds": 11.79
+    },
+    "night_start": {
+      "text": "天黑了，所有玩家请闭眼。",
+      "sha256": "672ef8009bb3c890f7285e2d3efdc44522f57cee7120dc8299d1bbe16e0960fd",
+      "bytes": 71180,
+      "durationSeconds": 5.84,
+      "sourceSampleRate": 24000,
+      "seed": 20261009,
+      "generationSeconds": 11.61
+    },
+    "guard_open": {
+      "text": "守卫请睁眼。请选择守护目标，或选择本夜不守，并确认行动。",
+      "sha256": "5ca4ad26e507192406e2f1b4278768cf4410e047548263dd40ea04e5767034ff",
+      "bytes": 150668,
+      "durationSeconds": 12.48,
+      "sourceSampleRate": 24000,
+      "seed": 20261010,
+      "generationSeconds": 19.06
+    },
+    "guard_close": {
+      "text": "守卫请闭眼。",
+      "sha256": "a9b05f63beb35de3c32ebf0944b875e6b0933fb2e3c68f396078b4f5daf94f84",
+      "bytes": 38348,
+      "durationSeconds": 3.12,
+      "sourceSampleRate": 24000,
+      "seed": 20261011,
+      "generationSeconds": 20.17
+    },
+    "werewolf_open": {
+      "text": "狼人请睁眼。请选择共同目标或空刀，所有存活狼人都需要确认。",
+      "sha256": "9cfedf7258a13deb1b31224c3de1a96f556923037291356a75edeca590f3e0f7",
+      "bytes": 149804,
+      "durationSeconds": 12.4,
+      "sourceSampleRate": 24000,
+      "seed": 20261112,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 1024,
+        "topK": 50,
+        "topP": 1.0,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 21.84
+    },
+    "werewolf_close": {
+      "text": "狼人请闭眼。",
+      "sha256": "95d5eaf8aaed8274205aa72e9e849022842020d5a5a90e3ee66827f3e74effdc",
+      "bytes": 33740,
+      "durationSeconds": 2.72,
+      "sourceSampleRate": 24000,
+      "seed": 20261013,
+      "generationSeconds": 10.78
+    },
+    "witch_open": {
+      "text": "女巫请睁眼。请选择使用一种药剂，或选择不用药，并确认行动。",
+      "sha256": "e733277e00ab1a70434e580d4ba8b9dc6203be0ae47d4c6aa563739d09a88d76",
+      "bytes": 210284,
+      "durationSeconds": 17.44,
+      "sourceSampleRate": 24000,
+      "seed": 20261014,
+      "generationSeconds": 19.78
+    },
+    "witch_close": {
+      "text": "女巫请闭眼。",
+      "sha256": "a8efd912f189540b4e85d5cdab70250bc16d00e18d1bb6bbedeb088ffabfa494",
+      "bytes": 71180,
+      "durationSeconds": 5.84,
+      "sourceSampleRate": 24000,
+      "seed": 20261015,
+      "generationSeconds": 10.06
+    },
+    "seer_open": {
+      "text": "预言家请睁眼。请选择查验目标，或选择本夜不查验，并确认行动。",
+      "sha256": "aa074da7f76924b6b41bb9f52ae43078b64a416dc2c9e84efb0529b0337cde0d",
+      "bytes": 184364,
+      "durationSeconds": 15.28,
+      "sourceSampleRate": 24000,
+      "seed": 20261016,
+      "generationSeconds": 16.04
+    },
+    "seer_close": {
+      "text": "预言家请闭眼。",
+      "sha256": "40437aa3ea609498001293b671a8022f9f91a1e6fb18cd2fc2bd9e211aed87e9",
+      "bytes": 88460,
+      "durationSeconds": 7.28,
+      "sourceSampleRate": 24000,
+      "seed": 20261217,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 1024,
+        "topK": 50,
+        "topP": 1.0,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 13.28
+    },
+    "dawn": {
+      "text": "天亮了，所有玩家请睁眼。现在公布本夜结果。",
+      "sha256": "879a91ff235ff744a4d1dbd10b885cbe09a4ff2baed2662d067ef81d71f8c3d2",
+      "bytes": 123020,
+      "durationSeconds": 10.16,
+      "sourceSampleRate": 24000,
+      "seed": 20261018,
+      "generationSeconds": 11.84
+    },
+    "no_death": {
+      "text": "昨夜是平安夜，没有玩家出局。",
+      "sha256": "084c98d750ee3366c99fb154ac9872eced8d964047ef8ae19332061dab69e3dd",
+      "bytes": 83564,
+      "durationSeconds": 6.88,
+      "sourceSampleRate": 24000,
+      "seed": 20261019,
+      "generationSeconds": 8.34
+    },
+    "death_list": {
+      "text": "昨夜出局的玩家是：",
+      "sha256": "6234fc8137c25276d30ad1b66de70a03a7f298435a2a2353ce8e2ed18eb2f485",
+      "bytes": 30860,
+      "durationSeconds": 2.48,
+      "sourceSampleRate": 24000,
+      "seed": 20261020,
+      "generationSeconds": 4.65
+    },
+    "hunter_identity": {
+      "text": "身份为猎人。",
+      "sha256": "0fb12bbf820a736d08e1e483c29fd9feb55f2b76ace3fc1c11444b2674e0d06a",
+      "bytes": 52748,
+      "durationSeconds": 4.32,
+      "sourceSampleRate": 24000,
+      "seed": 20261021,
+      "generationSeconds": 4.71
+    },
+    "hunter_open": {
+      "text": "请猎人选择开枪目标，或选择放弃开枪。",
+      "sha256": "dbd2406eda9965c337c1783ff2ade95a4b1096c7480eb9d92dcc06506041fbf1",
+      "bytes": 109484,
+      "durationSeconds": 9.04,
+      "sourceSampleRate": 24000,
+      "seed": 20261022,
+      "generationSeconds": 9.81
+    },
+    "hunter_shot": {
+      "text": "猎人开枪，出局的玩家是：",
+      "sha256": "18dbc9dcc0ddd85607ea534c3d247cc0fde294f28e34438151212f67d7448b34",
+      "bytes": 53900,
+      "durationSeconds": 4.4,
+      "sourceSampleRate": 24000,
+      "seed": 20261023,
+      "generationSeconds": 7.78
+    },
+    "hunter_pass": {
+      "text": "猎人选择放弃开枪。",
+      "sha256": "69a98315b8f68b5b8e9ba5c1907b78635736a24f9a6dd5a04899eb86631e9097",
+      "bytes": 51884,
+      "durationSeconds": 4.24,
+      "sourceSampleRate": 24000,
+      "seed": 20261024,
+      "generationSeconds": 5.73
+    },
+    "day": {
+      "text": "现在进入白天讨论。请在线下完成本轮投票。",
+      "sha256": "eba2871cd897ad74688f3189ef813c547e7feb5a605eee294953ce7a31edd96b",
+      "bytes": 84428,
+      "durationSeconds": 6.96,
+      "sourceSampleRate": 24000,
+      "seed": 20261025,
+      "generationSeconds": 6.49
+    },
+    "vote_list": {
+      "text": "本轮白天投票，出局的玩家是：",
+      "sha256": "5b88cfe315db6ca2aa5b55d012dedb0e30ba71c491b89f8a55dfe306c4d53eba",
+      "bytes": 66284,
+      "durationSeconds": 5.44,
+      "sourceSampleRate": 24000,
+      "seed": 20261026,
+      "generationSeconds": 7.64
+    },
+    "vote_none": {
+      "text": "本轮白天投票，无人出局。",
+      "sha256": "3b0147254b335620750d0927e5e10384a5ecec97ff788ffddee1a66a2e773333",
+      "bytes": 54764,
+      "durationSeconds": 4.48,
+      "sourceSampleRate": 24000,
+      "seed": 20261027,
+      "generationSeconds": 8.35
+    },
+    "good_win": {
+      "text": "游戏结束，好人阵营获胜。",
+      "sha256": "801e39074f0fd731d54d17c8c6a945372d9e71b59bfadf3092c260e19654f973",
+      "bytes": 49868,
+      "durationSeconds": 4.08,
+      "sourceSampleRate": 24000,
+      "seed": 20261028,
+      "generationSeconds": 7.92
+    },
+    "wolf_win": {
+      "text": "游戏结束，狼人阵营获胜。",
+      "sha256": "229e5205673d01dede9ef0ab9bd13658126ac8e55802a6a68ab612b3fcc47bb5",
+      "bytes": 37484,
+      "durationSeconds": 3.04,
+      "sourceSampleRate": 24000,
+      "seed": 20261029,
+      "generationSeconds": 5.85
+    },
+    "draw": {
+      "text": "游戏结束，双方全部出局，本局平局。",
+      "sha256": "f046ba21aa8de98b3dca16d78e6fe1147fa5e063e84f28c0fc4b4288ce9987d5",
+      "bytes": 89324,
+      "durationSeconds": 7.36,
+      "sourceSampleRate": 24000,
+      "seed": 20261030,
+      "generationSeconds": 7.3
+    },
+    "abort": {
+      "text": "本局已经中止，没有胜负结果。",
+      "sha256": "7d1f8e4beb0532d619f0cdd277ed8f99d5717a3fdd893730a47ab627d895e787",
+      "bytes": 64268,
+      "durationSeconds": 5.28,
+      "sourceSampleRate": 24000,
+      "seed": 20261031,
+      "generationSeconds": 6.98
+    },
+    "pause": {
+      "text": "对局已暂停，请保持当前状态。",
+      "sha256": "c2e471754d5e7480d46856beffd45ad8cde371c7bb2d7147a1d0c61498baee41",
+      "bytes": 72044,
+      "durationSeconds": 5.92,
+      "sourceSampleRate": 24000,
+      "seed": 20261032,
+      "generationSeconds": 6.49
+    },
+    "resume": {
+      "text": "对局继续，请按当前窗口完成操作。",
+      "sha256": "aa9d4ec881e12ae30836df96e20beb01f5c2617ca9f63b4b8a84cc0d6de482b2",
+      "bytes": 62540,
+      "durationSeconds": 5.12,
+      "sourceSampleRate": 24000,
+      "seed": 20261033,
+      "generationSeconds": 6.78
+    },
+    "new_lobby": {
+      "text": "新一局即将开始，请重新确认席位并准备。",
+      "sha256": "ecfe7c7f5960c49abb0ad89db8880eeab4199ae904e64c3b0b58c1a8c9d5b890",
+      "bytes": 61388,
+      "durationSeconds": 5.04,
+      "sourceSampleRate": 24000,
+      "seed": 20261034,
+      "generationSeconds": 7.51
+    },
+    "seat_1": {
+      "text": "一号玩家。",
+      "sha256": "89bffd45d800dc8a258a92ba97c36740203eae1e8ea7d4e6435a2735752888d9",
+      "bytes": 44108,
+      "durationSeconds": 3.6,
+      "sourceSampleRate": 24000,
+      "seed": 20261035,
+      "generationSeconds": 6.59
+    },
+    "seat_2": {
+      "text": "二号玩家。",
+      "sha256": "9765ddb399ab658eab54beb2c880433bf1bfb6e27692a2d65a6a1f3013ec9634",
+      "bytes": 37484,
+      "durationSeconds": 3.04,
+      "sourceSampleRate": 24000,
+      "seed": 20261036,
+      "generationSeconds": 4.42
+    },
+    "seat_3": {
+      "text": "三号玩家。",
+      "sha256": "19db9c86b92e7157b9596209ad9189ea6952ea59c410e69bbbda79b55874a469",
+      "bytes": 32588,
+      "durationSeconds": 2.64,
+      "sourceSampleRate": 24000,
+      "seed": 20261037,
+      "generationSeconds": 2.03
+    },
+    "seat_4": {
+      "text": "四号玩家。",
+      "sha256": "ec727f2fde2afec6f86d07c70e67528ef95f09cf013c88c9b1956473e93ae170",
+      "bytes": 36620,
+      "durationSeconds": 2.96,
+      "sourceSampleRate": 24000,
+      "seed": 20261038,
+      "generationSeconds": 2.61
+    },
+    "seat_5": {
+      "text": "五号玩家。",
+      "sha256": "f8ba313225caae769ecacbaf7d8c5d6a9348f8ca9bd6b8c25fd3301c2ce26b9d",
+      "bytes": 44108,
+      "durationSeconds": 3.6,
+      "sourceSampleRate": 24000,
+      "seed": 20261039,
+      "generationSeconds": 6.06
+    },
+    "seat_6": {
+      "text": "六号玩家。",
+      "sha256": "086367506cc38bee625297840d5c1075f54abe6791146cad51101bc9c8a3d0e5",
+      "bytes": 32588,
+      "durationSeconds": 2.64,
+      "sourceSampleRate": 24000,
+      "seed": 20261040,
+      "generationSeconds": 2.3
+    },
+    "seat_7": {
+      "text": "七号玩家。",
+      "sha256": "fe56c35ad16b2acc26339dcb9bdae6554ec7c431515e3066e50fe1de7dde61b2",
+      "bytes": 35468,
+      "durationSeconds": 2.88,
+      "sourceSampleRate": 24000,
+      "seed": 20261041,
+      "generationSeconds": 2.79
+    },
+    "seat_8": {
+      "text": "八号玩家。",
+      "sha256": "d7ed7b699f60df7fe40528150cf4329b786196951d8102b7fdd5db349c93048a",
+      "bytes": 19340,
+      "durationSeconds": 1.52,
+      "sourceSampleRate": 24000,
+      "seed": 20261042,
+      "generationSeconds": 1.26
+    },
+    "seat_9": {
+      "text": "九号玩家。",
+      "sha256": "d64af92013efccafa13cd0bc43e3eb0e1bffcb6e821bbd94f5ceae4df5dd34fb",
+      "bytes": 30860,
+      "durationSeconds": 2.48,
+      "sourceSampleRate": 24000,
+      "seed": 20261143,
+      "generation": {
+        "temperature": 0.7,
+        "maxTokens": 1024,
+        "topK": 50,
+        "topP": 1.0,
+        "repetitionPenalty": 1.05
+      },
+      "generationSeconds": 7.52
+    },
+    "seat_10": {
+      "text": "十号玩家。",
+      "sha256": "83993276a80bed73df458c9a8dc677a0783a8a5484040b3fc8b18743edec2c1c",
+      "bytes": 30860,
+      "durationSeconds": 2.48,
+      "sourceSampleRate": 24000,
+      "seed": 20261044,
+      "generationSeconds": 4.83
+    },
+    "seat_11": {
+      "text": "十一号玩家。",
+      "sha256": "52b77588070fdf15c3245d1f7afa09a0c437731d8c8480585ad4f3dbaf065ff5",
+      "bytes": 45260,
+      "durationSeconds": 3.68,
+      "sourceSampleRate": 24000,
+      "seed": 20261045,
+      "generationSeconds": 7.3
+    },
+    "seat_12": {
+      "text": "十二号玩家。",
+      "sha256": "994c9382a9b287e02344ec185733bd874e92601268459ab816eb808a409573d5",
+      "bytes": 26828,
+      "durationSeconds": 2.16,
+      "sourceSampleRate": 24000,
+      "seed": 20261046,
+      "generationSeconds": 1.94
+    }
+  }
+}

@@ -6,12 +6,13 @@ import type { Command } from "../game/commands";
 import { parseCreate, parseJoin, parseMutation, parseHeartbeat, type Mutation } from "./input";
 import type { Member, Receipt, Room, RoomStore, StoredRoom } from "./types";
 import { epochId, publicView, privateView, hostView, recapView } from "./views";
+import { defaultNarration, NARRATION_VERSION } from "../narration/plan";
 
 export const RETENTION_MS = 24 * 60 * 60 * 1000;
 export const hashSession = (token: string) => createHash("sha256").update(token).digest("hex");
 export const mintSession = () => randomBytes(32).toString("base64url");
 const fingerprint = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex");
-const hostOperations = new Set(["configure", "kick", "start", "begin_night", "cue_ack", "pause", "resume", "abort", "restart", "day_draft", "day_confirm", "day_publish"]);
+const hostOperations = new Set(["configure", "kick", "start", "begin_night", "cue_ack", "pause", "resume", "abort", "restart", "day_draft", "day_confirm", "day_publish", "narration_mode", "announcement_done"]);
 const lobbyOperations = new Set(["ready", "configure", "seat", "rename", "kick", "leave", "start"]);
 
 export class RoomService {
@@ -76,7 +77,7 @@ export class RoomService {
         lobbyId: randomUUID(), flowId: randomUUID(), config,
         members: [{ id: hostId, seat: 1, name: input.name, sessionHash: hash, ready: false }],
         game: null, archives: [], publicRevision: 1, consensusId: randomUUID(), draftId: null, heartbeatAt: now,
-        hostAvailable: true, pauseReason: null, expiresAt: now + RETENTION_MS,
+        hostAvailable: true, narration: defaultNarration(), pauseReason: null, expiresAt: now + RETENTION_MS,
       };
       const receipt = this.receipt(room, key, input.requestId, input);
       if (this.store.insert(room, receipt)) return receipt.result;
@@ -111,7 +112,17 @@ export class RoomService {
 
   // Public epochs follow visible phase changes, never secret submissions or internal CAS versions.
   private finishChange(room: Room, before: Room, now: number, meaningful: boolean) {
-    const shape = (r: Room) => [epochId(r), r.game?.phase, r.game?.nightRole, r.game?.nightNo, r.game?.paused];
+    if (room.narration?.mode === "voice") {
+      const previousEvents = before.game?.id === room.game?.id ? before.game?.publicEvents.length ?? 0 : 0;
+      const count = room.game?.publicEvents.length ?? 0;
+      if (count > previousEvents) {
+        room.narration.pending = { id: randomUUID(), from: previousEvents, to: count };
+        if (room.game?.phase === "hunter" && before.game?.phase !== "hunter") room.game.window = null;
+      }
+      else if (before.game && !room.game) room.narration.pending = { id: randomUUID(), kind: "new_lobby" };
+    }
+    const shape = (r: Room) => [epochId(r), r.game?.phase, r.game?.nightRole, r.game?.nightNo, r.game?.paused,
+      r.narration?.mode ?? "text", r.narration?.pending?.id, r.narration?.version];
     if (JSON.stringify(shape(room)) !== JSON.stringify(shape(before))) {
       room.flowId = randomUUID();
       if (epochId(room) !== epochId(before) || room.game?.nightNo !== before.game?.nightNo
@@ -120,7 +131,7 @@ export class RoomService {
     }
     if (JSON.stringify(publicView(room)) !== JSON.stringify(publicView(before))) room.publicRevision++;
     const facts = (r: Room) => ({ config: r.config, members: r.members, lobbyId: r.lobbyId,
-      game: r.game ? { ...r.game, updatedAt: 0 } : null, archives: r.archives });
+      game: r.game ? { ...r.game, updatedAt: 0 } : null, archives: r.archives, narration: r.narration });
     if (meaningful && JSON.stringify(facts(room)) !== JSON.stringify(facts(before))) room.expiresAt = now + RETENTION_MS;
     room.archives = room.archives.filter((archive) => archive.expiresAt > now);
   }
@@ -129,14 +140,22 @@ export class RoomService {
     const room = structuredClone(source);
     room.archives = room.archives.filter((archive) => archive.expiresAt > now);
     const game = room.game;
-    if (!game || game.phase === "end" || game.paused) return room;
+    if (!game || game.phase === "end" || (game.paused && !game.wolfDiscussionPaused)) return room;
     now = Math.max(now, game.updatedAt);
-    if (!room.hostAvailable || now - room.heartbeatAt >= 10_000) {
+    if (!room.hostAvailable || now - room.heartbeatAt >= 10_000
+      || (room.narration?.mode === "voice" && room.narration.version !== NARRATION_VERSION)) {
       room.game = executeCommand(game, { type: "pause", actorId: room.hostId }, now);
       room.pauseReason = "host_unavailable";
     } else if (game.phase === "night_action" && now >= game.window!.deadline) {
+      if (game.wolfDiscussionPaused) return room;
       room.game = executeCommand(game, { type: "close_window", actorId: room.hostId }, now);
       room.pauseReason = room.game.paused ? "window_incomplete" : null;
+    } else if (game.phase === "hunter" && !room.narration?.pending) {
+      if (!game.window) room.game = executeCommand(game, { type: "open_hunter_window", actorId: room.hostId }, now);
+      else if (now >= game.window.deadline) {
+        room.game = executeCommand(game, { type: "close_hunter_window", actorId: room.hostId }, now);
+        room.pauseReason = "window_incomplete";
+      }
     }
     this.finishChange(room, source, now, false);
     return room;
@@ -212,6 +231,25 @@ export class RoomService {
       requireRule(input.windowId === room.flowId, "STALE_WINDOW");
       const op = input.operation;
       if (hostOperations.has(op.type)) requireRule(member!.id === room.hostId, "FORBIDDEN");
+      if (op.type === "narration_mode") {
+        requireRule(!room.game || room.game.phase === "end" || room.game.paused, "PAUSE_BEFORE_MODE_CHANGE");
+        requireRule(op.mode === "text" || (op.trialConfirmed && room.hostAvailable && now - room.heartbeatAt < 10_000), "AUDIO_TRIAL_REQUIRED");
+        room.narration = { ...(room.narration ?? defaultNarration()), mode: op.mode, version: op.version };
+        return;
+      }
+      if (op.type === "announcement_done") {
+        requireRule(room.narration?.pending?.id === op.cueId, "STALE_CUE");
+        if (room.narration.mode === "voice") {
+          requireRule(op.version === NARRATION_VERSION && room.narration.version === NARRATION_VERSION, "STALE_AUDIO");
+          requireRule(!room.game?.paused && room.hostAvailable && now - room.heartbeatAt < 10_000, "HOST_NOT_READY");
+        }
+        room.narration.pending = null;
+        if (room.game?.phase === "hunter" && !room.game.window) room.game = executeCommand(room.game, { type: "open_hunter_window", actorId: room.hostId }, now);
+        return;
+      }
+      if (["start", "begin_night", "cue_ack", "hunter", "day_publish", "restart"].includes(op.type)) {
+        requireRule(!room.narration?.pending, "ANNOUNCEMENT_PENDING");
+      }
       if (lobbyOperations.has(op.type)) { this.lobby(room, member!, op, now); return; }
       requireRule(room.game, "GAME_NOT_STARTED");
       if (op.type === "wolf_confirm") requireRule(op.consensusId === room.consensusId, "STALE_CONSENSUS");
@@ -228,9 +266,14 @@ export class RoomService {
       }
       if (["begin_night", "cue_ack", "resume"].includes(op.type)) {
         requireRule(room.hostAvailable && now - room.heartbeatAt < 10_000, "HOST_NOT_READY");
+        requireRule(room.narration?.mode !== "voice" || room.narration.version === NARRATION_VERSION, "STALE_AUDIO");
       }
       let command: Command;
       if (op.type === "cue_ack") {
+        if (room.narration?.mode === "voice") {
+          requireRule(op.version === NARRATION_VERSION, "STALE_AUDIO");
+          requireRule(op.cueId === room.flowId, "STALE_CUE");
+        }
         const type = ({ night_open: "open_window", night_close: "finish_role", dawn: "publish_dawn" } as const)[room.game.phase as "night_open" | "night_close" | "dawn"];
         requireRule(type, "PHASE_MISMATCH");
         command = { type, actorId: member!.id };
@@ -242,6 +285,7 @@ export class RoomService {
       if (op.type === "wolf_propose" && JSON.stringify(room.game.currentNight?.wolfProposals) !== proposals) room.consensusId = randomUUID();
       if (op.type === "day_draft") room.draftId = randomUUID();
       if (op.type === "pause") room.pauseReason = "manual";
+      if (op.type === "wolf_confirm" && !room.game.paused) room.pauseReason = null;
       if (["resume", "abort"].includes(op.type)) room.pauseReason = null;
     });
   }
@@ -278,6 +322,7 @@ export class RoomService {
         requireRule(room.members.length === Object.values(room.config.roles).reduce((a, b) => a + b, 0), "PLAYERS_NOT_READY");
         requireRule(room.members.every((p) => p.ready), "PLAYERS_NOT_READY");
         requireRule(room.hostAvailable && now - room.heartbeatAt < 10_000, "HOST_NOT_READY");
+        requireRule(room.narration?.mode !== "voice" || room.narration.version === NARRATION_VERSION, "STALE_AUDIO");
         room.game = executeCommand(createGame(room.config, room.members.map(({ id, name, seat }) => ({ id, name, seat })),
           room.hostId, randomUUID(), now), { type: "deal", actorId: room.hostId }, now, this.random);
         break;
@@ -294,7 +339,8 @@ export class RoomService {
       requireRule(this.member(state.room, hash).id === state.room.hostId, "FORBIDDEN");
       const room = structuredClone(state.room);
       room.heartbeatAt = this.now();
-      room.hostAvailable = input.foreground && input.audioReady;
+      room.hostAvailable = input.foreground && input.audioReady
+        && (room.narration?.mode !== "voice" || input.narrationVersion === NARRATION_VERSION);
       const coordinated = this.coordinate(room, this.now());
       if (this.store.compareAndSwap(coordinated, state.version)) return { ok: true, paused: coordinated.game?.paused ?? false };
     }

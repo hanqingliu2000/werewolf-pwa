@@ -18,7 +18,7 @@ export function PrivateTask({ controller: c }: { controller: RoomController }) {
   const alive = view.players.filter((p) => !("alive" in p) || p.alive);
   const disabled = (id: string) => (task === "seer" || task === "hunter") && id === info.playerId
     || task === "guard" && info.previousGuardTargetId === id;
-  const working = c.busy || !!c.pending || view.paused;
+  const working = c.busy || !!c.pending || (view.paused && !info.wolves?.discussionPaused);
   const ownProposal = info.wolves?.proposals[info.playerId];
   const liveWolves = info.teammates?.filter((p) => alive.some((a) => a.id === p.id)) ?? [];
   const proposed = liveWolves.every((p) => Object.hasOwn(info.wolves?.proposals ?? {}, p.id));
@@ -34,6 +34,7 @@ export function PrivateTask({ controller: c }: { controller: RoomController }) {
     {c.pending && <button className="button secondary full-width" disabled={c.busy} onClick={() => void c.send()}>重试原请求</button>}
     {view.phase === "reveal" ? <div className="action-footer">{info.acknowledged ? <p className="success"><Check size={18} aria-hidden />身份已确认</p> : <NextButton busy={c.busy} disabled={working} onClick={() => void c.send({ type: "acknowledge" })}>确认身份</NextButton>}</div>
       : task === "werewolf" && info.wolves ? <section className="task-section"><div className="section-heading"><h3>共同选择</h3><span>{info.wolves.locked ? "已锁定" : consensus ? "目标一致" : "尚未一致"}</span></div>
+        {info.wolves.discussionPaused && <p role="status">等待全体共同确认</p>}
         <div className="wolf-proposals">{liveWolves.map((p) => <div key={p.id}><strong>{p.seat} 号 · {p.name}</strong><span>{Object.hasOwn(info.wolves!.proposals, p.id) ? info.wolves!.proposals[p.id] === null ? "空刀" : seat(info.wolves!.proposals[p.id]) : "尚未提议"}</span><span>{info.wolves!.confirmations.includes(p.id) ? "已确认" : "待确认"}</span></div>)}</div>
         <SeatGrid players={view.players} mode="target" ownId={info.playerId} selected={ownProposal} disabled={() => working || info.wolves!.locked} onSelect={(id) => { if (id) void c.send({ type: "wolf_propose", targetId: id }); }} />
         <button className="pass-choice" aria-pressed={ownProposal === null} disabled={working || info.wolves.locked} onClick={() => void c.send({ type: "wolf_propose", targetId: null })}>本夜空刀</button>

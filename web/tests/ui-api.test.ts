@@ -24,6 +24,15 @@ it("supports private reads without sending an actor id or target", async () => {
   const fetch = vi.fn().mockResolvedValue(Response.json({ role: "seer" })); vi.stubGlobal("fetch", fetch);
   const api = await import("../src/ui/api"); await api.request("rooms/R/private"); expect(fetch.mock.calls[0]![1]).toMatchObject({ method: "GET", credentials: "same-origin" }); expect(fetch.mock.calls[0]![1]).not.toHaveProperty("body");
 });
+it("forwards cancellation for reads without changing ordinary command requests", async () => {
+  const fetch = vi.fn().mockImplementation(() => Promise.resolve(Response.json({ ok: true }))); vi.stubGlobal("fetch", fetch);
+  const api = await import("../src/ui/api"); const controller = new AbortController();
+  await api.request("rooms/R", undefined, controller.signal);
+  expect(fetch.mock.calls[0]![1]).toMatchObject({ method: "GET", signal: controller.signal });
+  await api.request("rooms/R/commands", { requestId: "preserved" });
+  expect(fetch.mock.calls[1]![1]).not.toHaveProperty("signal");
+  expect(fetch.mock.calls[1]![1]).toMatchObject({ method: "POST", body: JSON.stringify({ requestId: "preserved" }) });
+});
 it("uses a neutral fallback for unexpected errors", async () => {
   const api = await import("../src/ui/api"); expect(api.errorText(new Error("raw private state"))).toBe("操作未完成，请重试"); expect(api.errorText(new api.ApiError("UNKNOWN"))).toBe("当前状态不允许这项操作");
 });

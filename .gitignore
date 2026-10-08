@@ -24,6 +24,7 @@ playwright-report/
 .env
 .env.*
 .local-archive/
+.local-generation/
 
 # Vercel local metadata
 .vercel/

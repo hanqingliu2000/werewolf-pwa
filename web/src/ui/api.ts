@@ -2,11 +2,11 @@ export class ApiError extends Error {
   constructor(public readonly code: string) { super(code); }
 }
 let initialization: Promise<void> | null = null;
-export async function request<T>(path: string, input?: unknown): Promise<T> {
+export async function request<T>(path: string, input?: unknown, signal?: AbortSignal): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`/api/v2/${path}`, { method: input === undefined ? "GET" : "POST",
-      credentials: "same-origin", cache: "no-store", ...(input === undefined ? {} : {
+      credentials: "same-origin", cache: "no-store", ...(signal ? { signal } : {}), ...(input === undefined ? {} : {
         headers: { "Content-Type": "application/json" }, body: JSON.stringify(input),
       }) });
   } catch { throw new ApiError("NETWORK_UNKNOWN"); }
@@ -32,5 +32,8 @@ const messages: Record<string, string> = {
   PLAYERS_NOT_READY: "尚未满员或有人未准备", VOTE_NOT_CONFIRMED: "结果尚未确认", WRITE_CONFLICT: "状态正在更新，请重试",
   NETWORK_UNKNOWN: "网络未确认结果，请重试原请求", INTERNAL_ERROR: "服务暂时不可用，请稍后重试",
   SEAT_TAKEN: "座位已被占用", SEATS_EXCEED_CAPACITY: "当前座位超出了新人数", ACTOR_ELIMINATED: "本人已经出局",
+  ANNOUNCEMENT_PENDING: "公开公告尚未完成", STALE_CUE: "播报阶段已更新，请重新确认",
+  AUDIO_TRIAL_REQUIRED: "请完成试音并确认听清", PAUSE_BEFORE_MODE_CHANGE: "请先暂停对局，再切换主持方式",
+  STALE_AUDIO: "播报资源已更新，请刷新页面后重新试音",
 };
 export function errorText(error: unknown) { return error instanceof ApiError ? messages[error.code] ?? "当前状态不允许这项操作" : "操作未完成，请重试"; }

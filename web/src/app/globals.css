@@ -168,6 +168,17 @@ button.seat[aria-pressed=true] { border-color:var(--green); box-shadow:inset 0 0
 .host-cue h3 { font-size:27px; margin:12px 0 24px; }
 .host-cue .button { width:100%; }
 .host-cue .button span { display:flex; gap:10px; align-items:center; }
+.voice-controls { padding:24px 0; border-bottom:1px solid var(--soft-line); }
+.voice-controls .segments { margin-bottom:16px; }
+.voice-controls .button + .button { margin-top:12px; }
+.voice-volume { display:grid; grid-template-columns:20px minmax(0,1fr) 52px; align-items:center; gap:12px; margin-top:20px; min-height:44px; }
+.voice-volume input { grid-column:1/3; width:100%; padding:0; min-height:44px; accent-color:var(--green); }
+.voice-volume output { text-align:right; font-variant-numeric:tabular-nums; }
+.voice-volume svg { color:var(--green); }
+.cue-caption { color:var(--muted); margin-bottom:20px; line-height:1.8; overflow-wrap:anywhere; }
+.voice-status { display:flex; align-items:flex-start; gap:12px; color:var(--green); padding:16px 0; font-size:14px; line-height:1.8; }
+.voice-status svg { flex-shrink:0; margin-top:4px; }
+.voice-status span { overflow-wrap:anywhere; }
 .vote-form,.host-roster,.host-maintenance { padding-top:28px; }
 .vote-form .seat-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
 .vote-form .button { width:100%; }

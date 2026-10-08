@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { RuleError } from "../game/errors";
+import { NARRATION_VERSION } from "../narration/plan";
 
 const id = z.string().uuid();
 const targetId = z.string().min(1).max(64).nullable();
@@ -13,7 +14,9 @@ const operation = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("seat"), seat: z.number().int().min(1).max(12) }),
   z.strictObject({ type: z.literal("rename"), name }),
   z.strictObject({ type: z.literal("kick"), playerId: id }), simple("leave"), simple("start"),
-  simple("acknowledge"), simple("begin_night"), simple("cue_ack"),
+  simple("acknowledge"), simple("begin_night"), z.strictObject({ type: z.literal("cue_ack"), cueId: id.optional(), version: z.string().max(32).optional() }),
+  z.strictObject({ type: z.literal("announcement_done"), cueId: id, version: z.string().max(32).optional() }),
+  z.strictObject({ type: z.literal("narration_mode"), mode: z.enum(["text", "voice"]), version: z.literal(NARRATION_VERSION), trialConfirmed: z.boolean() }),
   simple("pause"), simple("resume"), simple("abort"), simple("restart"),
   targeted("guard"), targeted("wolf_propose"), z.strictObject({ type: z.literal("wolf_confirm"), consensusId: id }), targeted("seer"),
   z.strictObject({ type: z.literal("witch"), choice: z.enum(["save", "poison", "pass"]), targetId }),
@@ -23,7 +26,7 @@ const operation = z.discriminatedUnion("type", [
 const mutationSchema = z.strictObject({ requestId: id, epochId: id, windowId: id, operation });
 const enrollmentSchema = z.strictObject({ requestId: id, name, config: z.unknown().optional() });
 const joinSchema = z.strictObject({ requestId: id, epochId: id, name });
-const heartbeatSchema = z.strictObject({ foreground: z.boolean(), audioReady: z.boolean() });
+const heartbeatSchema = z.strictObject({ foreground: z.boolean(), audioReady: z.boolean(), narrationVersion: z.string().max(32).optional() });
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
   const result = schema.safeParse(input);

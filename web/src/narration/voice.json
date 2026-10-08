@@ -1,0 +1,21 @@
+{
+  "version": "host-zh-v2",
+  "sourceModel": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "model": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-4bit",
+  "revision": "f35faf19b0cc2160865af64ecf0f22f83d335135",
+  "style": {
+    "id": "neutral",
+    "name": "平直播报",
+    "instruction": "清晰平直的普通话播报，语速正常，停顿简短，音量均匀，不夸张，不渲染情绪。",
+    "approvedPilotSha256": "3a0884136aa41e51d5cf91a3101f67e9e833d35f99c864e9a4bf9f077f2642ae",
+    "approvedAt": "2026-10-07"
+  },
+  "seedBase": 2026100801,
+  "generation": {
+    "temperature": 0.7,
+    "maxTokens": 512,
+    "topK": 50,
+    "topP": 1,
+    "repetitionPenalty": 1.05
+  }
+}

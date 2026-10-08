@@ -9,6 +9,7 @@ const schema = z.discriminatedUnion("type", [
   simple("deal"), simple("acknowledge"), simple("begin_night"),
   simple("open_window"), simple("close_window"), simple("finish_role"), simple("publish_dawn"),
   simple("pause"), simple("resume"), simple("abort"), simple("restart"),
+  simple("open_hunter_window"), simple("close_hunter_window"),
   targeted("guard"), targeted("wolf_propose"), simple("wolf_confirm"), targeted("seer"),
   z.strictObject({ type: z.literal("witch"), actorId, choice: z.enum(["save", "poison", "pass"]), targetId }),
   targeted("day_draft"), simple("day_confirm"), simple("day_publish"), targeted("hunter"),
