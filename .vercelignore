@@ -1,0 +1,11 @@
+.git/
+.local-archive/
+.local-generation/
+web/.data/
+web/test-results/
+web/coverage/
+web/node_modules/
+web/.next/
+materials/
+**/.env
+**/.env.*

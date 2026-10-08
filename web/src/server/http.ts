@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { RuleError, requireRule } from "../game/errors";
 import { hashSession, mintSession, type RoomService } from "./service";
+import { reportServerFailure } from "./storage-runtime";
 
 const MAX_BODY = 16_384;
 const COOKIE = "ww_session";
@@ -18,11 +19,11 @@ function token(request: NextRequest) {
   return result.success ? result.data : null;
 }
 
-function origin(request: NextRequest, configuredOrigin?: string) {
+function origin(request: NextRequest, configuredOrigin?: string | readonly string[]) {
   const url = new URL(request.url);
-  const expected = configuredOrigin ?? url.origin;
+  const allowed = typeof configuredOrigin === "string" ? [configuredOrigin] : configuredOrigin;
   if (!configuredOrigin) requireRule(["localhost", "127.0.0.1", "[::1]"].includes(url.hostname), "ORIGIN_NOT_CONFIGURED");
-  requireRule(request.headers.get("origin") === expected, "ORIGIN_REJECTED");
+  requireRule((!allowed || allowed.includes(url.origin)) && request.headers.get("origin") === url.origin, "ORIGIN_REJECTED");
   requireRule(!["cross-site", "same-site"].includes(request.headers.get("sec-fetch-site") ?? ""), "ORIGIN_REJECTED");
 }
 
@@ -56,8 +57,9 @@ function status(code: string) {
   return 409;
 }
 
-export function createHttpHandler(service: RoomService, configuredOrigin?: string) {
+export function createHttpHandler(service: RoomService, configuredOrigin?: string | readonly string[]) {
   return async function handle(raw: Request) {
+    const startedAt = Date.now();
     const request = raw instanceof NextRequest ? raw : new NextRequest(raw);
     try {
       const parts = new URL(request.url).pathname.split("/").filter(Boolean).slice(2);
@@ -66,44 +68,45 @@ export function createHttpHandler(service: RoomService, configuredOrigin?: strin
       if (parts.length === 1 && parts[0] === "session" && request.method === "POST") {
         const input = await body(request);
         requireRule(z.strictObject({}).safeParse(input).success, "INPUT_INVALID");
-        service.limit("session:global", 120);
+        await service.limit("session:global", 120);
         session ??= mintSession();
         const response = NextResponse.json({ ok: true }, { headers });
-        response.cookies.set(COOKIE, session, { httpOnly: true, secure: new URL(configuredOrigin ?? request.url).protocol === "https:",
+        response.cookies.set(COOKIE, session, { httpOnly: true, secure: new URL(request.url).protocol === "https:",
           sameSite: "strict", path: "/", maxAge: 7 * 24 * 60 * 60 });
         return response;
       }
       requireRule(session, "INVALID_SESSION");
-      service.limit(`http:${hashSession(session)}`, 240);
+      await service.limit(`http:${hashSession(session)}`, 240);
       if (parts[0] === "rooms" && parts.length === 1 && request.method === "POST") {
-        return NextResponse.json(service.create(session, await body(request)), { status: 201, headers });
+        return NextResponse.json(await service.create(session, await body(request)), { status: 201, headers });
       }
       requireRule(parts[0] === "rooms" && parts[1], "ENDPOINT_NOT_FOUND");
       const id = parts[1];
       if (parts.length === 3 && parts[2] === "invitation" && request.method === "GET") {
-        return NextResponse.json(service.invitation(id), { headers });
+        return NextResponse.json(await service.invitation(id), { headers });
       }
       if (parts.length === 3 && parts[2] === "recaps" && request.method === "GET") {
-        return NextResponse.json(service.listRecaps(id, session), { headers });
+        return NextResponse.json(await service.listRecaps(id, session), { headers });
       }
-      if (parts.length === 2 && request.method === "GET") return NextResponse.json(service.view(id, session), { headers });
+      if (parts.length === 2 && request.method === "GET") return NextResponse.json(await service.view(id, session), { headers });
       const action = parts[2];
       if (parts.length === 3 && request.method === "GET" && ["private", "host"].includes(action ?? "")) {
-        return NextResponse.json(service.view(id, session, action as "private" | "host"), { headers });
+        return NextResponse.json(await service.view(id, session, action as "private" | "host"), { headers });
       }
       if (parts.length === 4 && action === "recaps" && request.method === "GET") {
         requireRule(z.string().uuid().safeParse(parts[3]).success, "INPUT_INVALID");
-        return NextResponse.json(service.readRecap(id, session, parts[3]!), { headers });
+        return NextResponse.json(await service.readRecap(id, session, parts[3]!), { headers });
       }
       if (parts.length === 3 && request.method === "POST") {
         const input = await body(request);
-        if (action === "join") return NextResponse.json(service.join(id, session, input), { headers });
-        if (action === "commands") return NextResponse.json(service.mutate(id, session, input), { headers });
-        if (action === "heartbeat") return NextResponse.json(service.heartbeat(id, session, input), { headers });
+        if (action === "join") return NextResponse.json(await service.join(id, session, input), { headers });
+        if (action === "commands") return NextResponse.json(await service.mutate(id, session, input), { headers });
+        if (action === "heartbeat") return NextResponse.json(await service.heartbeat(id, session, input), { headers });
       }
       throw new RuleError("ENDPOINT_NOT_FOUND");
     } catch (error) {
       const code = error instanceof RuleError ? error.code : "INTERNAL_ERROR";
+      if (code === "INTERNAL_ERROR") reportServerFailure("api_internal_error", startedAt);
       return NextResponse.json({ error: { code } }, { status: code === "INTERNAL_ERROR" ? 500 : status(code),
         headers: { ...headers, ...(code === "RATE_LIMITED" ? { "Retry-After": "60" } : {}) } });
     }

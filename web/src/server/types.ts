@@ -30,11 +30,12 @@ export interface Receipt {
 }
 
 // Every successful conditional write and its receipt are one atomic commit.
+export type Awaitable<T> = T | Promise<T>;
 export interface RoomStore {
-  load(id: string): StoredRoom | null;
-  insert(room: Room, receipt: Receipt): boolean;
-  compareAndSwap(room: Room, version: number, receipt?: Receipt): boolean;
-  receipt(key: string): Receipt | null;
-  rate(key: string, now: number, limit: number): boolean;
-  cleanup(now: number): void;
+  load(id: string): Awaitable<StoredRoom | null>;
+  insert(room: Room, receipt: Receipt): Awaitable<boolean>;
+  compareAndSwap(room: Room, version: number, receipt?: Receipt): Awaitable<boolean>;
+  receipt(key: string): Awaitable<Receipt | null>;
+  rate(key: string, now: number, limit: number): Awaitable<boolean>;
+  cleanup(now: number): Awaitable<void>;
 }

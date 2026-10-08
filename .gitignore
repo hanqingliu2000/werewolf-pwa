@@ -31,3 +31,4 @@ playwright-report/
 
 # Local archives / handoff bundles
 *.tar.gz
+.vercel

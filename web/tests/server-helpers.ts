@@ -10,34 +10,34 @@ import { config, fixedRandom } from "./helpers";
 import type { RuleConfig } from "../src/game/types";
 import { NARRATION_VERSION } from "../src/narration/plan";
 
-export function fixture(count = 8, rules: RuleConfig = config) {
+export async function fixture(count = 8, rules: RuleConfig = config) {
   const directory = mkdtempSync(join(tmpdir(), "werewolf-service-"));
   const path = join(directory, "rooms.sqlite");
   const store = new SqliteRoomStore(path);
   const time = { now: 10_000 };
   const service = new RoomService(store, () => time.now, fixedRandom);
   const tokens = Array.from({ length: count }, mintSession);
-  const created = service.create(tokens[0]!, { requestId: randomUUID(), name: "Player 1", config: rules });
-  for (let i = 1; i < count; i++) service.join(created.roomId, tokens[i]!, { requestId: randomUUID(), epochId: created.epochId, name: `Player ${i + 1}` });
+  const created = await service.create(tokens[0]!, { requestId: randomUUID(), name: "Player 1", config: rules });
+  for (let i = 1; i < count; i++) await service.join(created.roomId, tokens[i]!, { requestId: randomUUID(), epochId: created.epochId, name: `Player ${i + 1}` });
   const id = created.roomId;
   const state = () => store.load(id)!.room;
   const envelope = (operation: Mutation["operation"]) => ({ requestId: randomUUID(), epochId: epochId(state()), windowId: state().flowId, operation });
   const act = (operation: Mutation["operation"], index = 0) => service.mutate(id, tokens[index]!, envelope(operation));
-  const start = () => {
-    for (let i = 0; i < count; i++) act({ type: "ready", ready: true }, i);
-    act({ type: "start" });
+  const start = async () => {
+    for (let i = 0; i < count; i++) await act({ type: "ready", ready: true }, i);
+    await act({ type: "start" });
   };
-  const begin = () => {
-    start();
-    for (let i = 0; i < count; i++) act({ type: "acknowledge" }, i);
-    act({ type: "begin_night" });
+  const begin = async () => {
+    await start();
+    for (let i = 0; i < count; i++) await act({ type: "acknowledge" }, i);
+    await act({ type: "begin_night" });
   };
-  const advance = () => {
+  const advance = async () => {
     const deadline = state().game!.window!.deadline;
     time.now = deadline - 1;
-    service.heartbeat(id, tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
+    await service.heartbeat(id, tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
     time.now = deadline;
-    service.view(id, tokens[0]!);
+    await service.view(id, tokens[0]!);
   };
   const patch = (change: (room: ReturnType<typeof state>) => void) => {
     const record = store.load(id)!;

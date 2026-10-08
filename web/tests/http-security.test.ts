@@ -4,15 +4,15 @@ import { createHttpHandler } from "../src/server/http";
 import { fixture } from "./server-helpers";
 import { config } from "./helpers";
 
-const fixtures: ReturnType<typeof fixture>[] = [];
-function setup() {
-  const f = fixture(1); fixtures.push(f);
+const fixtures: Awaited<Awaited<ReturnType<typeof fixture>>>[] = [];
+async function setup() {
+  const f = await fixture(1); fixtures.push(f);
   const handler = createHttpHandler(f.service);
-  const call = (path: string, method = "GET", input?: unknown, options: { cookie?: string; origin?: string; contentType?: string; raw?: string; site?: string } = {}) => {
+  const call = async (path: string, method = "GET", input?: unknown, options: { cookie?: string; origin?: string; contentType?: string; raw?: string; site?: string } = {}) => {
     const headers: Record<string, string> = { cookie: options.cookie ?? `ww_session=${f.tokens[0]}` };
     if (method === "POST") { headers.origin = options.origin ?? "http://localhost"; headers["content-type"] = options.contentType ?? "application/json"; }
     if (options.site) headers["sec-fetch-site"] = options.site;
-    return handler(new Request(`http://localhost/api/v2/${path}`, { method, headers,
+    return await handler(new Request(`http://localhost/api/v2/${path}`, { method, headers,
       ...(method === "POST" ? { body: options.raw ?? JSON.stringify(input ?? {}) } : {}) }));
   };
   return { ...f, handler, call };
@@ -21,7 +21,7 @@ afterEach(() => { vi.restoreAllMocks(); while (fixtures.length) fixtures.pop()!.
 
 describe("HTTP identity and security", () => {
   it("bootstraps a HttpOnly host-only cookie without returning credentials", async () => {
-    const f = setup();
+    const f = await setup();
     const result = await f.call("session", "POST", {}, { cookie: "" });
     expect(result.status).toBe(200); expect(await result.json()).toEqual({ ok: true });
     const cookie = result.headers.get("set-cookie")!;
@@ -38,11 +38,11 @@ describe("HTTP identity and security", () => {
   });
 
   it.each(["https://evil.example", "null", "http://other.localhost"])("rejects mutation origin %s", async (origin) => {
-    const f = setup(); expect((await f.call("session", "POST", {}, { origin })).status).toBe(403);
+    const f = await setup(); expect((await f.call("session", "POST", {}, { origin })).status).toBe(403);
   });
 
   it("rejects missing origin, cross-site fetch metadata and unconfigured public hosting", async () => {
-    const f = setup();
+    const f = await setup();
     const missing = await f.handler(new Request("http://localhost/api/v2/session", { method: "POST", body: "{}", headers: { "content-type": "application/json" } }));
     expect(missing.status).toBe(403);
     expect((await f.call("session", "POST", {}, { site: "cross-site" })).status).toBe(403);
@@ -52,12 +52,12 @@ describe("HTTP identity and security", () => {
   });
 
   it("rejects absent or malformed session cookies", async () => {
-    const f = setup();
+    const f = await setup();
     for (const cookie of ["", "ww_session=bad", "another=credential"]) expect((await f.call(`rooms/${f.id}`, "GET", undefined, { cookie })).status).toBe(401);
   });
 
   it("bounds bodies, requires JSON, and rejects unknown fields", async () => {
-    const f = setup();
+    const f = await setup();
     expect((await f.call("session", "POST", {}, { contentType: "text/plain" })).status).toBe(415);
     expect((await f.call("session", "POST", {}, { raw: "{" })).status).toBe(400);
     expect((await f.call("session", "POST", {}, { raw: JSON.stringify({ padding: "a".repeat(16_384) }) })).status).toBe(413);
@@ -67,7 +67,7 @@ describe("HTTP identity and security", () => {
   });
 
   it("uses private no-store responses, even for errors, and never echoes secret errors", async () => {
-    const f = setup();
+    const f = await setup();
     const responses = [await f.call(`rooms/${f.id}`), await f.call(`rooms/${f.id}/private`), await f.call(`rooms/${f.id}/host`),
       await f.call("no-such-path"), await f.call("rooms/INVALID")];
     for (const response of responses) {
@@ -80,7 +80,7 @@ describe("HTTP identity and security", () => {
   });
 
   it("routes room enrollment, commands, heartbeat and protected recaps", async () => {
-    const f = setup();
+    const f = await setup();
     const created = await f.call("rooms", "POST", { requestId: randomUUID(), name: "New room", config });
     expect(created.status).toBe(201);
     const receipt = await created.json(); expect(receipt).not.toHaveProperty("sessionToken");
@@ -97,10 +97,10 @@ describe("HTTP identity and security", () => {
   });
 
   it("returns rate limit feedback without credentials or private state", async () => {
-    const f = setup(); vi.spyOn(f.service, "limit").mockImplementation(() => { throw Object.assign(new Error(), { name: "unused" }); });
+    const f = await setup(); vi.spyOn(f.service, "limit").mockImplementation(() => { throw Object.assign(new Error(), { name: "unused" }); });
     expect((await f.call(`rooms/${f.id}`)).status).toBe(500);
     vi.restoreAllMocks();
-    for (let i = 0; i < 240; i++) f.service.limit(`http:${(await import("../src/server/service")).hashSession(f.tokens[0]!)}`, 240);
+    for (let i = 0; i < 240; i++) await f.service.limit(`http:${(await import("../src/server/service")).hashSession(f.tokens[0]!)}`, 240);
     const response = await f.call(`rooms/${f.id}`);
     expect(response.status).toBe(429); expect(response.headers.get("retry-after")).toBe("60");
     expect(await response.json()).toEqual({ error: { code: "RATE_LIMITED" } });

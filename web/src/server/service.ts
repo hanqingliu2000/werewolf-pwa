@@ -25,16 +25,16 @@ export class RoomService {
     return now;
   }
 
-  limit(key: string, limit: number) {
-    this.store.cleanup(this.now());
-    requireRule(this.store.rate(key, this.now(), limit), "RATE_LIMITED");
+  async limit(key: string, limit: number) {
+    await this.store.cleanup(this.now());
+    requireRule(await this.store.rate(key, this.now(), limit), "RATE_LIMITED");
   }
 
-  private load(id: string): StoredRoom {
+  private async load(id: string): Promise<StoredRoom> {
     requireRule(/^[A-F0-9]{8}$/.test(id), "ROOM_UNAVAILABLE");
     const now = this.now();
-    this.store.cleanup(now);
-    const state = this.store.load(id);
+    await this.store.cleanup(now);
+    const state = await this.store.load(id);
     requireRule(state && state.room.expiresAt > now, "ROOM_UNAVAILABLE");
     return state;
   }
@@ -45,11 +45,11 @@ export class RoomService {
     return member;
   }
 
-  private existing(key: string, input: unknown) {
-    const receipt = this.store.receipt(key);
+  private async existing(key: string, input: unknown) {
+    const receipt = await this.store.receipt(key);
     if (!receipt) return null;
     requireRule(receipt.fingerprint === fingerprint(input), "REQUEST_ID_REUSED");
-    this.load(receipt.result.roomId);
+    await this.load(receipt.result.roomId);
     return receipt.result;
   }
 
@@ -59,17 +59,17 @@ export class RoomService {
     } };
   }
 
-  create(token: string, raw: unknown) {
+  async create(token: string, raw: unknown) {
     const input = parseCreate(raw);
     const hash = hashSession(token);
     const key = `create:${hash}:${input.requestId}`;
     const now = this.now();
-    this.store.cleanup(now);
-    const previous = this.existing(key, input);
+    await this.store.cleanup(now);
+    const previous = await this.existing(key, input);
     if (previous) return previous;
     const config = validateConfig(input.config);
-    this.limit(`create:${hash}`, 5);
-    this.limit("create:global", 30);
+    await this.limit(`create:${hash}`, 5);
+    await this.limit("create:global", 30);
     for (let attempt = 0; attempt < 3; attempt++) {
       const hostId = randomUUID();
       const room: Room = {
@@ -80,18 +80,18 @@ export class RoomService {
         hostAvailable: true, narration: defaultNarration(), pauseReason: null, expiresAt: now + RETENTION_MS,
       };
       const receipt = this.receipt(room, key, input.requestId, input);
-      if (this.store.insert(room, receipt)) return receipt.result;
-      const existing = this.existing(key, input);
+      if (await this.store.insert(room, receipt)) return receipt.result;
+      const existing = await this.existing(key, input);
       if (existing) return existing;
     }
     throw new RuleError("WRITE_CONFLICT");
   }
 
-  join(id: string, token: string, raw: unknown) {
+  async join(id: string, token: string, raw: unknown) {
     const input = parseJoin(raw);
     const hash = hashSession(token);
-    this.limit(`join:${hash}`, 20);
-    this.limit("join:global", 300);
+    await this.limit(`join:${hash}`, 20);
+    await this.limit("join:global", 300);
     return this.write(id, hash, `join:${id}:${hash}:${input.requestId}`, input.requestId, input, (room) => {
       const prior = room.members.find((p) => p.sessionHash === hash);
       if (prior) return;
@@ -161,42 +161,42 @@ export class RoomService {
     return room;
   }
 
-  private synchronized(id: string, hash: string): StoredRoom {
+  private async synchronized(id: string, hash: string): Promise<StoredRoom> {
     for (let attempt = 0; attempt < 4; attempt++) {
-      const state = this.load(id);
+      const state = await this.load(id);
       this.member(state.room, hash);
       const room = this.coordinate(state.room, this.now());
       if (JSON.stringify(room) === JSON.stringify(state.room)) return state;
-      if (this.store.compareAndSwap(room, state.version)) return { room, version: state.version + 1 };
+      if (await this.store.compareAndSwap(room, state.version)) return { room, version: state.version + 1 };
     }
     throw new RuleError("WRITE_CONFLICT");
   }
 
-  view(id: string, token: string, kind?: "public"): ReturnType<typeof publicView> & { self: { playerId: string; seat: number; isHost: boolean }; serverTime: number };
-  view(id: string, token: string, kind: "private"): ReturnType<typeof privateView> & { serverTime: number };
-  view(id: string, token: string, kind: "host"): ReturnType<typeof hostView> & { serverTime: number };
-  view(id: string, token: string, kind: "public" | "private" | "host"): object;
-  view(id: string, token: string, kind: "public" | "private" | "host" = "public") {
+  view(id: string, token: string, kind?: "public"): Promise<ReturnType<typeof publicView> & { self: { playerId: string; seat: number; isHost: boolean }; serverTime: number }>;
+  view(id: string, token: string, kind: "private"): Promise<ReturnType<typeof privateView> & { serverTime: number }>;
+  view(id: string, token: string, kind: "host"): Promise<ReturnType<typeof hostView> & { serverTime: number }>;
+  view(id: string, token: string, kind: "public" | "private" | "host"): Promise<object>;
+  async view(id: string, token: string, kind: "public" | "private" | "host" = "public") {
     const hash = hashSession(token);
-    const { room } = this.synchronized(id, hash);
+    const { room } = await this.synchronized(id, hash);
     const member = this.member(room, hash);
     const data = kind === "public" ? { ...publicView(room), self: { playerId: member.id, seat: member.seat, isHost: member.id === room.hostId } }
       : kind === "private" ? privateView(room, member) : hostView(room, member);
     return { ...data, serverTime: this.now() };
   }
 
-  readRecap(id: string, token: string, gameId: string) {
-    return recapView(this.load(id).room, hashSession(token), gameId, this.now());
+  async readRecap(id: string, token: string, gameId: string) {
+    return recapView((await this.load(id)).room, hashSession(token), gameId, this.now());
   }
 
-  invitation(id: string) {
-    const { room } = this.load(id);
+  async invitation(id: string) {
+    const { room } = await this.load(id);
     return { roomId: room.id, epochId: room.lobbyId, phase: room.game ? "started" : "lobby",
       config: room.config, occupiedSeats: room.members.map((p) => p.seat) };
   }
 
-  listRecaps(id: string, token: string) {
-    const { room } = this.load(id);
+  async listRecaps(id: string, token: string) {
+    const { room } = await this.load(id);
     const hash = hashSession(token);
     const archives = room.archives.filter((a) => a.expiresAt > this.now() && a.members.some((p) => p.sessionHash === hash));
     const member = room.members.some((p) => p.sessionHash === hash);
@@ -205,27 +205,27 @@ export class RoomService {
     return { games: games.map((g) => ({ gameId: g.id, winner: g.winner, aborted: g.aborted })) };
   }
 
-  private write(id: string, hash: string, key: string, requestId: string, input: unknown,
+  private async write(id: string, hash: string, key: string, requestId: string, input: unknown,
     change: (room: Room, member: Member | null, now: number) => void, authenticated = true) {
     for (let attempt = 0; attempt < 4; attempt++) {
-      this.load(id);
-      const previous = this.existing(key, input);
+      await this.load(id);
+      const previous = await this.existing(key, input);
       if (previous) return previous;
-      const state = authenticated ? this.synchronized(id, hash) : this.load(id);
+      const state = await (authenticated ? this.synchronized(id, hash) : this.load(id));
       const room = structuredClone(state.room);
       const now = Math.max(this.now(), room.game?.updatedAt ?? 0);
       change(room, authenticated ? this.member(room, hash) : null, now);
       this.finishChange(room, state.room, now, true);
       const receipt = this.receipt(room, key, requestId, input);
-      if (this.store.compareAndSwap(room, state.version, receipt)) return receipt.result;
+      if (await this.store.compareAndSwap(room, state.version, receipt)) return receipt.result;
     }
     throw new RuleError("WRITE_CONFLICT");
   }
 
-  mutate(id: string, token: string, raw: unknown) {
+  async mutate(id: string, token: string, raw: unknown) {
     const input = parseMutation(raw);
     const hash = hashSession(token);
-    this.limit(`action:${hash}`, 120);
+    await this.limit(`action:${hash}`, 120);
     return this.write(id, hash, `action:${id}:${hash}:${input.requestId}`, input.requestId, input, (room, member, now) => {
       requireRule(input.epochId === epochId(room), "STALE_GAME");
       requireRule(input.windowId === room.flowId, "STALE_WINDOW");
@@ -330,19 +330,19 @@ export class RoomService {
     }
   }
 
-  heartbeat(id: string, token: string, raw: unknown) {
+  async heartbeat(id: string, token: string, raw: unknown) {
     const input = parseHeartbeat(raw);
     const hash = hashSession(token);
-    this.limit(`heartbeat:${hash}`, 40);
+    await this.limit(`heartbeat:${hash}`, 40);
     for (let attempt = 0; attempt < 4; attempt++) {
-      const state = this.synchronized(id, hash);
+      const state = await this.synchronized(id, hash);
       requireRule(this.member(state.room, hash).id === state.room.hostId, "FORBIDDEN");
       const room = structuredClone(state.room);
       room.heartbeatAt = this.now();
       room.hostAvailable = input.foreground && input.audioReady
         && (room.narration?.mode !== "voice" || input.narrationVersion === NARRATION_VERSION);
       const coordinated = this.coordinate(room, this.now());
-      if (this.store.compareAndSwap(coordinated, state.version)) return { ok: true, paused: coordinated.game?.paused ?? false };
+      if (await this.store.compareAndSwap(coordinated, state.version)) return { ok: true, paused: coordinated.game?.paused ?? false };
     }
     throw new RuleError("WRITE_CONFLICT");
   }

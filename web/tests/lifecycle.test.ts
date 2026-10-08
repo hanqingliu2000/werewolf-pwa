@@ -150,7 +150,7 @@ describe("daytime and host controls", () => {
 });
 
 it("returns a secret-free uncached application health response", async () => {
-  const response = GET();
+  const response = await GET();
   expect(response.status).toBe(200);
   expect(response.headers.get("Cache-Control")).toBe("no-store");
   expect(await response.json()).toEqual({ status: "ok", rulesVersion: "werewolf-web-v1" });
