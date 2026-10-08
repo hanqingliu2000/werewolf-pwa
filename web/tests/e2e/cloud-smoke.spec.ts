@@ -49,8 +49,18 @@ test("cloud smoke: enrollment, refresh, real trial and first private action only
     await expect.poll(async () => (await view()).narration.mode).toBe("voice"); await host.keyboard.press("Escape");
     for (let i = 0; i < 8; i++) if (i !== 1) await act(i, { type: "ready", ready: true });
     await act(0, { type: "start" });
+    await expect.poll(async () => (await view()).phase).toBe("reveal");
+    for (const page of pages) {
+      await expect(page.getByRole("button", { name: "查看身份", exact: true })).toBeVisible();
+      await expect(page.locator(".identity")).toHaveCount(0);
+      await expect(page.getByText("身份确认", { exact: true })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "确认身份", exact: true })).toHaveCount(0);
+    }
     await expect.poll(async () => (await view()).narration.pending).toBeNull();
-    await act(0, { type: "begin_night" });
+    await host.getByRole("button", { name: "主持控制", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "开始首夜", exact: true })).toBeEnabled();
+    await panel.getByRole("button", { name: "开始首夜", exact: true }).click();
+    await host.keyboard.press("Escape");
     await expect.poll(async () => (await view()).phase, { timeout: 60_000 }).toBe("night_action");
     const current = await view(); expect(current.nightRole).toBe("guard"); expect(current.window!.deadline - current.window!.openedAt).toBe(30_000);
     expect(current.players.every(p => "revealedRole" in p && p.revealedRole === null)).toBe(true);
@@ -65,7 +75,7 @@ test("cloud smoke: enrollment, refresh, real trial and first private action only
     await expect.poll(async () => (await read<PrivateRoom>(contexts[guard]!, `rooms/${room}/private`)).completed).toBe(true);
     await act(0, { type: "abort" }); await expect.poll(async () => (await view()).phase).toBe("end");
     expect((await view()).aborted).toBe(true); expect(errors).toEqual([]);
-    console.log("Cloud smoke passed: 8 isolated sessions, refresh, permissions, secure cookies, real trial, 40 decoded clips and first automatic action; deliberately aborted before a complete game.");
+    console.log("Cloud smoke passed: 8 isolated sessions, refresh, permissions, secure cookies, real trial, 40 decoded clips, no identity confirmations, first-night UI start and first automatic action; deliberately aborted before a complete game.");
   } finally {
     if (room) writeFileSync(info.outputPath("created-room-ids.json"), JSON.stringify({ rooms: [room], origin: baseURL }), { mode: 0o600 });
     for (const context of contexts) await context.close();

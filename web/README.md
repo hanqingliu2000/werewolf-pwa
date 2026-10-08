@@ -1,6 +1,6 @@
 # 网页与房间服务
 
-已完成规则、SQLite及异步PostgreSQL适配、原浏览器会话、权限、网页与公共播放器。当前分支取消逐人身份确认，音频为 `host-zh-v3`；此变更尚未提升至正式站，见 [23](../docs/23-identity-viewing-without-confirmation.md)。正式V2整局验收见 [22](../docs/22-production-voice-game-acceptance.md)，真实手机仍未验收。
+已完成规则、SQLite及异步PostgreSQL适配、原浏览器会话、权限、网页与公共播放器。取消逐人身份确认的版本已正式发布，音频为 `host-zh-v3`；本机验收见 [23](../docs/23-identity-viewing-without-confirmation.md)，正式发布与短程浏览器验收见 [24](../docs/24-identity-flow-production-release.md)。此前V2整局验收见 [22](../docs/22-production-voice-game-acceptance.md)，真实手机仍未验收。
 
 ## 安装与验收
 
