@@ -2,7 +2,7 @@
 
 这是一个面向朋友线下聚会的狼人杀主持工具：每个人都能参与游戏，系统组织夜晚秘密行动、结算与胜负判断，白天讨论留在桌边。
 
-截至2026-10-07，规则、网页、美术、平直播报、本机多人语音及新免费云端部署已完成。新网址为 [werewolf-web-v2.vercel.app](https://werewolf-web-v2.vercel.app)，Preview短程和正式API验收通过，详见19。真实手机和聚会现场仍待验证，音频版本为 `host-zh-v2`。
+截至2026-10-08，最新单屏行动版本已正式发布到 [werewolf-web-v2.vercel.app](https://werewolf-web-v2.vercel.app)。12个独立会话的正常计时线上语音局、复盘及重开通过，详见22。真实手机和聚会现场仍待验证，音频版本为 `host-zh-v2`。
 
 ## 当前范围
 
@@ -40,6 +40,7 @@
 | [19 云端部署](docs/19-cloud-deployment.md) | 免费资源、私有schema、维护与正式部署、预览验收和恢复 |
 | [20 试玩前流程修复](docs/20-pre-play-flow-fixes.md) | 紧凑行动窗、播报回执重试、白天改选防误发布和局部回归 |
 | [21 单屏行动与流程验收](docs/21-single-screen-action-acceptance.md) | 五角色一屏目标、180个布局组合、完整文字流程和本机来源修正 |
+| [22 正式语音整局验收](docs/22-production-voice-game-acceptance.md) | 正式部署、12个独立会话、正常计时3夜、复盘重开与验收边界 |
 | [本地语音生成](scripts/README.md) | 锁定环境、模型版本、生成参数与声音复核 |
 | [视觉规范](design-system/werewolf-web/MASTER.md) | 全站色彩、文字、控件与页面应用 |
 | [新应用运行说明](web/README.md) | 安装、检查、构建、健康入口与规则核心边界 |
