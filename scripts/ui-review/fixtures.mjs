@@ -101,9 +101,18 @@ export function applyPreviewOperation(fixture, operation) {
   else if (["guard", "seer", "witch", "hunter"].includes(op.type)) {
     personal.action = null; personal.hunterReaction = false; personal.completed = true;
     personal.acceptedAction = { actorId: "p1", kind: op.type === "seer" ? "see" : op.type === "witch" ? op.choice : op.type === "hunter" ? "pass" : op.type, targetId: op.targetId ?? null };
+    personal.actionResult = { kind: op.type === "hunter" ? "shot" : personal.acceptedAction.kind, targetId: op.targetId ?? null, nightNo: state.nightNo };
     if (op.type === "seer" && op.targetId) personal.reports.push({ nightNo: 2, targetId: op.targetId, alignment: fixture.recap.participants.find(p => p.id === op.targetId)?.role === "werewolf" ? "wolf" : "good" });
   } else if (op.type === "wolf_propose" && personal.wolves) { personal.wolves.proposals.p1 = op.targetId; personal.wolves.confirmations = []; }
-  else if (op.type === "wolf_confirm" && personal.wolves && !personal.wolves.confirmations.includes("p1")) personal.wolves.confirmations.push("p1");
+  else if (op.type === "wolf_confirm" && personal.wolves && !personal.wolves.confirmations.includes("p1")) {
+    personal.wolves.confirmations.push("p1");
+    const ids = personal.teammates.map(p => p.id);
+    if (ids.every(id => personal.wolves.confirmations.includes(id)) && new Set(ids.map(id => personal.wolves.proposals[id])).size === 1) {
+      personal.wolves.locked = true; personal.wolves.discussionPaused = false; personal.action = null;
+      personal.actionResult = { kind: "kill", targetId: personal.wolves.proposals.p1, nightNo: state.nightNo };
+      state.paused = false; state.pauseReason = null;
+    }
+  }
   else if (op.type === "day_draft") { host.dayDraft = { targetId: op.targetId ?? null, confirmed: false }; host.draftId = randomUUID(); }
   else if (op.type === "day_confirm" && host.dayDraft) host.dayDraft.confirmed = true;
   else if (op.type === "pause" || op.type === "resume") { state.paused = op.type === "pause"; state.pauseReason = state.paused ? "manual" : null; }

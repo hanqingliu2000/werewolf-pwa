@@ -1,6 +1,6 @@
 import { seerReports, recap } from "../game/engine";
 import { requireRule } from "../game/errors";
-import type { PublicEvent } from "../game/types";
+import type { Action, PublicEvent } from "../game/types";
 import type { Member, Room } from "./types";
 import { defaultNarration, NARRATION_VERSION } from "../narration/plan";
 
@@ -48,13 +48,23 @@ export function privateView(room: Room, member: Member) {
   const active = own?.alive && (!game?.paused || game.wolfDiscussionPaused) && game?.phase === "night_action" && own.role === game.nightRole;
   const completed = game?.currentNight?.completedActorIds.includes(member.id) ?? false;
   const knowledge = game?.currentNight?.witchKnowledge;
+  const accepted = game?.currentNight?.actions.find((a) => a.actorId === member.id) ?? null;
+  const wolfLocked = own?.role === "werewolf" && game?.currentNight?.killLocked
+    && game.currentNight.wolfConfirmations.includes(member.id);
+  const shot = own?.role === "hunter" ? game?.publicEvents.find((event) => event.type === "hunter_reaction"
+    && event.playerId === member.id) : undefined;
+  const actionResult: { kind: Action["kind"] | "kill" | "shot"; targetId: string | null; nightNo: number } | null =
+    shot?.type === "hunter_reaction" ? { kind: "shot", targetId: shot.targetId, nightNo: shot.nightNo }
+      : wolfLocked ? { kind: "kill", targetId: game!.currentNight!.killTargetId, nightNo: game!.nightNo }
+        : accepted ? { kind: accepted.kind, targetId: accepted.targetId, nightNo: game!.nightNo } : null;
   const result = {
     playerId: member.id, role: own?.role ?? null, alive: visibleAlive,
     // Preserve the v2 response shape without requiring legacy clients to confirm identity.
     acknowledged: own?.role != null,
     action: active && !completed && !(own?.role === "werewolf" && game!.currentNight!.killLocked) ? game!.nightRole : null,
     completed,
-    acceptedAction: game?.currentNight?.actions.find((a) => a.actorId === member.id) ?? null,
+    acceptedAction: accepted,
+    ...(actionResult ? { actionResult } : {}),
     hunterReaction: game?.phase === "hunter" && !game.paused && !room.narration?.pending && game.pendingHunter?.playerId === member.id,
   };
   return {

@@ -42,7 +42,7 @@ export function createReviewServer({ upstreamUrl = "http://127.0.0.1:3000", shut
       received.on("data", chunk => { size += chunk.length; if (size > 4_194_304) { remote.destroy(); response.destroy(); } else chunks.push(chunk); });
       received.on("end", () => {
         const scene = sceneFor(url);
-        const injection = `<script>window.__UI_REVIEW__=${safeJson({ id: scene.id, kind: scene.kind, roomId: scene.roomId, key: url.searchParams.get("reviewKey"), panel: scene.panel ?? null, now: REVIEW_NOW })};Date.now=()=>window.__UI_REVIEW__.now;</script><script src="/__review/frame.js"></script>`;
+        const injection = `<style data-ui-review-devtools>nextjs-portal{display:none!important}</style><script>window.__UI_REVIEW__=${safeJson({ id: scene.id, kind: scene.kind, roomId: scene.roomId, key: url.searchParams.get("reviewKey"), panel: scene.panel ?? null, now: REVIEW_NOW })};Date.now=()=>window.__UI_REVIEW__.now;</script><script src="/__review/frame.js"></script>`;
         const html = Buffer.concat(chunks).toString("utf8").replace("</head>", `${injection}</head>`);
         delete headers["content-length"]; delete headers["content-encoding"]; delete headers["transfer-encoding"];
         response.writeHead(received.statusCode ?? 502, headers); response.end(html);

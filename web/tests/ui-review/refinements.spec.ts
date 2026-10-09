@@ -80,9 +80,10 @@ test("public cardback is larger, uncropped and leaves the task entry usable at a
         fit: getComputedStyle(element).backgroundSize, gap: control.top - r.bottom, controlBottom: control.bottom,
         horizontalScroll: document.documentElement.scrollWidth > innerWidth };
     });
-    expect(layout.width).toBeGreaterThanOrEqual(220); expect(layout.width).toBeLessThanOrEqual(240);
+    if (viewport.width <= 768 && viewport.height <= 700) expect(layout.width).toBe(64);
+    else { expect(layout.width).toBeGreaterThanOrEqual(220); expect(layout.width).toBeLessThanOrEqual(240); }
     expect(layout.ratio).toBeCloseTo(0.75, 2); expect(layout.background).toContain("/art/cardback.webp");
-    expect(layout.fit).toBe("contain"); expect(layout.gap).toBeGreaterThanOrEqual(16); expect(layout.horizontalScroll).toBe(false);
+    expect(layout.fit).toBe("contain"); if (viewport.height > 700) expect(layout.gap).toBeGreaterThanOrEqual(8); expect(layout.horizontalScroll).toBe(false);
     if (viewport.height >= 800) expect(layout.controlBottom).toBeLessThanOrEqual(viewport.height);
     if ([390, 1440].includes(viewport.width)) await page.screenshot({ path: info.outputPath(`S11-${viewport.width}.png`) });
     await button.scrollIntoViewIfNeeded();

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { mintSession } from "../src/server/service";
 import { privateView, publicView } from "../src/server/views";
 import { fixture } from "./server-helpers";
-import { command, nightToDawn, config } from "./helpers";
+import { command, nightToDawn, config, toRole, wolves, finish, vote } from "./helpers";
 import type { Mutation } from "../src/server/input";
 
 const fixtures: Awaited<Awaited<ReturnType<typeof fixture>>>[] = [];
@@ -11,6 +11,55 @@ async function setup(count = 8) { const f = await fixture(count); fixtures.push(
 afterEach(() => { while (fixtures.length) fixtures.pop()!.close(); });
 
 describe("identity and role projections", () => {
+  it("restores only the actor's accepted target and seer result without exposing final night deaths", async () => {
+    const f = await setup(); await f.begin();
+    f.patch((room) => { room.game = nightToDawn(room.game!, { guard: room.members[4]!.id, kill: room.members[7]!.id,
+      witch: { choice: "poison", targetId: room.members[6]!.id }, see: room.members[0]!.id }); });
+    const room = JSON.parse(JSON.stringify(f.state())) as ReturnType<typeof f.state>;
+    const expected = [[0, "kill", 7], [1, "kill", 7], [2, "see", 0], [3, "poison", 6], [4, "guard", 4]] as const;
+    for (const [actor, kind, target] of expected) {
+      const personal = privateView(room, room.members[actor]!);
+      expect(personal.actionResult).toEqual({ kind, targetId: room.members[target]!.id, nightNo: 1 });
+      expect(personal).not.toHaveProperty("pendingDeaths");
+    }
+    expect(privateView(room, room.members[2]!).reports).toContainEqual({ nightNo: 1, targetId: room.members[0]!.id, alignment: "wolf" });
+    expect(privateView(room, room.members[6]!)).not.toHaveProperty("actionResult");
+    expect(publicView(room)).not.toHaveProperty("actionResult");
+    expect(publicView(room).players.every(p => "alive" in p && p.alive)).toBe(true);
+  });
+
+  it("does not call a wolf proposal confirmed and retains a locked empty kill after the wolf window", async () => {
+    const f = await setup(); await f.begin();
+    f.patch(room => { room.game = toRole(room.game!, "werewolf");
+      room.game = command(room.game, { type: "wolf_propose", actorId: room.members[0]!.id, targetId: null }); });
+    expect(privateView(f.state(), f.state().members[0]!)).not.toHaveProperty("actionResult");
+    f.patch(room => { room.game = finish(wolves(room.game!, null)); });
+    expect(privateView(f.state(), f.state().members[0]!).actionResult).toEqual({ kind: "kill", targetId: null, nightNo: 1 });
+    expect(privateView(f.state(), f.state().members[0]!)).not.toHaveProperty("wolves");
+    f.patch(room => { room.game = vote(command(nightToDawn(room.game!), { type: "publish_dawn", actorId: room.hostId }), null); });
+    expect(f.state().game!.nightNo).toBe(2);
+    expect(privateView(f.state(), f.state().members[0]!)).not.toHaveProperty("actionResult");
+  });
+
+  it.each([null, 6])("restores the hunter's own reaction target %s after shooting or passing", async (target) => {
+    const f = await setup(); await f.begin();
+    f.patch(room => { room.game = command(nightToDawn(room.game!, { kill: room.members[5]!.id }), { type: "publish_dawn", actorId: room.hostId });
+      room.game = command(room.game, { type: "hunter", actorId: room.members[5]!.id, targetId: target === null ? null : room.members[target]!.id }); });
+    const room = JSON.parse(JSON.stringify(f.state())) as ReturnType<typeof f.state>;
+    expect(privateView(room, room.members[5]!).actionResult).toEqual({ kind: "shot", targetId: target === null ? null : room.members[target]!.id, nightNo: 1 });
+    expect(privateView(room, room.members[6]!)).not.toHaveProperty("actionResult");
+  });
+
+  it.each([null, 6])("keeps a day-voted hunter's result %s when the reaction immediately starts the next night", async (target) => {
+    const f = await setup(); await f.begin();
+    f.patch(room => { room.game = command(nightToDawn(room.game!), { type: "publish_dawn", actorId: room.hostId });
+      room.game = vote(room.game, room.members[5]!.id);
+      room.game = command(room.game, { type: "hunter", actorId: room.members[5]!.id, targetId: target === null ? null : room.members[target]!.id }); });
+    const room = JSON.parse(JSON.stringify(f.state())) as ReturnType<typeof f.state>;
+    expect(room.game!.nightNo).toBe(2);
+    expect(privateView(room, room.members[5]!).actionResult).toEqual({ kind: "shot", targetId: target === null ? null : room.members[target]!.id, nightNo: 1 });
+    expect(privateView(room, room.members[6]!)).not.toHaveProperty("actionResult");
+  });
   it("does not treat an id, room code or host seat as credentials", async () => {
     const f = await setup();
     await expect(f.service.view(f.id, mintSession())).rejects.toThrow("INVALID_SESSION");

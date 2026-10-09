@@ -85,7 +85,7 @@ test("all five action roles fit every target and control without scrolling", asy
         const art = element.querySelector(".identity img") as HTMLImageElement;
         return {
           scroll: content.scrollHeight <= content.clientHeight + 1 && content.scrollWidth <= content.clientWidth + 1,
-          targets: tiles.length > 0 && tiles.every((e) => { const r = e.getBoundingClientRect(); return r.top >= clip.top - 1 && r.bottom <= clip.bottom + 1 && r.top >= 0 && r.bottom <= innerHeight; }),
+          targets: tiles.length > 0 && tiles.every((e) => { const r = e.getBoundingClientRect(); return r.height >= 48 && r.height <= 64 && r.top >= clip.top - 1 && r.bottom <= clip.bottom + 1 && r.top >= 0 && r.bottom <= innerHeight; }),
           controls: controls.every((e) => { const r = e.getBoundingClientRect(); return r.top >= frame.top && r.bottom <= frame.bottom && r.left >= 0 && r.right <= innerWidth && r.width >= 44 && r.height >= 44; }),
           labels: proposalLabels.every((e) => { const range = document.createRange(); range.selectNodeContents(e); return range.getBoundingClientRect().width <= e.getBoundingClientRect().width + 1; }),
           art: art.complete && art.naturalWidth > 0,
