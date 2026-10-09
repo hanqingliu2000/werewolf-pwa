@@ -4,6 +4,7 @@ import { createHttpHandler } from "../src/server/http";
 import { fixture } from "./server-helpers";
 import { config } from "./helpers";
 import { NextRequest } from "next/server";
+import { RequestGate } from "../src/server/request-gate";
 
 const fixtures: Awaited<Awaited<ReturnType<typeof fixture>>>[] = [];
 async function setup() {
@@ -21,6 +22,30 @@ async function setup() {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); while (fixtures.length) fixtures.pop()!.close(); });
 
 describe("HTTP identity and security", () => {
+  it("rejects invalid routes, SQL-shaped room IDs and malformed mutations before database-backed counters", async () => {
+    const f = await setup(); const limit = vi.spyOn(f.service, "limit"); const load = vi.spyOn(f.service, "view");
+    expect((await f.call("unknown-path")).status).toBe(404);
+    expect((await f.call("rooms/%27%20OR%201%3D1--")).status).toBe(404);
+    expect((await f.call(`rooms/${f.id}/commands`, "POST", { operation: { type: "ready", ready: true } })).status).toBe(400);
+    expect((await f.call(`rooms/${f.id}/commands`, "POST", {}, { raw: "{" })).status).toBe(400);
+    expect(limit).not.toHaveBeenCalled(); expect(load).not.toHaveBeenCalled();
+  });
+  it("rejects oversized declared bodies without reading them or reaching the database", async () => {
+    const f = await setup(); const limit = vi.spyOn(f.service, "limit");
+    const response = await f.handler(new Request("http://localhost/api/v2/session", { method: "POST", body: "{}",
+      headers: { origin: "http://localhost", "content-type": "application/json", "content-length": "999999" } }));
+    expect(response.status).toBe(413); expect(limit).not.toHaveBeenCalled();
+  });
+  it("rejects obvious excess traffic before database work without adding user verification", async () => {
+    const f = await setup(); vi.stubEnv("VERCEL", "1"); const gate = new RequestGate(() => 1000);
+    const handler = createHttpHandler(f.service, undefined, gate); const request = new Request(`http://localhost/api/v2/rooms/${f.id}`, {
+      headers: { cookie: `ww_session=${f.tokens[0]}`, "x-vercel-forwarded-for": "203.0.113.10" },
+    });
+    for (let i = 0; i < 2400; i++) gate.check(request);
+    const limit = vi.spyOn(f.service, "limit"); const response = await handler(request);
+    expect(response.status).toBe(429); expect(limit).not.toHaveBeenCalled();
+    expect(await response.json()).toEqual({ error: { code: "RATE_LIMITED" } });
+  });
   it.each(["127.0.0.1", "[::1]"])("accepts only the configured loopback origin after NextURL normalizes %s", async (host) => {
     vi.stubEnv("__NEXT_NO_MIDDLEWARE_URL_NORMALIZE", "");
     const f = await setup(); const declared = `http://${host}:3117`;

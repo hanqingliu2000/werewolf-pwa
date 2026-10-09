@@ -3,6 +3,9 @@ import { z } from "zod";
 import { RuleError, requireRule } from "../game/errors";
 import { hashSession, mintSession, type RoomService } from "./service";
 import { reportServerFailure } from "./storage-runtime";
+import { parseCreate, parseJoin, parseMutation, parseHeartbeat } from "./input";
+import { validateConfig } from "../game/config";
+import { requestGate, type RequestGate } from "./request-gate";
 
 const MAX_BODY = 16_384;
 const COOKIE = "ww_session";
@@ -39,6 +42,11 @@ function origin(request: NextRequest, configuredOrigin?: string | readonly strin
 
 async function body(request: NextRequest) {
   requireRule(request.headers.get("content-type")?.split(";")[0]?.trim() === "application/json", "CONTENT_TYPE_INVALID");
+  const declared = request.headers.get("content-length");
+  if (declared !== null) {
+    requireRule(/^\d+$/.test(declared), "INPUT_INVALID");
+    requireRule(Number(declared) <= MAX_BODY, "BODY_TOO_LARGE");
+  }
   const reader = request.body?.getReader();
   requireRule(reader, "INPUT_INVALID");
   const chunks: Uint8Array[] = [];
@@ -67,15 +75,28 @@ function status(code: string) {
   return 409;
 }
 
-export function createHttpHandler(service: RoomService, configuredOrigin?: string | readonly string[]) {
+export function createHttpHandler(service: RoomService, configuredOrigin?: string | readonly string[], gate: RequestGate = requestGate) {
   return async function handle(raw: Request) {
     const startedAt = Date.now();
     const request = raw instanceof NextRequest ? raw : new NextRequest(raw);
     try {
       const parts = new URL(request.url).pathname.split("/").filter(Boolean).slice(2);
       if (request.method === "POST") origin(request, configuredOrigin);
+      const sessionRoute = parts.length === 1 && parts[0] === "session" && request.method === "POST";
+      const createRoute = parts.length === 1 && parts[0] === "rooms" && request.method === "POST";
+      const roomRoute = parts[0] === "rooms" && parts[1] && (
+        request.method === "GET" && (parts.length === 2 || parts.length === 3 && ["invitation", "private", "host", "recaps"].includes(parts[2]!)
+          || parts.length === 4 && parts[2] === "recaps")
+        || request.method === "POST" && parts.length === 3 && ["join", "commands", "heartbeat"].includes(parts[2]!));
+      requireRule(sessionRoute || createRoute || roomRoute, "ENDPOINT_NOT_FOUND");
+      if (roomRoute) {
+        requireRule(/^[A-F0-9]{8}$/.test(parts[1]!), "ROOM_UNAVAILABLE");
+        if (parts.length === 4) requireRule(z.string().uuid().safeParse(parts[3]).success, "INPUT_INVALID");
+      }
       let session = token(request);
-      if (parts.length === 1 && parts[0] === "session" && request.method === "POST") {
+      if (!sessionRoute) requireRule(session, "INVALID_SESSION");
+      gate.check(request);
+      if (sessionRoute) {
         const input = await body(request);
         requireRule(z.strictObject({}).safeParse(input).success, "INPUT_INVALID");
         await service.limit("session:global", 120);
@@ -86,9 +107,21 @@ export function createHttpHandler(service: RoomService, configuredOrigin?: strin
         return response;
       }
       requireRule(session, "INVALID_SESSION");
+      let input: unknown;
+      if (request.method === "POST") {
+        const rawInput = await body(request);
+        if (createRoute) { const enrollment = parseCreate(rawInput); validateConfig(enrollment.config); input = enrollment; }
+        else if (parts[2] === "join") input = parseJoin(rawInput);
+        else if (parts[2] === "heartbeat") input = parseHeartbeat(rawInput);
+        else {
+          const mutation = parseMutation(rawInput);
+          if (mutation.operation.type === "configure") validateConfig(mutation.operation.config);
+          input = mutation;
+        }
+      }
       await service.limit(`http:${hashSession(session)}`, 240);
-      if (parts[0] === "rooms" && parts.length === 1 && request.method === "POST") {
-        return NextResponse.json(await service.create(session, await body(request)), { status: 201, headers });
+      if (createRoute) {
+        return NextResponse.json(await service.create(session, input), { status: 201, headers });
       }
       requireRule(parts[0] === "rooms" && parts[1], "ENDPOINT_NOT_FOUND");
       const id = parts[1];
@@ -108,7 +141,6 @@ export function createHttpHandler(service: RoomService, configuredOrigin?: strin
         return NextResponse.json(await service.readRecap(id, session, parts[3]!), { headers });
       }
       if (parts.length === 3 && request.method === "POST") {
-        const input = await body(request);
         if (action === "join") return NextResponse.json(await service.join(id, session, input), { headers });
         if (action === "commands") return NextResponse.json(await service.mutate(id, session, input), { headers });
         if (action === "heartbeat") return NextResponse.json(await service.heartbeat(id, session, input), { headers });

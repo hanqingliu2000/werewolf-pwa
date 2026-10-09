@@ -73,6 +73,7 @@ test("cloud smoke: enrollment, refresh, real trial and first private action only
     await privatePanel.getByRole("button", { name: "本夜不守", exact: true }).click();
     await privatePanel.getByRole("button", { name: "确认行动", exact: true }).click();
     await expect.poll(async () => (await read<PrivateRoom>(contexts[guard]!, `rooms/${room}/private`)).completed).toBe(true);
+    await expect(privatePanel.locator(".waiting-note")).toContainText("本夜不守");
     await act(0, { type: "abort" }); await expect.poll(async () => (await view()).phase).toBe("end");
     expect((await view()).aborted).toBe(true); expect(errors).toEqual([]);
     console.log("Cloud smoke passed: 8 isolated sessions, refresh, permissions, secure cookies, real trial, 40 decoded clips, no identity confirmations, first-night UI start and first automatic action; deliberately aborted before a complete game.");

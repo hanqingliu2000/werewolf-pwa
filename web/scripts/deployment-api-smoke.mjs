@@ -19,6 +19,8 @@ try {
   const [host, guest, stranger] = actors;
   const health = await host.get("/api/health"); check(health.status() === 200 && (await health.json()).status === "ok", "database readiness");
   const home = await host.get("/"); check(home.status() === 200 && !(await home.text()).includes("暂未开放入席"), "open homepage");
+  check(home.headers()["x-frame-options"] === "SAMEORIGIN" && home.headers()["x-content-type-options"] === "nosniff", "page security headers");
+  const injection = await host.get("/api/v2/rooms/%27%20OR%201%3D1--"); check(injection.status() === 404, "SQL-shaped route rejected");
   const bank = await host.get(`/audio/${script.version}/manifest.json`); check(bank.ok(), "bank manifest"); const manifest = await bank.json();
   check(Object.keys(manifest.clips).length === 40, "40 clips");
   for (const [id, entry] of Object.entries(manifest.clips)) {

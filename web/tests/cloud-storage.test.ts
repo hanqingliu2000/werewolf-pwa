@@ -50,6 +50,20 @@ async function backend(kind: "sqlite" | "postgres") {
 }
 
 describe.each(["sqlite", "postgres"] as const)("%s storage contract", (kind) => {
+  it("stores SQL-looking nicknames literally and never interpolates lookup keys", async () => {
+    const f = await backend(kind);
+    try {
+      const record = (await f.store.load(f.id))!;
+      const name = "O'Brien'); DROP TABLE rooms;--";
+      record.room.members[0]!.name = name;
+      expect(await f.store.compareAndSwap(record.room, record.version)).toBe(true);
+      expect((await f.store.load(f.id))!.room.members[0]!.name).toBe(name);
+      expect(await f.store.load("' OR '1'='1")).toBeNull();
+      expect(await f.store.receipt("' OR '1'='1")).toBeNull();
+      expect((await f.service.view(f.id, f.token)).roomId).toBe(f.id);
+      expect(() => cloudSchema("werewolf_prod; DROP SCHEMA public CASCADE;--")).toThrow("STORAGE_SCHEMA_INVALID");
+    } finally { f.close(); }
+  });
   it("commits snapshots and receipts together, rejects stale versions and rolls back broken receipts", async () => {
     const f = await backend(kind);
     try {
