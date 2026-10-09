@@ -22,4 +22,24 @@ Supabase保持Free，Vercel保持Hobby且没有试用。沿用现有资源，不
 
 Chromium与WebKit的10项生产构建局部回归通过，包含入口、六身份牌、五角色8/12人单屏行动及私密遮蔽；4项临时评审浏览器检查通过，SAMEORIGIN未阻断同源评审画布与14个示例。没有运行完整局。
 
-生产部署先保持现有网址不变，候选通过接口和短程浏览器检查后才手动提升。发布版本、部署编号及正式站检查结果在完成后记录于下方；本次不执行新的完整对局或真实手机音频验收。
+## 正式发布
+
+| 项目 | 记录 |
+| --- | --- |
+| 正式网址 | https://werewolf-web-v2.vercel.app |
+| 应用提交 | `78dc2ffbf84ae0dd54ef82bb2722a3d50d963c0f` |
+| 当前部署 | `dpl_247G437nmbr5fbaumsGWaaYxjnVw` |
+| 候选网址 | https://werewolf-web-v2-q3bgztoh5-barrylius-projects-d58e2788.vercel.app |
+| 发布前正式部署 | `dpl_3f3z6LQXKKUijXtRS71HWGdPd9Cp`，应用提交 `6cd8065` |
+| 项目 | `werewolf-web-v2`，`prj_pw1MiSa05HR43JzYQxcbQNW03UDh` |
+| 运行与音频 | Node.js 24、iad1、现有host-zh-v3共40段 |
+
+候选就绪后通过检查再手动提升，项目生产指针确认指向上述部署，自动生产域名分配仍关闭。本次同时正式发布最近的入口文字精简、身份立绘、紧凑席位/行动网格与本人行动回执；没有修改游戏规则或音频。
+
+候选与公开正式网址的接口验收均通过：数据库就绪、3个独立会话、建房加入、刷新/重试所需回执、权限、Secure/HttpOnly/Strict Cookie、私密响应禁止缓存、基础安全头、SQL形状路由拒绝及40段音频字节/SHA-256。正式检查没有使用部署保护绕过。
+
+候选真实Chromium短程验收43.0秒通过，正式站42.3秒通过，各使用8个独立会话；验证加入、刷新准备状态、权限、实际MP3试音与40段解码、无身份确认、页面开始首夜、守卫自动打开和“不守”回执。之后明确中止；不是完整对局、独立agent试玩或真实手机外放验收，也没有执行正式站高频压力攻击。
+
+发布前后Supabase安全advisor均无发现。仅按创建报告和Cloud QA房主标记精确删除4个自己的测试房间（候选/正式各2个），没有清空数据。应用没有数据结构变更；出现问题可回退此前兼容V3版本或维护部署，保留数据库，不恢复旧站。发布记录的后续推送不自动替换已验收的应用版本。
+
+平台IP头依据：[Vercel请求头](https://vercel.com/docs/headers/request-headers)。私有表权限依据：[Supabase API安全](https://supabase.com/docs/guides/api/securing-your-api)。
