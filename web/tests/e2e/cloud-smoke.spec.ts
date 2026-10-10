@@ -95,6 +95,7 @@ test("cloud smoke: optional trial, guard action and split wolf votes", async ({ 
     await first.getByRole("button", { name: "确认投票", exact: true }).click();
     const second = pages[wolfActors[1]!]!.getByRole("dialog", { name: "本人私密视角" });
     await second.getByRole("button", { name: "确认投票", exact: true }).click();
+    await expect.poll(async () => (await read<PrivateRoom>(contexts[wolfActors[0]!]!, `rooms/${room}/private`)).actionResult?.kind).toBe("kill");
     const decisions = await read<PrivateRoom>(contexts[wolfActors[0]!]!, `rooms/${room}/private`);
     expect(decisions.actionResult?.kind).toBe("kill");
     expect([wolfWindow.players[6]!.id, wolfWindow.players[7]!.id]).toContain(decisions.actionResult?.targetId);
