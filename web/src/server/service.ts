@@ -233,7 +233,7 @@ export class RoomService {
       if (hostOperations.has(op.type)) requireRule(member!.id === room.hostId, "FORBIDDEN");
       if (op.type === "narration_mode") {
         requireRule(!room.game || room.game.phase === "end" || room.game.paused, "PAUSE_BEFORE_MODE_CHANGE");
-        requireRule(op.mode === "text" || (op.trialConfirmed && room.hostAvailable && now - room.heartbeatAt < 10_000), "AUDIO_TRIAL_REQUIRED");
+        requireRule(op.mode === "text" || (room.hostAvailable && now - room.heartbeatAt < 10_000), "HOST_NOT_READY");
         room.narration = { ...(room.narration ?? defaultNarration()), mode: op.mode, version: op.version };
         return;
       }

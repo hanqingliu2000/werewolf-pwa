@@ -11,6 +11,18 @@ async function setup(count = 8) { const f = await fixture(count); fixtures.push(
 afterEach(() => { while (fixtures.length) fixtures.pop()!.close(); });
 
 describe("identity and role projections", () => {
+  it("shows previous wolf knife targets only to living wolves without reporting whether the victim died", async () => {
+    const f = await setup(); await f.begin();
+    f.patch(room => { const target = room.members[7]!.id;
+      room.game = vote(command(nightToDawn(room.game!, { kill: target, guard: target }), { type: "publish_dawn", actorId: room.hostId }), null); });
+    const room = f.state();
+    expect(privateView(room, room.members[0]!).wolfHistory).toEqual([{ nightNo: 1, targetId: room.members[7]!.id }]);
+    expect(room.game!.players[7]!.alive).toBe(true);
+    expect(privateView(room, room.members[2]!)).not.toHaveProperty("wolfHistory");
+    expect(publicView(room)).not.toHaveProperty("wolfHistory");
+    room.game!.publicEvents.push({ type: "deaths", nightNo: 1, playerIds: [room.members[0]!.id], revealedHunters: [] });
+    expect(privateView(room, room.members[0]!)).not.toHaveProperty("wolfHistory");
+  });
   it("restores only the actor's accepted target and seer result without exposing final night deaths", async () => {
     const f = await setup(); await f.begin();
     f.patch((room) => { room.game = nightToDawn(room.game!, { guard: room.members[4]!.id, kill: room.members[7]!.id,

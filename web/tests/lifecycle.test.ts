@@ -9,7 +9,7 @@ describe("public windows and timing", () => {
     const guard = open(started());
     expect(guard.window!.deadline - guard.window!.openedAt).toBe(30_000);
     const wolf = toRole(started(), "werewolf");
-    expect(wolf.window!.deadline - wolf.window!.openedAt).toBe(15_000);
+    expect(wolf.window!.deadline - wolf.window!.openedAt).toBe(30_000);
   });
   it("does not close a public window early even after submission", () => {
     const game = command(open(started()), { type: "guard", actorId: "p5", targetId: null });

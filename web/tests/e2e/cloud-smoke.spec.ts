@@ -4,7 +4,8 @@ import { preset } from "../../src/game/config";
 import script from "../../src/narration/script.json" with { type: "json" };
 import type { PublicRoom, PrivateRoom, Operation } from "../../src/ui/contracts";
 
-test("cloud smoke: enrollment, refresh, real trial and first private action only", async ({ browser, baseURL }, info) => {
+test("cloud smoke: optional trial, guard action and split wolf votes", async ({ browser, baseURL }, info) => {
+  test.setTimeout(240_000);
   const contexts: BrowserContext[] = []; const errors: string[] = []; let room = "";
   const headers = info.project.use.extraHTTPHeaders ?? {};
   async function read<T>(context: BrowserContext, path: string): Promise<T> {
@@ -44,8 +45,8 @@ test("cloud smoke: enrollment, refresh, real trial and first private action only
     const manifest = await manifestResponse.json(); expect(Object.keys(manifest.clips)).toHaveLength(40);
     await host.getByRole("button", { name: "主持控制", exact: true }).click();
     const panel = host.getByRole("dialog", { name: "主持控制" }); await panel.getByRole("button", { name: "语音", exact: true }).click();
-    await expect(panel.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 60_000 });
-    await panel.getByRole("button", { name: "已听清，启用语音" }).click();
+    await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+
     await expect.poll(async () => (await view()).narration.mode).toBe("voice"); await host.keyboard.press("Escape");
     for (let i = 0; i < 8; i++) if (i !== 1) await act(i, { type: "ready", ready: true });
     await act(0, { type: "start" });
@@ -74,9 +75,33 @@ test("cloud smoke: enrollment, refresh, real trial and first private action only
     await privatePanel.getByRole("button", { name: "确认行动", exact: true }).click();
     await expect.poll(async () => (await read<PrivateRoom>(contexts[guard]!, `rooms/${room}/private`)).completed).toBe(true);
     await expect(privatePanel.locator(".waiting-note")).toContainText("本夜不守");
+    await expect.poll(async () => { const current = await view(); return `${current.phase}:${current.nightRole}`; }, { timeout: 60_000 }).toBe("night_action:werewolf");
+    const wolfWindow = await view(); expect(wolfWindow.window!.deadline - wolfWindow.window!.openedAt).toBe(30_000);
+    const wolfActors: number[] = [];
+    for (let i = 0; i < 8; i++) if ((await read<PrivateRoom>(contexts[i]!, `rooms/${room}/private`)).role === "werewolf") wolfActors.push(i);
+    expect(wolfActors).toHaveLength(2);
+    for (let i = 0; i < 2; i++) {
+      const wolfPanel = pages[wolfActors[i]!]!.getByRole("dialog", { name: "本人私密视角" });
+      await expect(wolfPanel).toBeVisible();
+      await wolfPanel.getByRole("button", { name: "历次刀口目标", exact: true }).click();
+      await expect(wolfPanel.locator(".private-detail:popover-open")).toContainText("暂无历史刀口");
+      await wolfPanel.getByRole("button", { name: "关闭详情", exact: true }).click();
+      await wolfPanel.getByRole("button", { name: new RegExp(`^${i + 7}号 `) }).click();
+    }
+    const first = pages[wolfActors[0]!]!.getByRole("dialog", { name: "本人私密视角" });
+    const otherSeat = wolfWindow.players[wolfActors[1]!]!.seat;
+    const otherRow = first.locator(".wolf-proposals>div").filter({ has: pages[wolfActors[0]!]!.locator("strong").filter({ hasText: new RegExp(`^${otherSeat} 号$`) }) });
+    await expect(otherRow.locator("span").first()).toHaveText("8 号");
+    await first.getByRole("button", { name: "确认投票", exact: true }).click();
+    const second = pages[wolfActors[1]!]!.getByRole("dialog", { name: "本人私密视角" });
+    await second.getByRole("button", { name: "确认投票", exact: true }).click();
+    const decisions = await read<PrivateRoom>(contexts[wolfActors[0]!]!, `rooms/${room}/private`);
+    expect(decisions.actionResult?.kind).toBe("kill");
+    expect([wolfWindow.players[6]!.id, wolfWindow.players[7]!.id]).toContain(decisions.actionResult?.targetId);
+    await expect(first.locator(".waiting-note")).toContainText("狼队共同目标");
     await act(0, { type: "abort" }); await expect.poll(async () => (await view()).phase).toBe("end");
     expect((await view()).aborted).toBe(true); expect(errors).toEqual([]);
-    console.log("Cloud smoke passed: 8 isolated sessions, refresh, permissions, secure cookies, real trial, 40 decoded clips, no identity confirmations, first-night UI start and first automatic action; deliberately aborted before a complete game.");
+    console.log("Cloud smoke passed: 8 isolated sessions, direct voice without trial, 40 decoded clips, guard action, 30-second wolf window, different confirmed votes and a persisted tied decision; aborted before a complete game.");
   } finally {
     if (room) writeFileSync(info.outputPath("created-room-ids.json"), JSON.stringify({ rooms: [room], origin: baseURL }), { mode: 0o600 });
     for (const context of contexts) await context.close();

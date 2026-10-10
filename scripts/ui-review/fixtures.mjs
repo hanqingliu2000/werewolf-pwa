@@ -61,7 +61,7 @@ export function makeFixture(scene) {
   const action = ["guard", "werewolf", "witch", "seer"].includes(kind);
   const end = ["end", "recap"].includes(kind);
   const isHost = ["lobby", "vote", "paused", "end"].includes(kind);
-  const duration = ["guard", "paused"].includes(kind) ? 30_000 : kind === "werewolf" ? 15_000 : 10_000;
+  const duration = ["guard", "paused", "werewolf"].includes(kind) ? 30_000 : 10_000;
   const phase = lobby ? "lobby" : kind === "identity" ? "reveal" : action || kind === "paused" ? "night_action"
     : kind === "hunter" ? "hunter" : end ? "end" : "day";
   const recap = recapFor(scene, ownRole);
@@ -70,7 +70,7 @@ export function makeFixture(scene) {
     nightRole: action ? kind : kind === "paused" ? "guard" : null,
     paused: ["werewolf", "paused"].includes(kind), pauseReason: kind === "werewolf" ? "window_incomplete" : kind === "paused" ? "host_unavailable" : null,
     narration: { mode: "text", pending: null, version: voice },
-    window: action || ["hunter", "paused"].includes(kind) ? { openedAt: REVIEW_NOW - (kind === "werewolf" ? 15_000 : kind === "paused" ? 18_000 : 0), deadline: REVIEW_NOW + (kind === "werewolf" ? 0 : kind === "paused" ? 12_000 : duration),
+    window: action || ["hunter", "paused"].includes(kind) ? { openedAt: REVIEW_NOW - (kind === "werewolf" ? 30_000 : kind === "paused" ? 18_000 : 0), deadline: REVIEW_NOW + (kind === "werewolf" ? 0 : kind === "paused" ? 12_000 : duration),
       remainingMs: kind === "werewolf" ? 0 : kind === "paused" ? 12_000 : null } : null,
     players: Array.from({ length: lobby ? 6 : 12 }, (_, i) => ({ id: `p${i + 1}`, seat: i + 1, name: names[i],
       ...(lobby ? { ready: i !== 0 && i !== 3 } : { alive: end ? recap.participants[i].alive : !(["day", "vote"].includes(kind) && i === 9) && !(kind === "hunter" && i === 0),
@@ -84,6 +84,7 @@ export function makeFixture(scene) {
     ...(ownRole === "witch" ? { witch: { saveRemaining: true, poisonRemaining: true, canSeeWolfTarget: kind === "witch", ...(kind === "witch" ? { wolfTargetId: "p8" } : {}) } } : {}),
     ...(ownRole === "seer" ? { reports: [{ nightNo: 1, targetId: "p3", alignment: "wolf" }] } : {}) };
   if (kind === "werewolf") {
+    personal.wolfHistory = [{ nightNo: 1, targetId: "p9" }];
     personal.teammates = recap.participants.filter(p => p.role === "werewolf").map(({ id, seat, name }) => ({ id, seat, name }));
     personal.wolves = { proposals: Object.fromEntries(personal.teammates.map(p => [p.id, "p8"])), confirmations: personal.teammates.slice(1, 3).map(p => p.id),
       locked: false, discussionPaused: true, consensusId: uuid(300) };
@@ -103,7 +104,7 @@ export function applyPreviewOperation(fixture, operation) {
     personal.acceptedAction = { actorId: "p1", kind: op.type === "seer" ? "see" : op.type === "witch" ? op.choice : op.type === "hunter" ? "pass" : op.type, targetId: op.targetId ?? null };
     personal.actionResult = { kind: op.type === "hunter" ? "shot" : personal.acceptedAction.kind, targetId: op.targetId ?? null, nightNo: state.nightNo };
     if (op.type === "seer" && op.targetId) personal.reports.push({ nightNo: 2, targetId: op.targetId, alignment: fixture.recap.participants.find(p => p.id === op.targetId)?.role === "werewolf" ? "wolf" : "good" });
-  } else if (op.type === "wolf_propose" && personal.wolves) { personal.wolves.proposals.p1 = op.targetId; personal.wolves.confirmations = []; }
+  } else if (op.type === "wolf_propose" && personal.wolves) { personal.wolves.proposals.p1 = op.targetId; personal.wolves.confirmations = personal.wolves.confirmations.filter(id => id !== "p1"); }
   else if (op.type === "wolf_confirm" && personal.wolves && !personal.wolves.confirmations.includes("p1")) {
     personal.wolves.confirmations.push("p1");
     const ids = personal.teammates.map(p => p.id);

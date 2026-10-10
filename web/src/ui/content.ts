@@ -1,7 +1,7 @@
 import type { Role, PublicEvent } from "../game/types";
 export const roleNames: Record<Role, string> = { werewolf: "狼人", seer: "预言家", witch: "女巫", guard: "守卫", hunter: "猎人", villager: "平民" };
 export const roleRules: Record<Role, string> = {
-  werewolf: "全体存活狼人共同选择并确认目标，也可共同空刀。",
+  werewolf: "存活狼人各自确认一票，最多票目标成为刀口，最高票平票时随机选择；可投空刀。操作30秒，未投完则等待。",
   seer: "每夜查验一名其他存活玩家的阵营，可重复查验或放弃。",
   witch: "解药与毒药各一瓶，每夜最多一瓶。仅首夜可自救，有解药时可看本夜狼刀目标。",
   guard: "可自守或不守，不可连续守护同一人。守护与解药叠加不会导致死亡。",

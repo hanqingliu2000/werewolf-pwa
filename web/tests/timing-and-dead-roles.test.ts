@@ -83,15 +83,13 @@ it("starts a hunter's 10-second clock only after its real public announcement re
   expect(f.state().game!.window).toBeNull();
 });
 
-it("automatically waits at 15 seconds, permits changes and finishes only on unanimous confirmation", () => {
+it("automatically waits at 30 seconds and counts different confirmed votes", () => {
   let game = toRole(started(), "werewolf");
-  expect(game.window!.deadline - game.window!.openedAt).toBe(15_000);
+  expect(game.window!.deadline - game.window!.openedAt).toBe(30_000);
   game = command(game, { type: "close_window", actorId: "p1" }, game.window!.deadline);
   const remaining = game.window!.remainingMs;
   game = command(game, { type: "wolf_propose", actorId: "p1", targetId: "p8" }, game.updatedAt + 60_000);
   game = command(game, { type: "wolf_propose", actorId: "p2", targetId: "p7" });
-  expect(() => command(game, { type: "wolf_confirm", actorId: "p1" })).toThrow("WOLF_CONSENSUS_REQUIRED");
-  game = command(game, { type: "wolf_propose", actorId: "p2", targetId: "p8" });
   game = command(game, { type: "wolf_confirm", actorId: "p1" });
   expect(game.paused).toBe(true); expect(game.window!.remainingMs).toBe(remaining);
   game = command(game, { type: "wolf_confirm", actorId: "p2" });
@@ -112,7 +110,7 @@ it("preserves partial confirmations at the deadline without accepting non-wolf o
   expect(game.phase).toBe("night_close"); expect(game.currentNight!.killTargetId).toBeNull();
 });
 
-it("keeps early unanimous confirmation in the fixed 15-second window", () => {
+it("keeps an early completed vote in the fixed 30-second window", () => {
   let game = toRole(started(), "werewolf");
   for (const actorId of ["p1", "p2"]) game = command(game, { type: "wolf_propose", actorId, targetId: null });
   for (const actorId of ["p1", "p2"]) game = command(game, { type: "wolf_confirm", actorId });

@@ -24,6 +24,26 @@ async function controls(page: Page) {
 }
 async function close(page: Page) { await page.keyboard.press("Escape"); await expect(page.locator("dialog[open]")).toHaveCount(0); }
 
+test("voice can be enabled without playing a trial and trial remains optional", async ({ page, context }) => {
+  await page.addInitScript(() => {
+    const Native = window.AudioContext; const state = window as unknown as { startedAudio: number }; state.startedAudio = 0;
+    window.AudioContext = class extends Native {
+      createBufferSource() { const source = super.createBufferSource(); const start = source.start.bind(source);
+        source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => { state.startedAudio++; start(...args); }; return source; }
+    };
+  });
+  const room = await create(page); const panel = await controls(page);
+  await expect(panel.getByRole("button", { name: "试音（可选）", exact: true })).toBeVisible();
+  await panel.getByRole("button", { name: "语音", exact: true }).click();
+  await expect.poll(async () => (await view(context, room)).narration.mode).toBe("voice");
+  await expect(panel.locator(".voice-controls [role=status]")).toHaveText("声音就绪");
+  expect(await page.evaluate(() => (window as unknown as { startedAudio: number }).startedAudio)).toBe(0);
+  await panel.getByRole("button", { name: "试音（可选）", exact: true }).click();
+  await expect(panel.locator(".voice-controls [role=status]")).toHaveText("声音就绪", { timeout: 30_000 });
+  expect(await page.evaluate(() => (window as unknown as { startedAudio: number }).startedAudio)).toBe(1);
+  expect((await view(context, room)).narration.mode).toBe("voice");
+});
+
 test("complete narration bank decodes with matching text, hashes and duration", async ({ page }) => {
   await page.goto("/");
   const clips = await page.evaluate(async (version) => {
@@ -50,7 +70,7 @@ test("complete narration bank decodes with matching text, hashes and duration", 
   }
 });
 
-test("real MP3 trial, ended clock, interruption, reload and explicit text fallback", async ({ page, context, browser, baseURL }, info) => {
+test("direct voice, ended clock, interruption, reload and explicit text fallback", async ({ page, context, browser, baseURL }, info) => {
   const otherContexts: BrowserContext[] = []; const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   // Observe the real browser audio context; no production test hooks or synthetic ended events.
@@ -72,10 +92,10 @@ test("real MP3 trial, ended clock, interruption, reload and explicit text fallba
     await panel.getByRole("button", { name: "语音", exact: true }).click();
     await expect(panel.getByRole("alert")).toContainText("浏览器未允许播放");
     expect((await view(context, room)).narration.mode).toBe("text");
-    await panel.getByRole("button", { name: "重新试音" }).click();
-    await expect(panel.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 30_000 });
+    await panel.getByRole("button", { name: "恢复声音" }).click();
+    await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
     await panel.getByLabel("播报音量").fill("60");
-    await panel.getByRole("button", { name: "已听清，启用语音" }).click();
+
     await expect.poll(async () => (await view(context, room)).narration.mode).toBe("voice");
     for (const width of [360, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
@@ -120,11 +140,11 @@ test("real MP3 trial, ended clock, interruption, reload and explicit text fallba
     await expect(page.locator(".private-modal[open]")).toHaveCount(0);
     await expect.poll(async () => (await view(context, room)).paused).toBe(true);
     panel = await controls(page); await expect(panel.getByRole("button", { name: "恢复对局" })).toBeDisabled();
-    await panel.getByRole("button", { name: "重新试音" }).click(); // Injected first resume rejection after reload.
+    await panel.getByRole("button", { name: "恢复声音" }).click(); // Injected first resume rejection after reload.
     await expect(panel.getByRole("alert")).toContainText("浏览器未允许播放");
-    await panel.getByRole("button", { name: "重新试音" }).click();
-    await expect(panel.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 30_000 });
-    await panel.getByRole("button", { name: "已听清，启用语音" }).click();
+    await panel.getByRole("button", { name: "恢复声音" }).click();
+    await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+
     await expect(panel.getByRole("button", { name: "恢复对局" })).toBeEnabled();
     await panel.getByRole("button", { name: "恢复对局" }).click();
     await expect.poll(async () => (await view(context, room)).paused).toBe(false);
@@ -152,7 +172,7 @@ test("missing and corrupt bank cannot enable voice or silently advance", async (
   expect((await view(context, room)).narration.mode).toBe("text");
   await page.unroute(`**/audio/${script.version}/guard_open.mp3`);
   await page.route(`**/audio/${script.version}/guard_open.mp3`, (route) => route.fulfill({ status: 200, contentType: "audio/mpeg", body: "corrupted audio" }));
-  await panel.getByRole("button", { name: "重新试音" }).click();
+  await panel.getByRole("button", { name: "恢复声音" }).click();
   await expect(panel.getByRole("alert")).toContainText("声音资源未能完整加载");
   expect((await view(context, room)).phase).toBe("lobby");
   expect((await view(context, room)).narration.mode).toBe("text");

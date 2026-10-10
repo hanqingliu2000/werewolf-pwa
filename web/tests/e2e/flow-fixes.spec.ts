@@ -50,6 +50,29 @@ async function inViewport(locator: ReturnType<Page["locator"]>) {
   })).toBe(true);
 }
 
+test("wolves can confirm split votes, inspect history, and see the winning rather than their own target", async ({ page }) => {
+  const api = await mockRoom(page); api.state.nightRole = "werewolf"; api.state.nightNo = 3;
+  api.state.window = { openedAt: Date.now(), deadline: Date.now() + 30_000, remainingMs: null };
+  api.personal.role = "werewolf"; api.personal.action = "werewolf";
+  api.personal.teammates = api.state.players.slice(0, 2);
+  api.personal.wolves = { proposals: { p1: "p8", p2: "p9" }, confirmations: [], locked: false, consensusId: "votes", discussionPaused: false };
+  api.personal.wolfHistory = [{ nightNo: 1, targetId: "p7" }, { nightNo: 2, targetId: null }];
+  await page.goto("/r/ABCDEF12"); const panel = page.getByRole("dialog", { name: "本人私密视角" });
+  await expect(panel.getByRole("button", { name: "确认投票", exact: true })).toBeEnabled();
+  await panel.getByRole("button", { name: "历次刀口目标", exact: true }).click();
+  await expect(panel.locator(".private-detail:popover-open")).toContainText("第 1 夜");
+  await expect(panel.locator(".private-detail:popover-open")).toContainText("7 号");
+  await expect(panel.locator(".private-detail:popover-open")).toContainText("空刀");
+  await panel.getByRole("button", { name: "关闭详情", exact: true }).click();
+  await panel.getByRole("button", { name: "确认投票", exact: true }).click();
+  expect(api.commands.at(-1)?.operation).toEqual({ type: "wolf_confirm", consensusId: "votes" });
+  api.personal.wolves.locked = true; api.personal.action = null;
+  api.personal.actionResult = { kind: "kill", targetId: "p9", nightNo: 3 };
+  await expect(panel.locator(".waiting-note")).toContainText("狼队共同目标：9 号 · 玩家9");
+  await expect(panel.locator(".waiting-note")).not.toContainText("8 号");
+  expect(api.errors).toEqual([]);
+});
+
 test("all five action roles fit every target and control without scrolling", async ({ page }, info) => {
   const api = await mockRoom(page);
   const viewports = [{ width: 320, height: 568 }, { width: 360, height: 560 }, { width: 360, height: 640 }, { width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }, { width: 640, height: 320 }, { width: 740, height: 360 }, { width: 844, height: 390 }];
@@ -125,8 +148,8 @@ test("seer, guard, hunter and wolf waiting keep usable pinned actions", async ({
   api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
   api.personal.wolves = { proposals: { p1: "p2" }, confirmations: [], locked: false, consensusId: "consensus", discussionPaused: true };
   await expect(panel).toBeVisible(); await expect(panel.getByText("协商等待", { exact: true })).toBeVisible();
-  await expect(panel.getByRole("button", { name: "共同确认", exact: true })).toBeEnabled();
-  await inViewport(panel.getByRole("button", { name: "共同确认", exact: true })); expect(api.errors).toEqual([]);
+  await expect(panel.getByRole("button", { name: "确认投票", exact: true })).toBeEnabled();
+  await inViewport(panel.getByRole("button", { name: "确认投票", exact: true })); expect(api.errors).toEqual([]);
 });
 
 for (const { completion, unknown } of [{ completion: "cue_ack", unknown: false }, { completion: "announcement_done", unknown: false }, { completion: "cue_ack", unknown: true }] as const) test(`real audio ${completion} retries ${unknown ? "unknown results" : "conflicts"} without replay and drops stale retries`, async ({ page }) => {
@@ -152,8 +175,8 @@ for (const { completion, unknown } of [{ completion: "cue_ack", unknown: false }
   await page.goto("/r/ABCDEF12"); await page.getByRole("button", { name: "主持控制", exact: true }).click();
   const controls = page.getByRole("dialog", { name: "主持控制" });
   await controls.getByRole("button", { name: "语音", exact: true }).click();
-  await expect(controls.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 30_000 });
-  await controls.getByRole("button", { name: "已听清，启用语音" }).click();
+  await expect(controls.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+
   await expect(controls.locator(".host-mode strong")).toHaveText("语音主持");
   api.state.phase = completion === "cue_ack" ? "night_open" : "reveal"; api.state.windowId = "audio-window";
   if (completion === "cue_ack") api.state.nightRole = "seer";

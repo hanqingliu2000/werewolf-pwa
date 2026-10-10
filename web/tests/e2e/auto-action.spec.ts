@@ -55,7 +55,7 @@ test("foreground actions open once, conceal on hide and respect private eligibil
   turn(7, "werewolf"); personal.role = "werewolf"; state.nightRole = "werewolf"; state.paused = true;
   personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
   personal.wolves = { proposals: {}, discussionPaused: true, confirmations: [], locked: false, consensusId: "consensus" };
-  await expect(panel).toBeVisible(); await expect(panel.getByText("等待全体共同确认", { exact: true })).toBeVisible();
+  await expect(panel).toBeVisible(); await expect(panel.getByText("0 / 1 已投票", { exact: true })).toBeVisible();
   await expect(panel.getByRole("button", { name: "本夜空刀", exact: true })).toBeEnabled();
   await page.keyboard.press("Escape"); personal.wolves = undefined; personal.action = null; state.paused = false;
   state.phase = "hunter"; state.nightRole = null; state.windowId = "hunter-announcement";

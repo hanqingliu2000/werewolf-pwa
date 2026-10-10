@@ -2,7 +2,7 @@ import { requireRule } from "./errors";
 import type { Death, DeathCause, Game, Night, NightRole, Player, Winner } from "./types";
 
 const order: NightRole[] = ["guard", "werewolf", "witch", "seer"];
-export const actionDuration = (role: NightRole | "hunter") => role === "werewolf" ? 15_000 : role === "guard" ? 30_000 : 10_000;
+export const actionDuration = (role: NightRole | "hunter") => role === "werewolf" || role === "guard" ? 30_000 : 10_000;
 
 export function nightRoles(game: Game): NightRole[] {
   return order.filter((role) => game.config.roles[role] > 0);

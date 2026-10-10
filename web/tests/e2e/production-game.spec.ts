@@ -58,9 +58,11 @@ test("production: 12 independent players complete a real-time voice game, recap 
   async function trial() {
     const panel = await controls();
     const enable = panel.getByRole("button", { name: "语音", exact: true });
-    if (await enable.isEnabled()) await enable.click(); else await panel.getByRole("button", { name: "重新试音", exact: true }).click();
-    await expect(panel.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 60_000 });
-    await panel.getByRole("button", { name: "已听清，启用语音" }).click();
+    if (await enable.isEnabled()) await enable.click();
+    else if (await panel.getByRole("button", { name: "恢复声音", exact: true }).isVisible()) await panel.getByRole("button", { name: "恢复声音", exact: true }).click();
+    else await panel.getByRole("button", { name: "试音（可选）", exact: true }).click();
+    await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+
     await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 30_000 });
     await expect.poll(async () => (await view()).narration.mode).toBe("voice"); await close(actors[0]!.page);
   }
@@ -147,7 +149,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
         const turn = `${current.nightNo}:${current.nightRole}`;
         if (handled.has(turn)) { await host.page.waitForTimeout(700); continue; }
         const duration = current.window!.deadline - current.window!.openedAt;
-        expect(duration).toBe(current.nightRole === "guard" ? 30_000 : current.nightRole === "werewolf" ? 15_000 : 10_000);
+        expect(duration).toBe(["guard", "werewolf"].includes(current.nightRole!) ? 30_000 : 10_000);
         if (current.nightNo === 1 && current.nightRole === "werewolf" && !current.paused) { await host.page.waitForTimeout(700); continue; }
         report.windows.push({ night: current.nightNo, role: current.nightRole!, durationMs: duration, opening: current.window!.openedAt }); save();
         const active = actors.filter((a) => a.role === current.nightRole && alive(a, current));
@@ -170,8 +172,8 @@ test("production: 12 independent players complete a real-time voice game, recap 
           }
         }
         if (current.nightRole === "werewolf") for (const actor of active) {
-          const panel = await privatePanel(actor); await expect(panel.getByRole("button", { name: "共同确认", exact: true })).toBeEnabled();
-          await panel.getByRole("button", { name: "共同确认", exact: true }).click();
+          const panel = await privatePanel(actor); await expect(panel.getByRole("button", { name: "确认投票", exact: true })).toBeEnabled();
+          await panel.getByRole("button", { name: "确认投票", exact: true }).click();
           await expect.poll(async () => {
             const accepted = await view();
             return accepted.phase !== "night_action" || accepted.nightRole !== "werewolf" || !!(await personal(actor)).wolves?.confirmations.includes(actor.id);

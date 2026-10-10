@@ -226,6 +226,8 @@ button.seat[aria-pressed=true] { border-color:var(--green); box-shadow:inset 0 0
   .single-screen .action-targets[data-count="8"] { --target-rows:2; }
   .single-screen .wolf-proposals { grid-template-columns:minmax(0,1fr); gap:0; }
   .single-screen .wolf-proposals>div { min-height:24px; line-height:18px; }
+  .single-screen[data-task="werewolf"] .action-facts { display:none; }
+  .single-screen[data-task="werewolf"] .action-context { justify-content:flex-end; }
   .single-screen .private-action-bar { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,1fr); align-items:center; gap:16px; }
   .single-screen .selection-summary { margin:0; }
 }

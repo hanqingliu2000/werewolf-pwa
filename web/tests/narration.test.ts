@@ -18,14 +18,15 @@ async function begin(f: Awaited<Awaited<ReturnType<typeof fixture>>>) {
 }
 
 describe("public narration contract", () => {
-  it("requires a host trial, changes mode only while safe, and supports old snapshots", async () => {
+  it("makes trial optional, keeps host readiness and changes mode only while safe", async () => {
     const f = await setup();
     f.patch((room) => { delete room.narration; });
     expect(publicView(f.state()).narration.mode).toBe("text");
-    await expect(f.act({ type: "narration_mode", mode: "voice", version: NARRATION_VERSION, trialConfirmed: false })).rejects.toThrow("AUDIO_TRIAL_REQUIRED");
+    await f.act({ type: "narration_mode", mode: "voice", version: NARRATION_VERSION });
+    expect(publicView(f.state()).narration.mode).toBe("voice");
     await expect(f.act({ type: "narration_mode", mode: "voice", version: NARRATION_VERSION, trialConfirmed: true }, 1)).rejects.toThrow("FORBIDDEN");
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: false, narrationVersion: NARRATION_VERSION });
-    await expect(enable(f)).rejects.toThrow("AUDIO_TRIAL_REQUIRED");
+    await expect(enable(f)).rejects.toThrow("HOST_NOT_READY");
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
     await begin(f);
     await expect(f.act({ type: "narration_mode", mode: "text", version: NARRATION_VERSION, trialConfirmed: false })).rejects.toThrow("PAUSE_BEFORE_MODE_CHANGE");

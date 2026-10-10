@@ -46,28 +46,28 @@ describe("role actions and confirmation", () => {
   });
 });
 
-describe("wolf consensus", () => {
-  it("requires proposals and agreement before confirmation", () => {
+describe("wolf voting", () => {
+  it("requires an own proposal, accepts different votes, and resolves a tie", () => {
     let game = toRole(started(), "werewolf");
     expect(() => command(game, { type: "wolf_confirm", actorId: "p1" })).toThrow("WOLF_CONSENSUS_REQUIRED");
     game = command(game, { type: "wolf_propose", actorId: "p1", targetId: "p1" });
     game = command(game, { type: "wolf_propose", actorId: "p2", targetId: "p2" });
-    expect(() => command(game, { type: "wolf_confirm", actorId: "p1" })).toThrow("WOLF_CONSENSUS_REQUIRED");
-    game = command(game, { type: "wolf_propose", actorId: "p2", targetId: "p1" });
     game = command(game, { type: "wolf_confirm", actorId: "p1" });
     expect(game.currentNight!.killLocked).toBe(false);
     expect(command(game, { type: "wolf_confirm", actorId: "p1" }).currentNight!.wolfConfirmations).toEqual(["p1"]);
     game = command(game, { type: "wolf_confirm", actorId: "p2" });
-    expect(game.currentNight!.killTargetId).toBe("p1");
+    expect(game.currentNight!.killTargetId).toBe("p2");
     expect(() => command(game, { type: "wolf_propose", actorId: "p1", targetId: null })).toThrow("ACTION_LOCKED");
     expect(() => command(game, { type: "wolf_confirm", actorId: "p1" })).toThrow("ACTION_LOCKED");
   });
-  it("invalidates prior confirmations after a proposal change", () => {
+  it("invalidates only the changing wolf's confirmation", () => {
     let game = toRole(started(), "werewolf");
     for (const actorId of ["p1", "p2"]) game = command(game, { type: "wolf_propose", actorId, targetId: "p8" });
     game = command(game, { type: "wolf_confirm", actorId: "p1" });
     expect(command(game, { type: "wolf_propose", actorId: "p1", targetId: "p8" }).currentNight!.wolfConfirmations).toEqual(["p1"]);
     game = command(game, { type: "wolf_propose", actorId: "p2", targetId: null });
+    expect(game.currentNight!.wolfConfirmations).toEqual(["p1"]);
+    game = command(game, { type: "wolf_propose", actorId: "p1", targetId: null });
     expect(game.currentNight!.wolfConfirmations).toEqual([]);
   });
   it("distinguishes a jointly confirmed empty kill from no proposal", () => {

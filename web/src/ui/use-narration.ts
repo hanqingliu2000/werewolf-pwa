@@ -9,7 +9,7 @@ import type { Operation } from "./contracts";
 export function useNarration(controller: RoomController) {
   const latest = useRef(controller); latest.current = controller;
   const player = useRef<NarrationPlayer | null>(null); const verified = useRef(false); const sequence = useRef(0);
-  const [status, setStatus] = useState<"idle" | "loading" | "testing" | "confirm" | "ready" | "playing" | "failed">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "testing" | "ready" | "playing" | "failed">("idle");
   const [problem, setProblem] = useState<string | null>(null); const [caption, setCaption] = useState("");
   const [volume, setVolume] = useState(80); const [generation, setGeneration] = useState(0);
   const [completionRetry, setCompletionRetry] = useState(false);
@@ -99,7 +99,7 @@ export function useNarration(controller: RoomController) {
     }
   }, [controller.leader]);
 
-  async function trial() {
+  async function prepareVoice(sample: boolean) {
     if (!latest.current.leader) return;
     const trialSequence = ++sequence.current; verified.current = false; completed.current = null;
     setCompletionRetry(false);
@@ -109,21 +109,18 @@ export function useNarration(controller: RoomController) {
     try {
       await preparation;
       if (trialSequence !== sequence.current || document.visibilityState !== "visible") return;
-      setStatus("testing"); setCaption(script.clips.sample); await player.current.play(["sample"]);
-      if (trialSequence === sequence.current) setStatus("confirm");
+      if (sample) { setStatus("testing"); setCaption(script.clips.sample); await player.current.play(["sample"]); }
+      if (trialSequence !== sequence.current || !player.current.ready || document.visibilityState !== "visible" || !latest.current.leader) return;
+      verified.current = true; await latest.current.reportAudio(true);
+      if (trialSequence !== sequence.current || !player.current.ready || document.visibilityState !== "visible" || !latest.current.leader) return;
+      if (!sample && !await latest.current.send({ type: "narration_mode", mode: "voice", version: NARRATION_VERSION, trialConfirmed: false })) {
+        verified.current = false; setStatus("failed"); setProblem("AUDIO_MODE_FAILED"); return;
+      }
+      setStatus("ready"); setCaption(""); setGeneration((n) => n + 1);
     } catch (error) { if (trialSequence === sequence.current) fail.current(error); }
   }
-  async function confirmTrial() {
-    const c = latest.current;
-    if (status !== "confirm" || !player.current?.ready || !c.leader) return;
-    const confirmation = sequence.current;
-    verified.current = true; await c.reportAudio(true);
-    if (confirmation !== sequence.current || !player.current?.ready || document.visibilityState !== "visible" || !latest.current.leader) return;
-    if (!await latest.current.send({ type: "narration_mode", mode: "voice", version: NARRATION_VERSION, trialConfirmed: true })) {
-      verified.current = false; setStatus("failed"); setProblem("AUDIO_MODE_FAILED"); return;
-    }
-    setStatus("ready"); setCaption(""); setGeneration((n) => n + 1);
-  }
+  const trial = () => prepareVoice(true);
+  const enableVoice = () => prepareVoice(false);
   async function textMode() {
     const c = latest.current;
     sequence.current++; player.current?.cancel(); completed.current = null;
@@ -138,6 +135,6 @@ export function useNarration(controller: RoomController) {
   return { mode, status, problem, caption, volume, ready: mode === "text" || (verified.current && !!player.current?.ready),
     completionRetry: completionRetry && !!item && controller.leader && !v?.paused && mode === "voice"
       && item.envelope.epochId === v?.epochId && item.envelope.windowId === v?.windowId, retryCompletion,
-    text: textPlan ? captions(textPlan.clips) : "", version: NARRATION_VERSION, trial, confirmTrial, textMode, changeVolume };
+    text: textPlan ? captions(textPlan.clips) : "", version: NARRATION_VERSION, trial, enableVoice, textMode, changeVolume };
 }
 export type VoiceController = ReturnType<typeof useNarration>;

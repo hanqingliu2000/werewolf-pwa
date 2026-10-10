@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomInt } from "node:crypto";
 import { z } from "zod";
 import { parseCommand } from "./commands";
 import { validateConfig } from "./config";
@@ -173,7 +173,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       if (command.targetId !== null) livingTarget(game, command.targetId);
       if (!Object.hasOwn(night.wolfProposals, actorId) || night.wolfProposals[actorId] !== command.targetId) {
         night.wolfProposals[actorId] = command.targetId;
-        night.wolfConfirmations = [];
+        night.wolfConfirmations = night.wolfConfirmations.filter((id) => id !== actorId);
       }
       break;
     }
@@ -181,15 +181,20 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       const night = activeRole(game, actorId, "werewolf", now);
       requireRule(!night.killLocked, "ACTION_LOCKED");
       const actors = actorIds(game);
-      requireRule(actors.every((id) => Object.hasOwn(night.wolfProposals, id)), "WOLF_CONSENSUS_REQUIRED");
-      const targets = actors.map((id) => night.wolfProposals[id]);
-      requireRule(new Set(targets).size === 1, "WOLF_CONSENSUS_REQUIRED");
+      requireRule(Object.hasOwn(night.wolfProposals, actorId), "WOLF_CONSENSUS_REQUIRED");
       if (!night.wolfConfirmations.includes(actorId)) night.wolfConfirmations.push(actorId);
       if (actors.every((id) => night.wolfConfirmations.includes(id))) {
+        const counts = new Map<string | null, number>();
+        for (const id of actors) { const target = night.wolfProposals[id]!; counts.set(target, (counts.get(target) ?? 0) + 1); }
+        const highest = Math.max(...counts.values());
+        const tied = [...counts.keys()].filter((target) => counts.get(target) === highest)
+          .sort((a, b) => (a === null ? 13 : player(game, a).seat) - (b === null ? 13 : player(game, b).seat));
+        const index = tied.length === 1 ? 0 : (random.randomIndex ?? randomInt)(tied.length);
+        requireRule(Number.isInteger(index) && index >= 0 && index < tied.length, "RANDOM_INDEX_INVALID");
         night.wolfConfirmations = [...actors];
         night.wolfProposals = Object.fromEntries(actors.map((id) => [id, night.wolfProposals[id]!]));
         night.killLocked = true;
-        night.killTargetId = targets[0]!;
+        night.killTargetId = tied[index]!;
         if (game.wolfDiscussionPaused) {
           game.wolfDiscussionPaused = false; game.paused = false;
           move(game, "CLOSE"); game.window = null;

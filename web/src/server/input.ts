@@ -16,7 +16,7 @@ const operation = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("kick"), playerId: id }), simple("leave"), simple("start"),
   simple("acknowledge"), simple("begin_night"), z.strictObject({ type: z.literal("cue_ack"), cueId: id.optional(), version: z.string().max(32).optional() }),
   z.strictObject({ type: z.literal("announcement_done"), cueId: id, version: z.string().max(32).optional() }),
-  z.strictObject({ type: z.literal("narration_mode"), mode: z.enum(["text", "voice"]), version: z.literal(NARRATION_VERSION), trialConfirmed: z.boolean() }),
+  z.strictObject({ type: z.literal("narration_mode"), mode: z.enum(["text", "voice"]), version: z.literal(NARRATION_VERSION), trialConfirmed: z.boolean().optional() }),
   simple("pause"), simple("resume"), simple("abort"), simple("restart"),
   targeted("guard"), targeted("wolf_propose"), z.strictObject({ type: z.literal("wolf_confirm"), consensusId: id }), targeted("seer"),
   z.strictObject({ type: z.literal("witch"), choice: z.enum(["save", "poison", "pass"]), targetId }),

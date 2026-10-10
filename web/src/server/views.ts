@@ -79,6 +79,7 @@ export function privateView(room: Room, member: Member) {
     },
       action: active && !completed && (game!.witchPotions.save || game!.witchPotions.poison) ? "witch" : null } : {}),
     ...(own?.role === "werewolf" && visibleAlive ? {
+      wolfHistory: game!.nights.filter((night) => night.killLocked).map((night) => ({ nightNo: night.number, targetId: night.killTargetId })),
       teammates: game!.players.filter((p) => p.role === "werewolf").map((p) => ({ id: p.id, seat: p.seat, name: p.name })),
       ...(active ? { wolves: { proposals: game!.currentNight!.wolfProposals,
         discussionPaused: game!.wolfDiscussionPaused ?? false,

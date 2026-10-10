@@ -144,8 +144,8 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
     const maintenance = await host(organizer.page);
     if (voice) {
       await maintenance.getByRole("button", { name: "语音", exact: true }).click();
-      await expect(maintenance.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 30_000 });
-      await maintenance.getByRole("button", { name: "已听清，启用语音" }).click();
+      await expect(maintenance.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+
       await expect.poll(async () => (await status(organizer, room)).narration.mode).toBe("voice");
     }
     await expect(maintenance.getByRole("button", { name: "开始发牌" })).toBeEnabled(); await maintenance.getByRole("button", { name: "开始发牌" }).click(); await close(organizer.page);
@@ -175,9 +175,9 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
         const role = (await status(organizer, room)).nightRole;
         const active = actors.filter((a) => a.role === role && publicState.players.some((p) => p.id === a.id && "alive" in p && p.alive));
         if (voice && count === 12 && round === 1 && role === "werewolf") {
-          await expect.poll(async () => (await status(organizer, room)).paused, { timeout: 20_000 }).toBe(true);
+          await expect.poll(async () => (await status(organizer, room)).paused, { timeout: 35_000 }).toBe(true);
           const panel = await reveal(active[0]!.page);
-          await expect(panel.getByText("等待全体共同确认", { exact: true })).toBeVisible();
+          await expect(panel.getByText("0 / 4 已投票", { exact: true })).toBeVisible();
           await expect(panel.getByRole("button", { name: "暂停协商计时" })).toHaveCount(0);
           await expect(panel.getByRole("button", { name: "本夜空刀" })).toBeEnabled();
           await screenshot(active[0]!.page, info, "wolves-automatic-wait"); await close(active[0]!.page);
@@ -226,7 +226,7 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
           await close(actor.page);
         }
         if (role === "werewolf") for (const actor of active) {
-          const panel = await reveal(actor.page); await expect(panel.getByRole("button", { name: "共同确认" })).toBeEnabled(); await panel.getByRole("button", { name: "共同确认" }).click();
+          const panel = await reveal(actor.page); await expect(panel.getByRole("button", { name: "确认投票" })).toBeEnabled(); await panel.getByRole("button", { name: "确认投票" }).click();
           if ((await status(organizer, room)).phase === "night_action") await expect.poll(async () => (await personal(actor, room)).wolves?.confirmations.includes(actor.id)).toBe(true);
           await close(actor.page);
         }
@@ -286,9 +286,9 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
     await organizer.page.getByRole("link", { name: "返回这一桌" }).click();
     if (voice) {
       control = await host(organizer.page);
-      await control.getByRole("button", { name: "重新试音" }).click();
-      await expect(control.getByRole("button", { name: "已听清，启用语音" })).toBeVisible({ timeout: 30_000 });
-      await control.getByRole("button", { name: "已听清，启用语音" }).click();
+      await control.getByRole("button", { name: "试音（可选）" }).click();
+      await expect(control.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+
       await close(organizer.page);
     }
     await organizer.page.getByRole("button", { name: "下一局" }).click();
