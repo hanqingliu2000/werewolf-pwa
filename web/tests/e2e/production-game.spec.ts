@@ -16,7 +16,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
     players: 12, voiceVersion: script.version, startedAt: Date.now(), endedAt: 0, gameId: "", winner: null as string | null,
     windows: [] as { night: number; role: string; durationMs: number; opening: number }[],
     transitions: [] as { phase: string; role: string | null; night: number; at: number }[],
-    recoveries: 0, wolfAutomaticWait: false, hostEliminated: false, recapChecked: false, nextLobbyChecked: false,
+    recoveries: 0, wolfReconfirmations: 0, wolfAutomaticWait: false, hostEliminated: false, recapChecked: false, nextLobbyChecked: false,
     playedClips: {} as Record<string, number>, interruptedClips: {} as Record<string, number>, decodedClips: 0 };
   const reportPath = info.outputPath("production-report.json");
   const save = () => writeFileSync(reportPath, JSON.stringify(report), { mode: 0o600 });
@@ -54,6 +54,13 @@ test("production: 12 independent players complete a real-time voice game, recap 
       return content.scrollHeight <= content.clientHeight + 1 && buttons.every((b) => { const r = b.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.width >= 44 && r.height >= 44; });
     });
     expect(fits, `${label} fits on screen`).toBe(true); await actor.page.screenshot({ path: info.outputPath(`${label}.png`) });
+  }
+  async function receipt(actor: Actor) {
+    await expect.poll(async () => (await personal(actor)).completed).toBe(true);
+    const panel = await privatePanel(actor);
+    await expect(panel.getByRole("heading", { name: "行动已确认", exact: true })).toBeVisible();
+    await actor.page.screenshot({ path: info.outputPath(`receipt-${actor.role}-seat-${actor.seat}.png`) });
+    await close(actor.page);
   }
   async function trial() {
     const panel = await controls();
@@ -107,7 +114,8 @@ test("production: 12 independent players complete a real-time voice game, recap 
     await host.page.getByRole("button", { name: "创建房间", exact: true }).last().click();
     await host.page.waitForURL(/\/r\/[A-F0-9]{8}$/); room = host.page.url().split("/").at(-1)!; report.rooms.push(room); save();
     for (const actor of actors.slice(1)) {
-      await actor.page.goto(`/join?room=${room}`); await actor.page.getByLabel("你的昵称").fill(`Cloud QA live ${actor.seat}`);
+      const nickname = ["测试房主", "阿青", "小周", "Riley", "小夏", "木木", "小陈", "安安", "小余", "小白", "阿宁", "小林"][actor.seat - 1]!;
+      await actor.page.goto(`/join?room=${room}`); await actor.page.getByLabel("你的昵称").fill(nickname);
       await actor.page.getByRole("button", { name: "加入房间", exact: true }).last().click(); await actor.page.waitForURL(new RegExp(`/r/${room}$`));
     }
     for (const actor of actors) {
@@ -115,6 +123,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
       await actor.page.getByRole("button", { name: "准备好了", exact: true }).click(); await expect(actor.page.getByRole("button", { name: "取消准备", exact: true })).toBeVisible();
       const cookie = (await actor.context.cookies()).find((c) => c.name === "ww_session"); expect(cookie).toMatchObject({ secure: true, httpOnly: true, sameSite: "Strict" });
     }
+    await host.page.screenshot({ path: info.outputPath("ready-lobby.png"), fullPage: true });
     await actors[1]!.page.reload(); await expect(actors[1]!.page.getByRole("button", { name: "取消准备", exact: true })).toBeVisible();
     expect((await actors[1]!.context.request.get(`/api/v2/rooms/${room}/host`)).status()).toBe(403);
     const bad = await actors[1]!.context.request.post(`/api/v2/rooms/${room}/commands`, { headers: { origin: "https://evil.example" }, data: {} }); expect(bad.status()).toBe(403);
@@ -139,10 +148,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
         expect(current.aborted).toBe(false); expect(current.winner).toBe("good"); report.winner = current.winner; report.completeGame = true; break;
       }
       if (current.paused) {
-        const wolf = actors.find((a) => a.role === "werewolf" && alive(a, current));
-        const discussion = current.phase === "night_action" && current.nightRole === "werewolf" && wolf && (await personal(wolf)).wolves?.discussionPaused;
-        if (!discussion) { await recover(); continue; }
-        report.wolfAutomaticWait = true;
+        await recover(); continue;
       }
       if (current.narration.pending || current.phase === "night_open" || current.phase === "night_close" || current.phase === "dawn") { await host.page.waitForTimeout(700); continue; }
       if (current.phase === "night_action") {
@@ -150,10 +156,16 @@ test("production: 12 independent players complete a real-time voice game, recap 
         if (handled.has(turn)) { await host.page.waitForTimeout(700); continue; }
         const duration = current.window!.deadline - current.window!.openedAt;
         expect(duration).toBe(["guard", "werewolf"].includes(current.nightRole!) ? 30_000 : 10_000);
-        if (current.nightNo === 1 && current.nightRole === "werewolf" && !current.paused) { await host.page.waitForTimeout(700); continue; }
+        if (current.nightNo === 1 && current.nightRole === "werewolf" && !current.window!.waiting) { await host.page.waitForTimeout(700); continue; }
+        if (current.window!.waiting) {
+          expect(current.paused).toBe(false); expect(current.pauseReason).toBeNull();
+          if (current.nightRole === "werewolf") {
+            report.wolfAutomaticWait = true;
+            await host.page.screenshot({ path: info.outputPath("wolf-silent-wait.png") });
+          }
+        }
         report.windows.push({ night: current.nightNo, role: current.nightRole!, durationMs: duration, opening: current.window!.openedAt }); save();
         const active = actors.filter((a) => a.role === current.nightRole && alive(a, current));
-        if (current.paused && current.nightRole === "werewolf") for (const actor of active) await expect(actor.page.locator(".stage-status")).toHaveText("暂停");
         for (const actor of active) {
           const panel = await privatePanel(actor);
           if (current.nightRole !== "witch") await frame(actor, `${turn.replace(":", "-")}-seat-${actor.seat}`);
@@ -167,17 +179,26 @@ test("production: 12 independent players complete a real-time voice game, recap 
               else await panel.getByRole("button", { name: "不用药", exact: true }).click();
             }
             if (current.nightRole === "seer") { const target = actors.find((a) => a.role === "werewolf" && alive(a, current))!; await panel.getByRole("button", { name: new RegExp(`^${target.seat}号 `) }).click(); }
-            await panel.getByRole("button", { name: "确认行动", exact: true }).click(); await expect(panel.getByRole("heading", { name: "行动已确认", exact: true })).toBeVisible(); await close(actor.page);
+            await panel.getByRole("button", { name: "确认行动", exact: true }).click(); await receipt(actor);
             if (actor.id !== host.id && !actionReloaded) { await actor.page.reload(); await expect(actor.page.locator(".private-modal[open]")).toHaveCount(0); const restored = await privatePanel(actor); await expect(restored.getByRole("heading", { name: "行动已确认", exact: true })).toBeVisible(); await close(actor.page); actionReloaded = true; }
           }
         }
         if (current.nightRole === "werewolf") for (const actor of active) {
-          const panel = await privatePanel(actor); await expect(panel.getByRole("button", { name: "确认投票", exact: true })).toBeEnabled();
-          await panel.getByRole("button", { name: "确认投票", exact: true }).click();
-          await expect.poll(async () => {
+          const panel = await privatePanel(actor);
+          const confirmed = async () => {
             const accepted = await view();
             return accepted.phase !== "night_action" || accepted.nightRole !== "werewolf" || !!(await personal(actor)).wolves?.confirmations.includes(actor.id);
-          }).toBe(true);
+          };
+          for (let attempt = 0; attempt < 3; attempt++) {
+            await expect(panel.getByRole("button", { name: "确认投票", exact: true })).toBeEnabled();
+            await panel.getByRole("button", { name: "确认投票", exact: true }).click();
+            await expect.poll(async () => await confirmed() || await panel.getByText("狼队提议已更新，请重新确认", { exact: true }).isVisible()).toBe(true);
+            if (await confirmed()) break;
+            report.wolfReconfirmations++; save();
+            await actor.page.screenshot({ path: info.outputPath(`wolf-reconfirm-seat-${actor.seat}.png`) });
+            console.log(`Live acceptance: seat ${actor.seat} sees updated wolf proposals and reconfirms through the UI`);
+          }
+          expect(await confirmed()).toBe(true);
           await close(actor.page);
         }
         handled.add(turn); continue;
@@ -195,6 +216,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
         const target = !hunterReacted ? actors.find((a) => a.role === "hunter" && alive(a, current)) : undefined;
         const voted = target ?? actors.find((a) => a.role === "werewolf" && alive(a, current))!;
         expect(voted).toBeTruthy(); const panel = await controls();
+        await host.page.screenshot({ path: info.outputPath(`day-${current.nightNo}-host-controls.png`) });
         await panel.getByRole("button", { name: new RegExp(`^${voted.seat}号 `) }).click(); await panel.getByRole("button", { name: "保存草案", exact: true }).click();
         await expect(panel.getByText(`${voted.seat} 号出局`, { exact: true })).toBeVisible(); await panel.getByRole("button", { name: "确认待发布", exact: true }).click();
         await panel.getByRole("button", { name: "发布结果", exact: true }).click(); await panel.getByRole("button", { name: "确认发布", exact: true }).click(); await close(host.page);
