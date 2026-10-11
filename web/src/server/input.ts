@@ -18,7 +18,7 @@ const operation = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("announcement_done"), cueId: id, version: z.string().max(32).optional() }),
   z.strictObject({ type: z.literal("narration_mode"), mode: z.enum(["text", "voice"]), version: z.literal(NARRATION_VERSION), trialConfirmed: z.boolean().optional() }),
   simple("pause"), simple("resume"), simple("abort"), simple("restart"),
-  targeted("guard"), targeted("wolf_propose"), z.strictObject({ type: z.literal("wolf_confirm"), consensusId: id }), targeted("seer"),
+  targeted("guard"), targeted("wolf_propose"), z.strictObject({ type: z.literal("wolf_confirm"), consensusId: id, targetId: targetId.optional() }), targeted("seer"),
   z.strictObject({ type: z.literal("witch"), choice: z.enum(["save", "poison", "pass"]), targetId }),
   targeted("day_draft"), z.strictObject({ type: z.literal("day_confirm"), draftId: id }),
   z.strictObject({ type: z.literal("day_publish"), draftId: id }), targeted("hunter"),

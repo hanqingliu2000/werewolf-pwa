@@ -88,6 +88,8 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     await privatePanel.getByRole("button", { name: "本夜不守", exact: true }).click();
     await privatePanel.getByRole("button", { name: "确认行动", exact: true }).click();
     await expect.poll(async () => (await read<PrivateRoom>(contexts[guard]!, `rooms/${room}/private`)).completed).toBe(true);
+    await expect(privatePanel.locator(".waiting-note")).toContainText("本夜不守");
+    await pages[guard]!.waitForTimeout(1000); await expect(privatePanel).toBeVisible();
     await expect(privatePanel).not.toBeVisible();
     await pages[guard]!.getByRole("button", { name: "查看当前任务", exact: true }).click();
     await expect(privatePanel.locator(".waiting-note")).toContainText("本夜不守");
@@ -121,12 +123,14 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     const decisions = await read<PrivateRoom>(contexts[wolfActors[0]!]!, `rooms/${room}/private`);
     expect(decisions.actionResult?.kind).toBe("kill");
     expect([wolfWindow.players[6]!.id, wolfWindow.players[7]!.id]).toContain(decisions.actionResult?.targetId);
+    await expect(first.locator(".waiting-note")).toContainText("狼队共同目标");
+    await pages[wolfActors[0]!]!.waitForTimeout(1000); await expect(first).toBeVisible();
     await expect(first).not.toBeVisible();
     await pages[wolfActors[0]!]!.getByRole("button", { name: "查看当前任务", exact: true }).click();
     await expect(first.locator(".waiting-note")).toContainText("狼队共同目标");
     await act(0, { type: "abort" }); await expect.poll(async () => (await view()).phase).toBe("end");
     expect((await view()).aborted).toBe(true); expect(errors).toEqual([]);
-    console.log("Cloud smoke passed: 8 isolated sessions, direct voice without trial, 40 decoded clips, silent guard/wolf timeout waits, late actions, preserved partial votes and a persisted tied decision; aborted before a complete game.");
+    console.log("Cloud smoke passed: 8 isolated sessions, direct voice without trial, 40 decoded clips, silent guard/wolf timeout waits, late private receipts before concealment, preserved partial votes and a persisted tied decision; aborted before a complete game.");
   } finally {
     if (room) writeFileSync(info.outputPath("created-room-ids.json"), JSON.stringify({ rooms: [room], origin: baseURL }), { mode: 0o600 });
     for (const context of contexts) await context.close();

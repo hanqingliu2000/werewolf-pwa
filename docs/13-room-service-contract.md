@@ -73,7 +73,7 @@ SQLite 使用房间、请求回执和限额三个表。房间保存版本化 JSO
 | `narration_mode` | `mode` 为 text 或 voice，`version` 为当前脚本版本 host-zh-v3，`trialConfirmed` 为可选兼容字段，不参与准入 | 房主；仅大厅、结束或暂停时更改；语音只要求播放器准备就绪及有效主持状态，试音可选 |
 | `guard`、`seer` | `targetId` | 对应存活角色当前窗口 |
 | `wolf_propose` | `targetId` | 活狼当前窗口，个人提议仍可修改 |
-| `wolf_confirm` | `consensusId` | 活狼，携带本人私密视图中的最新提议版本 |
+| `wolf_confirm` | `consensusId`（兼容字段），当前网页另携带 `targetId` | 活狼，只核对本人确认目标；其他狼人改提议不要求本人重新确认，null表示空刀 |
 | `witch` | `choice` 为 save、poison、pass，及 `targetId` | 合法药剂与自救规则；pass 的目标必须为 null |
 | `hunter` | `targetId` | 已公告且本次合法待反应猎人，公开播报完成后开放；不能射击本人 |
 | `day_draft` | `targetId` | 白天房主，null 表示明确无人出局 |
@@ -118,7 +118,7 @@ SQLite 使用房间、请求回执和限额三个表。房间保存版本化 JSO
 | 401 | `INVALID_SESSION` | 原会话无法验证，不按昵称接管；不能用新凭据读取旧席位 |
 | 403 | `FORBIDDEN`、同源校验失败 | 停止越权路径，不显示秘密详情 |
 | 404 | `ROOM_UNAVAILABLE`、未知接口 | 房间失效或路径无效 |
-| 409 | `STALE_GAME`、`STALE_WINDOW`、`STALE_CONSENSUS`、`STALE_DRAFT` | 同步当前状态，旧草案不迁移，私密新目标重新确认 |
+| 409 | `STALE_GAME`、`STALE_WINDOW`、`STALE_PROPOSAL`、`STALE_DRAFT` | 同步当前状态，旧草案不迁移；仅本人目标变化需核对，不因其他狼人的提议变化重新确认 |
 | 409 | 锁定、资格、阶段、准备和有限重试冲突 | 显示对应当前任务错误；不更改已接受结果 |
 | 429 | `RATE_LIMITED` | 按 Retry After 等待，仍保留原请求编号 |
 | 500 | `INTERNAL_ERROR` | 结果未知时用原编号重试或同步，不展示数据库异常文本 |

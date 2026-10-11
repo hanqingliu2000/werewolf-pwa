@@ -7,7 +7,7 @@ import { errorText } from "./api";
 import type { RoomController } from "./use-room";
 
 export function PrivateTask({ controller: c }: { controller: RoomController }) {
-  const view = c.view!; const info = c.personal;
+  const view = c.feedback?.view ?? c.view!; const info = c.feedback?.info ?? c.personal;
   const seat = (id: string) => `${view.players.find((p) => p.id === id)?.seat ?? "?"} 号`;
   if (!info) return <p role="status">正在读取本人身份</p>;
   if (!info.role) return <p>尚未发牌</p>;

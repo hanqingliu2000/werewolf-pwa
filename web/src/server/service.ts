@@ -260,7 +260,9 @@ export class RoomService {
       }
       if (lobbyOperations.has(op.type)) { this.lobby(room, member!, op, now); return; }
       requireRule(room.game, "GAME_NOT_STARTED");
-      if (op.type === "wolf_confirm") requireRule(op.consensusId === room.consensusId, "STALE_CONSENSUS");
+      if (op.type === "wolf_confirm" && op.targetId !== undefined) {
+        requireRule(room.game.currentNight?.wolfProposals[member!.id] === op.targetId, "STALE_PROPOSAL");
+      }
       if (op.type === "day_confirm" || op.type === "day_publish") requireRule(op.draftId === room.draftId, "STALE_DRAFT");
       if (op.type === "restart") {
         requireRule(room.game.phase === "end", "PHASE_MISMATCH");

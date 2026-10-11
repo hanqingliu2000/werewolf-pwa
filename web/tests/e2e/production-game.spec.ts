@@ -225,6 +225,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
       throw new Error(`Unexpected public phase: ${current.phase}`);
     }
     expect(report.wolfAutomaticWait).toBe(true); expect(report.hostEliminated).toBe(true);
+    expect(report.wolfReconfirmations).toBe(0);
     await expect(host.page.getByRole("heading", { name: "好人阵营获胜", exact: true })).toBeVisible();
     const manifest = await (await host.context.request.get(`/audio/${script.version}/manifest.json`)).json();
     const sounds = await host.page.evaluate(() => (window as unknown as { productionSounds: Sound[] }).productionSounds);

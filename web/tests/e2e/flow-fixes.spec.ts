@@ -6,6 +6,71 @@ import type { Mutation } from "../../src/server/input";
 
 const NARRATION_VERSION = script.version;
 
+for (const dismissal of ["close", "background", "pause"] as const) test(`${dismissal} immediately redacts a held private receipt`, async ({ page }) => {
+  const api = await mockRoom(page); api.state.nightRole = "guard"; api.state.window!.waiting = true;
+  api.personal.role = "guard"; api.personal.action = "guard";
+  const original = api.command;
+  api.command = async (route, input) => {
+    api.personal.action = null; api.personal.completed = true;
+    api.personal.actionResult = { kind: "guard", targetId: "p2", nightNo: 1 };
+    api.state.phase = "night_close"; api.state.windowId = "closed-action"; api.state.window = null;
+    await original(route, input);
+  };
+  await page.goto("/r/ABCDEF12"); const panel = page.getByRole("dialog", { name: "本人私密视角" });
+  await expect(panel).toBeVisible(); await panel.getByRole("button", { name: "2号 玩家2", exact: true }).click();
+  await panel.getByRole("button", { name: "确认行动", exact: true }).click();
+  await expect(panel.locator(".waiting-note")).toContainText("2 号 · 玩家2");
+  if (dismissal === "close") await panel.getByRole("button", { name: "收起私密信息", exact: true }).click();
+  else if (dismissal === "background") await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  else { api.state.paused = true; api.state.windowId = "safety-pause"; }
+  await expect(panel).not.toBeVisible();
+  await expect(page.locator(".waiting-note")).toHaveCount(0);
+  expect(api.errors).toEqual([]);
+});
+
+for (const role of ["guard", "seer", "witch", "werewolf", "hunter"] as const) test(`late ${role} confirmation keeps its private receipt for three seconds across advancing phases`, async ({ page }) => {
+  const api = await mockRoom(page);
+  api.state.nightRole = role === "hunter" ? null : role;
+  api.state.phase = role === "hunter" ? "hunter" : "night_action";
+  api.state.window!.waiting = true;
+  api.state.window!.deadline = Date.now() - 1000;
+  api.personal.role = role; api.personal.action = role === "hunter" ? null : role;
+  api.personal.hunterReaction = role === "hunter";
+  if (role === "werewolf") {
+    api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
+    api.personal.wolves = { proposals: { p1: "p2" }, confirmations: [], locked: false, consensusId: "votes", discussionPaused: false };
+  }
+  const original = api.command;
+  api.command = async (route, input) => {
+    api.personal.action = null; api.personal.hunterReaction = false; api.personal.completed = true;
+    const kind = role === "werewolf" ? "kill" : role === "hunter" ? "shot" : role === "seer" ? "see" : role === "witch" ? "poison" : "guard";
+    api.personal.actionResult = { kind, targetId: "p2", nightNo: 1 };
+    if (role === "seer") api.personal.reports = [{ nightNo: 1, targetId: "p2", alignment: "wolf" }];
+    if (api.personal.wolves) api.personal.wolves.locked = true;
+    api.state.phase = role === "hunter" ? "night_open" : "night_close";
+    api.state.windowId = "saved-next-phase"; api.state.window = null;
+    await original(route, input);
+  };
+  await page.goto("/r/ABCDEF12"); const panel = page.getByRole("dialog", { name: "本人私密视角" });
+  await expect(panel).toBeVisible();
+  if (role === "witch") await panel.getByRole("button", { name: "使用毒药", exact: true }).click();
+  if (role !== "werewolf") await panel.getByRole("button", { name: "2号 玩家2", exact: true }).click();
+  await panel.getByRole("button", { name: role === "werewolf" ? "确认投票" : "确认行动", exact: true }).click();
+  await expect(panel.locator(".waiting-note")).toContainText("2 号 · 玩家2");
+  const shownAt = Date.now();
+  api.state.phase = "night_open"; api.state.nightRole = "guard"; api.state.nightNo = 2; api.state.windowId = "further-phase";
+  api.personal.actionResult = undefined; api.personal.completed = false;
+  await page.waitForTimeout(1200);
+  await expect(panel.locator(".waiting-note")).toContainText("2 号 · 玩家2");
+  await expect(page.locator(".public-stage")).not.toContainText("查验结果");
+  await expect(panel).not.toBeVisible({ timeout: 5000 });
+  expect(Date.now() - shownAt).toBeGreaterThanOrEqual(2200);
+  expect(api.errors).toEqual([]);
+});
+
 test("all action timeouts wait silently while a genuine pause still plays its cue", async ({ page }) => {
   const api = await mockRoom(page);
   api.state.self.isHost = true; api.state.phase = "end"; api.state.window = null;
@@ -101,7 +166,7 @@ test("wolves can confirm split votes, inspect history, and see the winning rathe
   await expect(panel.locator(".private-detail:popover-open")).toContainText("空刀");
   await panel.getByRole("button", { name: "关闭详情", exact: true }).click();
   await panel.getByRole("button", { name: "确认投票", exact: true }).click();
-  expect(api.commands.at(-1)?.operation).toEqual({ type: "wolf_confirm", consensusId: "votes" });
+  expect(api.commands.at(-1)?.operation).toEqual({ type: "wolf_confirm", consensusId: "votes", targetId: "p8" });
   api.personal.wolves.locked = true; api.personal.action = null;
   api.personal.actionResult = { kind: "kill", targetId: "p9", nightNo: 3 };
   await expect(panel.locator(".waiting-note")).toContainText("狼队共同目标：9 号 · 玩家9");

@@ -173,7 +173,7 @@ describe("server clock and recovery", () => {
     expect((await f.service.view(f.id, f.tokens[0]!)).phase).toBe("end");
   });
 
-  it("rejects stale private consensus and stale vote confirmation", async () => {
+  it("accepts a wolf's unchanged target across other proposals but rejects stale own targets and day drafts", async () => {
     const f = await setup(); await f.begin();
     f.patch((room) => { room.game = command(room.game!, { type: "open_window", actorId: room.hostId });
       room.game = command(room.game, { type: "guard", actorId: room.members[4]!.id, targetId: null });
@@ -182,9 +182,15 @@ describe("server clock and recovery", () => {
     f.time.now = f.state().game!.updatedAt;
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true }); await f.act({ type: "resume" }); await f.act({ type: "cue_ack" });
     await f.act({ type: "wolf_propose", targetId: null }); await f.act({ type: "wolf_propose", targetId: null }, 1);
-    const stale = f.envelope({ type: "wolf_confirm", consensusId: f.state().consensusId });
+    const stale = f.envelope({ type: "wolf_confirm", consensusId: f.state().consensusId, targetId: null });
     await f.act({ type: "wolf_propose", targetId: f.state().hostId }, 1);
-    await expect(f.service.mutate(f.id, f.tokens[0]!, stale)).rejects.toThrow("STALE_CONSENSUS");
+    await f.service.mutate(f.id, f.tokens[0]!, stale);
+    expect(f.state().game!.currentNight!.wolfConfirmations).toContain(f.state().hostId);
+    await f.act({ type: "wolf_propose", targetId: f.state().hostId });
+    await f.service.mutate(f.id, f.tokens[0]!, stale);
+    expect(f.state().game!.currentNight!.wolfConfirmations).not.toContain(f.state().hostId);
+    await expect(f.act({ type: "wolf_confirm", consensusId: f.state().consensusId, targetId: null })).rejects.toThrow("STALE_PROPOSAL");
+    await f.act({ type: "wolf_propose", targetId: null });
     await f.act({ type: "wolf_propose", targetId: null }, 1);
     const consensusId = f.state().consensusId;
     await f.act({ type: "wolf_confirm", consensusId }); await f.act({ type: "wolf_confirm", consensusId }, 1);

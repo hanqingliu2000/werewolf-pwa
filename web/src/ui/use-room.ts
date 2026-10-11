@@ -6,6 +6,8 @@ import { NARRATION_VERSION } from "../narration/plan";
 
 export function useRoom(roomId: string) {
   const [view, setView] = useState<PublicRoom | null>(null); const [personal, setPersonal] = useState<PrivateRoom | null>(null);
+  const [feedback, setFeedback] = useState<{ view: PublicRoom; info: PrivateRoom } | null>(null);
+  const feedbackHold = useRef<{ epochId: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const [host, setHost] = useState<HostRoom | null>(null); const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false); const [revealed, setRevealed] = useState(false);
   const [hostOpen, setHostOpen] = useState(false); const [leader, setLeader] = useState(false);
@@ -41,7 +43,11 @@ export function useRoom(roomId: string) {
     void fetch(url, { method: "POST", credentials: "same-origin", keepalive: true,
       headers: { "Content-Type": "application/json" }, body }).catch(() => undefined);
   }
-  const conceal = useCallback(() => { revealSequence.current++; privateOpen.current = false; setRevealed(false); setPersonal(null); }, []);
+  const conceal = useCallback(() => {
+    if (feedbackHold.current) clearTimeout(feedbackHold.current.timer);
+    feedbackHold.current = null; setFeedback(null);
+    revealSequence.current++; privateOpen.current = false; setRevealed(false); setPersonal(null);
+  }, []);
   const sync = useCallback(() => {
     if (!active.current) return Promise.resolve();
     if (inFlight.current) return inFlight.current;
@@ -51,8 +57,25 @@ export function useRoom(roomId: string) {
         await initialize(); if (controller.signal.aborted) return;
         const next = await request<PublicRoom>(base, undefined, controller.signal);
         if (!active.current) return;
-        if (current.current && current.current.windowId !== next.windowId) {
-          privateOpen.current = false; setRevealed(false); setPersonal(null);
+        const previous = current.current;
+        if (feedbackHold.current && (next.epochId !== feedbackHold.current.epochId || next.paused)) conceal();
+        if (previous && previous.windowId !== next.windowId && !feedbackHold.current) {
+          let saved: PrivateRoom | null = null;
+          const sequence = revealSequence.current;
+          if (privateOpen.current && foreground.current && document.visibilityState === "visible"
+            && previous.epochId === next.epochId && !next.paused && ["night_action", "hunter"].includes(previous.phase)) {
+            const info = await request<PrivateRoom>(`${base}/private`, undefined, controller.signal);
+            const result = info.actionResult;
+            if (info.epochId === next.epochId && result?.nightNo === previous.nightNo
+              && (previous.phase === "hunter" ? result.kind === "shot" : previous.nightRole === info.role)
+              && sequence === revealSequence.current && privateOpen.current && active.current
+              && foreground.current && document.visibilityState === "visible") saved = info;
+          }
+          if (saved) {
+            // Keep only the authenticated receipt; public state and narration continue normally.
+            setFeedback({ view: next, info: { ...saved, action: null, hunterReaction: false } });
+            feedbackHold.current = { epochId: next.epochId, timer: setTimeout(conceal, 3000) };
+          } else conceal();
         }
         current.current = next; setView(next); setReceivedAt(Date.now());
         if (privateOpen.current) {
@@ -204,7 +227,7 @@ export function useRoom(roomId: string) {
     localStorage.setItem(`ww:host:${roomId}`, JSON.stringify({ tab: tab.current, until: Date.now() + 5000 }));
     leaderRef.current = true; setLeader(true); try { if (await foregroundHeartbeat() && active.current) await refresh(); } catch (e) { setError(e); }
   }
-  return { view, personal, host, error, setError, busy, revealed, hostOpen, leader, pending, receivedAt, sync, send,
+  return { view, personal, feedback, host, error, setError, busy, revealed, hostOpen, leader, pending, receivedAt, sync, send,
     showPrivate, conceal, showHost, closeHost, claim, reportAudio, sendCaptured };
 }
 export type RoomController = ReturnType<typeof useRoom>;

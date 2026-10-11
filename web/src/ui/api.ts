@@ -25,6 +25,7 @@ const messages: Record<string, string> = {
   INPUT_INVALID: "请检查输入内容", FORBIDDEN: "当前身份不能执行这项操作", RATE_LIMITED: "操作过于频繁，请稍后再试",
   STALE_GAME: "对局已经更新，请重新确认", STALE_WINDOW: "当前阶段已更新，请重新确认",
   STALE_CONSENSUS: "狼队提议已更新，请重新确认", STALE_DRAFT: "录入结果已更新，请重新核对",
+  STALE_PROPOSAL: "本人目标已更新，请核对当前选择",
   WOLF_CONSENSUS_REQUIRED: "请先选择本人的投票目标", HOST_NOT_READY: "主持尚未恢复，请先启用当前页面",
   GAME_PAUSED: "对局已暂停", ACTION_LOCKED: "这项行动已经确认", GUARD_REPEAT_FORBIDDEN: "不能连续守护同一目标",
   WITCH_SELF_SAVE_FORBIDDEN: "只有首夜可以自救", WITCH_SAVE_EXHAUSTED: "解药已用尽", WITCH_POISON_EXHAUSTED: "毒药已用尽",
