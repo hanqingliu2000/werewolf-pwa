@@ -36,7 +36,7 @@ export type PublicEvent =
   | { type: "day_vote"; nightNo: number; playerId: string | null; revealedHunterId: string | null }
   | { type: "hunter_reaction"; nightNo: number; origin: "night" | "day"; playerId: string; targetId: string | null }
   | { type: "game_end"; winner: Winner | null; aborted: boolean };
-export interface Window { openedAt: number; deadline: number; remainingMs: number | null }
+export interface Window { openedAt: number; deadline: number; remainingMs: number | null; waiting?: boolean }
 export interface Game {
   id: string;
   hostId: string;

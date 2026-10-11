@@ -140,21 +140,29 @@ export class RoomService {
     const room = structuredClone(source);
     room.archives = room.archives.filter((archive) => archive.expiresAt > now);
     const game = room.game;
-    if (!game || game.phase === "end" || (game.paused && !game.wolfDiscussionPaused)) return room;
+    if (!game || game.phase === "end") return room;
+    // Upgrade only legacy timeout pauses; genuine safety/manual pauses remain locked.
+    if (game.paused && room.pauseReason === "window_incomplete" && game.window) {
+      game.paused = false;
+      game.wolfDiscussionPaused = false;
+      game.window.waiting = true;
+      game.window.remainingMs = null;
+      room.pauseReason = null;
+    }
+    if (game.paused) return room;
     now = Math.max(now, game.updatedAt);
     if (!room.hostAvailable || now - room.heartbeatAt >= 10_000
       || (room.narration?.mode === "voice" && room.narration.version !== NARRATION_VERSION)) {
       room.game = executeCommand(game, { type: "pause", actorId: room.hostId }, now);
       room.pauseReason = "host_unavailable";
     } else if (game.phase === "night_action" && now >= game.window!.deadline) {
-      if (game.wolfDiscussionPaused) return room;
-      room.game = executeCommand(game, { type: "close_window", actorId: room.hostId }, now);
-      room.pauseReason = room.game.paused ? "window_incomplete" : null;
+      if (!game.window!.waiting) room.game = executeCommand(game, { type: "close_window", actorId: room.hostId }, now);
+      room.pauseReason = null;
     } else if (game.phase === "hunter" && !room.narration?.pending) {
       if (!game.window) room.game = executeCommand(game, { type: "open_hunter_window", actorId: room.hostId }, now);
-      else if (now >= game.window.deadline) {
+      else if (now >= game.window.deadline && !game.window.waiting) {
         room.game = executeCommand(game, { type: "close_hunter_window", actorId: room.hostId }, now);
-        room.pauseReason = "window_incomplete";
+        room.pauseReason = null;
       }
     }
     this.finishChange(room, source, now, false);

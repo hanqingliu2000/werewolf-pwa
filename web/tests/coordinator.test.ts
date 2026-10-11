@@ -126,16 +126,20 @@ describe("server clock and recovery", () => {
     expect(f.state().game!.window).toBeNull();
   });
 
-  it("missing action pauses without auto-pass and resume adds 30s", async () => {
+  it("missing action waits without auto-pass, pause or repeated writes", async () => {
     const f = await setup(); await f.begin(); await f.act({ type: "cue_ack" });
     const deadline = f.state().game!.window!.deadline;
     f.patch((room) => { room.heartbeatAt = deadline - 1; }); f.time.now = deadline;
     await f.service.view(f.id, f.tokens[6]!);
-    expect(f.state().pauseReason).toBe("window_incomplete");
+    expect(f.state().pauseReason).toBeNull();
+    expect(f.state().game!.paused).toBe(false);
+    expect(f.state().game!.window!.waiting).toBe(true);
     expect(f.state().game!.currentNight!.actions).toEqual([]);
-    await f.act({ type: "resume" });
-    expect(f.state().game!.window!.deadline).toBe(deadline + 30_000);
+    const waiting = f.state();
+    await f.service.view(f.id, f.tokens[6]!);
+    expect(f.state()).toEqual(waiting);
     await f.act({ type: "guard", targetId: null }, 4);
+    expect(f.state().game!.phase).toBe("night_close");
   });
 
   it("freezes remaining time after host disappearance and requires explicit resume", async () => {

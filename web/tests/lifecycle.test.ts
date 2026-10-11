@@ -5,7 +5,7 @@ import { GET } from "../src/app/api/health/route";
 import { config, seats, command, day, finish, open, started, toRole, vote } from "./helpers";
 
 describe("public windows and timing", () => {
-  it("uses 30-second guard and 15-second wolf windows", () => {
+  it("uses 30-second guard and wolf windows", () => {
     const guard = open(started());
     expect(guard.window!.deadline - guard.window!.openedAt).toBe(30_000);
     const wolf = toRole(started(), "werewolf");
@@ -15,17 +15,16 @@ describe("public windows and timing", () => {
     const game = command(open(started()), { type: "guard", actorId: "p5", targetId: null });
     expect(() => command(game, { type: "close_window", actorId: "p1" })).toThrow("WINDOW_STILL_OPEN");
   });
-  it("pauses on timeout without replacing the missing action", () => {
+  it("waits on timeout without replacing the missing action", () => {
     let game = open(started());
     game = command(game, { type: "close_window", actorId: "p1" }, game.window!.deadline);
-    expect(game.paused).toBe(true);
+    expect(game.paused).toBe(false);
+    expect(game.window!.waiting).toBe(true);
     expect(game.phase).toBe("night_action");
     expect(game.currentNight!.actions).toEqual([]);
-    expect(() => command(game, { type: "guard", actorId: "p5", targetId: null })).toThrow("GAME_PAUSED");
-    game = command(game, { type: "resume", actorId: "p1" }, game.updatedAt + 10_000);
-    expect(game.window!.deadline - game.updatedAt).toBe(30_000);
-    game = command(game, { type: "guard", actorId: "p5", targetId: null });
-    expect(finish(game).nightRole).toBe("werewolf");
+    game = command(game, { type: "guard", actorId: "p5", targetId: null }, game.updatedAt + 10_000);
+    expect(game.phase).toBe("night_close");
+    expect(command(game, { type: "finish_role", actorId: "p1" }).nightRole).toBe("werewolf");
   });
   it("preserves remaining time on manual pause and adds the extension", () => {
     let game = open(started());

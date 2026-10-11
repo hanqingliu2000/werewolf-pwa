@@ -3,12 +3,56 @@ import { command, finish, open, started, toRole, vote, nightToDawn } from "./hel
 import { fixture } from "./server-helpers";
 import { narrationPlan, NARRATION_VERSION } from "../src/narration/plan";
 import { actionDuration } from "../src/game/rules";
+import { publicView } from "../src/server/views";
+import { RoomService } from "../src/server/service";
 
 const fixtures: Awaited<Awaited<ReturnType<typeof fixture>>>[] = [];
 afterEach(() => { while (fixtures.length) fixtures.pop()!.close(); });
 const setup = async () => { const f = await fixture(); fixtures.push(f); return f; };
 const cue = async (f: Awaited<Awaited<ReturnType<typeof fixture>>>) => await f.act({ type: "cue_ack", cueId: f.state().flowId, version: NARRATION_VERSION });
 const announce = async (f: Awaited<Awaited<ReturnType<typeof fixture>>>) => await f.act({ type: "announcement_done", cueId: f.state().narration!.pending!.id, version: NARRATION_VERSION });
+
+it.each(["guard", "seer", "witch"] as const)("%s waits silently and accepts a late action without resume", (role) => {
+  let game = toRole(started(), role);
+  game = command(game, { type: "close_window", actorId: game.hostId }, game.window!.deadline);
+  expect(game.paused).toBe(false);
+  expect(game.window!.waiting).toBe(true);
+  expect(game.window!.remainingMs).toBeNull();
+  const actorId = game.players.find((p) => p.role === role)!.id;
+  const late = game.updatedAt + 120_000;
+  game = role === "witch" ? command(game, { type: "witch", actorId, choice: "pass", targetId: null }, late)
+    : command(game, { type: role, actorId, targetId: null }, late);
+  expect(game.phase).toBe("night_close");
+  expect(game.paused).toBe(false);
+  expect(game.window).toBeNull();
+});
+
+it("silently restores a timeout wait across service instances and retains real safety pauses", async () => {
+  const f = await setup(); await f.begin(); await f.act({ type: "cue_ack" });
+  f.time.now = f.state().game!.window!.deadline;
+  f.patch((room) => { room.heartbeatAt = f.time.now; room.narration = { mode: "voice", pending: null, version: NARRATION_VERSION }; });
+  const flowId = f.state().flowId;
+  await f.service.view(f.id, f.tokens[4]!);
+  expect(f.state().flowId).toBe(flowId);
+  expect(narrationPlan(publicView(f.state()))).toBeNull();
+  const restored = new RoomService(f.store, () => f.time.now);
+  expect(await restored.view(f.id, f.tokens[4]!)).toMatchObject({ paused: false, pauseReason: null, window: { waiting: true } });
+  expect((await restored.view(f.id, f.tokens[4]!, "private")).action).toBe("guard");
+  await f.act({ type: "pause" });
+  expect(f.state().game!.paused).toBe(true);
+  await expect(f.act({ type: "guard", targetId: null }, 4)).rejects.toThrow("GAME_PAUSED");
+});
+
+it("upgrades a legacy timeout pause but never upgrades a manual pause", async () => {
+  const f = await setup(); await f.begin(); await f.act({ type: "cue_ack" });
+  f.time.now = f.state().game!.window!.deadline;
+  f.patch((room) => { room.heartbeatAt = f.time.now; room.game!.paused = true; room.game!.window!.remainingMs = 0; room.pauseReason = "window_incomplete"; });
+  expect(await f.service.view(f.id, f.tokens[4]!)).toMatchObject({ paused: false, window: { waiting: true } });
+  await f.act({ type: "guard", targetId: null }, 4);
+  expect(f.state().game!.phase).toBe("night_close");
+  await f.act({ type: "pause" });
+  expect((await f.service.view(f.id, f.tokens[4]!)).paused).toBe(true);
+});
 
 it.each(["guard", "witch", "seer"] as const)("fully calls a %s killed in the previous night with the same action duration", async (role) => {
   const f = await setup(); await f.begin();
@@ -74,11 +118,10 @@ it("starts a hunter's 10-second clock only after its real public announcement re
   await announce(f);
   expect(f.state().game!.window).toEqual({ openedAt: f.time.now, deadline: f.time.now + 10_000, remainingMs: null });
   f.time.now += 10_000; f.patch((room) => { room.heartbeatAt = f.time.now; });
-  expect((await f.service.view(f.id, f.tokens[0]!)).paused).toBe(true);
+  expect((await f.service.view(f.id, f.tokens[0]!)).paused).toBe(false);
+  expect(f.state().game!.window!.waiting).toBe(true);
   expect(f.state().game!.pendingHunter?.playerId).toBe(hunter.id);
   expect(f.state().game!.publicEvents.some((e) => e.type === "hunter_reaction")).toBe(false);
-  await f.act({ type: "resume" });
-  expect(f.state().game!.window!.deadline).toBe(f.time.now + 10_000);
   await f.act({ type: "hunter", targetId: null }, f.state().members.findIndex((p) => p.id === hunter.id));
   expect(f.state().game!.window).toBeNull();
 });
@@ -91,7 +134,8 @@ it("automatically waits at 30 seconds and counts different confirmed votes", () 
   game = command(game, { type: "wolf_propose", actorId: "p1", targetId: "p8" }, game.updatedAt + 60_000);
   game = command(game, { type: "wolf_propose", actorId: "p2", targetId: "p7" });
   game = command(game, { type: "wolf_confirm", actorId: "p1" });
-  expect(game.paused).toBe(true); expect(game.window!.remainingMs).toBe(remaining);
+  expect(game.paused).toBe(false); expect(game.window!.remainingMs).toBe(remaining);
+  expect(game.window!.waiting).toBe(true);
   game = command(game, { type: "wolf_confirm", actorId: "p2" });
   expect(game.paused).toBe(false); expect(game.phase).toBe("night_close"); expect(game.window).toBeNull();
 });
@@ -126,7 +170,8 @@ it("an unavailable host overrides a wolf discussion pause and forbids continuing
   f.time.now = f.state().game!.updatedAt;
   f.time.now = f.state().game!.window!.deadline;
   f.patch((room) => { room.heartbeatAt = f.time.now; }); await f.service.view(f.id, f.tokens[0]!);
-  expect((await f.service.view(f.id, f.tokens[0]!, "private")).wolves?.discussionPaused).toBe(true);
+  expect((await f.service.view(f.id, f.tokens[0]!, "private")).wolves?.discussionPaused).toBe(false);
+  expect(f.state().game!.window!.waiting).toBe(true);
   const proposals = structuredClone(f.state().game!.currentNight!.wolfProposals);
   await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: false, audioReady: true });
   expect(f.state().pauseReason).toBe("host_unavailable");

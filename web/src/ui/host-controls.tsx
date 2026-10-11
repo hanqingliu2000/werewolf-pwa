@@ -27,7 +27,7 @@ export function HostControls({ controller: c, voice }: { controller: RoomControl
         : v.phase === "lobby" ? <NextButton disabled={blocked || !host.canStart || !!v.narration.pending || !voice.ready} onClick={() => void c.send({ type: "start" })}>开始发牌</NextButton>
           : v.phase === "reveal" ? <NextButton disabled={blocked || !host.canBeginNight} onClick={() => void c.send({ type: "begin_night" })}>开始首夜</NextButton>
             : host.cueId && voice.mode === "text" ? <NextButton disabled={blocked || !!v.narration.pending} onClick={() => void c.send({ type: "cue_ack" })}>{v.phase === "dawn" ? "发布出局公告" : "当前指令完成"}</NextButton>
-              : v.phase === "night_action" ? <p className="muted">等待固定窗口结束</p> : null}
+              : v.phase === "night_action" ? <p className="muted">{v.window?.waiting ? "等待操作完成" : "等待固定窗口结束"}</p> : null}
     </section>
     {v.phase === "day" && <section className="vote-form"><div className="section-heading"><h3>白天投票结果</h3><span>{dirty ? "改选未保存" : host.dayDraft?.confirmed ? "待发布" : "草案"}</span></div>
       <SeatGrid players={v.players} mode="target" selected={target === undefined ? host.dayDraft?.targetId : target} disabled={() => blocked || v.paused} onSelect={(id) => { setTarget(id); setPublish(null); }} />

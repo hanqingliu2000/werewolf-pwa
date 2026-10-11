@@ -60,6 +60,7 @@ export function WindowCountdown({ view, receivedAt, compact = false }: {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(timer); }, []);
   if (!view.window) return null;
+  if (view.window.waiting && !view.paused) return <div className={`countdown waiting${compact ? " compact" : ""}`} role="status"><strong>等待操作</strong></div>;
   const remaining = view.paused ? view.window.remainingMs ?? 0
     : Math.max(0, view.window.deadline - view.serverTime - Math.max(0, now - receivedAt));
   return <div className={`countdown${compact ? " compact" : ""}`} role="timer" aria-live="off" aria-label="窗口剩余时间">{Math.ceil(remaining / 1000).toString().padStart(2, "0")}<span>秒</span></div>;

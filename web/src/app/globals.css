@@ -113,6 +113,7 @@ button.seat[aria-pressed=true] { border-color:var(--green); box-shadow:inset 0 0
 .public-stage h2 { font-size:30px; }
 .countdown { font:40px/1.2 ui-monospace,monospace; margin-top:20px; min-height:52px; font-variant-numeric:tabular-nums; }
 .countdown span { font:13px var(--sans); margin-left:12px; color:var(--muted); }
+.countdown.waiting strong { font:400 14px/1.6 var(--sans); color:var(--green); }
 .neutral-identity { margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:16px; }
 .neutral-identity .back-art { width:min(80%,240px); max-width:240px; background-size:contain; }
 .neutral-identity .button { min-width:240px; }

@@ -33,7 +33,7 @@ export function publicView(room: Room) {
     nightRole: game?.nightRole ?? null, paused: game?.paused ?? false, pauseReason: room.pauseReason,
     narration: { ...(room.narration ?? defaultNarration()), version: NARRATION_VERSION },
     window: game?.window ? { openedAt: game.window.openedAt, deadline: game.window.deadline,
-      remainingMs: game.window.remainingMs } : null,
+      remainingMs: game.window.remainingMs, ...(game.window.waiting ? { waiting: true } : {}) } : null,
     players: room.members.map(({ id, seat, name, ready }) => ({ id, seat, name,
       ...(game ? { alive: !dead.has(id), revealedRole: hunters.has(id) ? "hunter" as const : null } : { ready }) })),
     events: game?.publicEvents ?? [], winner: game?.winner ?? null, aborted: game?.aborted ?? false,
@@ -45,7 +45,7 @@ export function privateView(room: Room, member: Member) {
   const own = game?.players.find((p) => p.id === member.id);
   const events = announced(game?.publicEvents ?? []);
   const visibleAlive = !events.dead.has(member.id);
-  const active = own?.alive && (!game?.paused || game.wolfDiscussionPaused) && game?.phase === "night_action" && own.role === game.nightRole;
+  const active = own?.alive && !game?.paused && game?.phase === "night_action" && own.role === game.nightRole;
   const completed = game?.currentNight?.completedActorIds.includes(member.id) ?? false;
   const knowledge = game?.currentNight?.witchKnowledge;
   const accepted = game?.currentNight?.actions.find((a) => a.actorId === member.id) ?? null;
@@ -82,7 +82,7 @@ export function privateView(room: Room, member: Member) {
       wolfHistory: game!.nights.filter((night) => night.killLocked).map((night) => ({ nightNo: night.number, targetId: night.killTargetId })),
       teammates: game!.players.filter((p) => p.role === "werewolf").map((p) => ({ id: p.id, seat: p.seat, name: p.name })),
       ...(active ? { wolves: { proposals: game!.currentNight!.wolfProposals,
-        discussionPaused: game!.wolfDiscussionPaused ?? false,
+        discussionPaused: false,
         confirmations: game!.currentNight!.wolfConfirmations, locked: game!.currentNight!.killLocked,
         consensusId: room.consensusId } } : {}),
     } : {}),

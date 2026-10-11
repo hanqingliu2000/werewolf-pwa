@@ -16,7 +16,7 @@ export function PrivateAction({ controller: c, info, task }: { controller: RoomC
   const seat = (id: string | null | undefined) => id ? `${view.players.find((p) => p.id === id)?.seat ?? "?"} 号` : "无目标";
   const disabled = (id: string) => (task === "seer" || task === "hunter") && id === info.playerId
     || task === "guard" && info.previousGuardTargetId === id;
-  const working = c.busy || !!c.pending || (view.paused && !info.wolves?.discussionPaused);
+  const working = c.busy || !!c.pending || view.paused;
   const ownProposal = info.wolves?.proposals[info.playerId];
   const liveWolves = info.teammates?.filter((p) => view.players.some((a) => a.id === p.id && (!("alive" in a) || a.alive))) ?? [];
   const title = task === "werewolf" ? "共同选择" : task === "witch" ? "今夜的药" : task === "guard" ? "选择守护" : task === "seer" ? "选择查验" : "最后一枪";
@@ -28,7 +28,7 @@ export function PrivateAction({ controller: c, info, task }: { controller: RoomC
     if (task === "witch" && choice) await c.send({ type: "witch", choice, targetId: choice === "pass" ? null : target });
   }
   return <div className="private-task active-task single-screen" data-task={task}>
-    <header className="action-heading"><div className="identity"><img src={`/art/${info.role}.webp`} alt="" width="36" height="48" /><div><span>{roleNames[info.role!]} · {view.self.seat} 号</span><h3>{title}</h3></div></div><div className="task-clock">{info.wolves?.discussionPaused ? <strong>协商等待</strong> : <WindowCountdown view={view} receivedAt={c.receivedAt} compact />}</div><IconButton icon={X} label="关闭面板" onClick={c.conceal} /></header>
+    <header className="action-heading"><div className="identity"><img src={`/art/${info.role}.webp`} alt="" width="36" height="48" /><div><span>{roleNames[info.role!]} · {view.self.seat} 号</span><h3>{title}</h3></div></div><div className="task-clock"><WindowCountdown view={view} receivedAt={c.receivedAt} compact /></div><IconButton icon={X} label="关闭面板" onClick={c.conceal} /></header>
     {!!c.error && <div className="action-notice" role="alert"><span>{errorText(c.error)}</span>{c.pending && <button className="button secondary" disabled={c.busy} onClick={() => void c.send()}>重试原请求</button>}</div>}
     <div className="action-content"><section className="action-options" aria-label="本轮行动状态">
       <div className="action-context"><div className="action-facts">

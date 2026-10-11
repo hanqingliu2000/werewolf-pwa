@@ -6,6 +6,42 @@ import type { Mutation } from "../../src/server/input";
 
 const NARRATION_VERSION = script.version;
 
+test("all action timeouts wait silently while a genuine pause still plays its cue", async ({ page }) => {
+  const api = await mockRoom(page);
+  api.state.self.isHost = true; api.state.phase = "end"; api.state.window = null;
+  api.state.nightRole = null; api.personal.action = null;
+  await page.addInitScript(() => {
+    const Native = window.AudioContext;
+    const observed = window as unknown as { audioStarts: number }; observed.audioStarts = 0;
+    window.AudioContext = class extends Native {
+      createBufferSource() { const source = super.createBufferSource(); const start = source.start.bind(source);
+        source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => { observed.audioStarts++; start(...args); }; return source; }
+    };
+  });
+  await page.goto("/r/ABCDEF12"); await page.getByRole("button", { name: "主持控制", exact: true }).click();
+  const controls = page.getByRole("dialog", { name: "主持控制" });
+  await controls.getByRole("button", { name: "语音", exact: true }).click();
+  await expect(controls.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+  await page.keyboard.press("Escape");
+  for (const role of ["werewolf", "guard", "witch", "seer", "hunter"] as const) {
+    api.state.phase = role === "hunter" ? "hunter" : "night_action";
+    api.state.nightRole = role === "hunter" ? null : role;
+    api.state.windowId = `waiting-${role}`;
+    api.state.window = { openedAt: Date.now() - 60_000, deadline: Date.now() - 30_000, remainingMs: null, waiting: true };
+    const title = { werewolf: "狼人行动窗口", guard: "守卫行动窗口", witch: "女巫行动窗口", seer: "预言家行动窗口", hunter: "猎人反应" }[role];
+    await expect(page.locator(".public-stage h2")).toHaveText(title);
+    await expect(page.locator(".public-stage").getByText("等待操作", { exact: true })).toBeVisible();
+    await expect(page.locator(".stage-status")).not.toContainText("暂停");
+    await page.waitForTimeout(1500);
+    expect(await page.evaluate(() => (window as unknown as { audioStarts: number }).audioStarts)).toBe(0);
+    if (role === "werewolf" || role === "hunter") await test.info().attach(`silent-wait-${role}`, { body: await page.screenshot(), contentType: "image/png" });
+  }
+  api.state.paused = true; api.state.pauseReason = "manual"; api.state.windowId = "real-pause";
+  await expect.poll(() => page.evaluate(() => (window as unknown as { audioStarts: number }).audioStarts)).toBeGreaterThan(0);
+  expect(api.commands.some((c) => c.operation.type === "resume")).toBe(false);
+  expect(api.errors).toEqual([]);
+});
+
 async function mockRoom(page: Page) {
   const state: PublicRoom = {
     roomId: "ABCDEF12", epochId: "review-game", windowId: "review-window", revision: 1, config: preset(12),
@@ -144,10 +180,10 @@ test("seer, guard, hunter and wolf waiting keep usable pinned actions", async ({
   await expect(panel).toBeVisible(); await panel.getByRole("button", { name: "放弃开枪", exact: true }).click();
   await expect(panel.getByRole("button", { name: "确认行动", exact: true })).toBeEnabled();
   await page.keyboard.press("Escape"); api.state.nightNo = 3; api.state.phase = "night_action"; api.state.nightRole = "werewolf";
-  api.state.windowId = "wolf-waiting"; api.state.paused = true; api.personal.role = "werewolf"; api.personal.alive = true; api.personal.hunterReaction = false;
+  api.state.windowId = "wolf-waiting"; api.state.paused = false; api.state.window!.waiting = true; api.personal.role = "werewolf"; api.personal.alive = true; api.personal.hunterReaction = false;
   api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
-  api.personal.wolves = { proposals: { p1: "p2" }, confirmations: [], locked: false, consensusId: "consensus", discussionPaused: true };
-  await expect(panel).toBeVisible(); await expect(panel.getByText("协商等待", { exact: true })).toBeVisible();
+  api.personal.wolves = { proposals: { p1: "p2" }, confirmations: [], locked: false, consensusId: "consensus", discussionPaused: false };
+  await expect(panel).toBeVisible(); await expect(panel.getByText("等待操作", { exact: true })).toBeVisible();
   await expect(panel.getByRole("button", { name: "确认投票", exact: true })).toBeEnabled();
   await inViewport(panel.getByRole("button", { name: "确认投票", exact: true })); expect(api.errors).toEqual([]);
 });

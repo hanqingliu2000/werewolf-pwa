@@ -68,10 +68,10 @@ export function makeFixture(scene) {
   const state = { roomId: scene.roomId, epochId: scene.gameId, windowId: uuid(100 + scenes.indexOf(scene)), revision: 1,
     config: structuredClone(config), phase, nightNo: lobby || kind === "identity" ? 0 : 2,
     nightRole: action ? kind : kind === "paused" ? "guard" : null,
-    paused: ["werewolf", "paused"].includes(kind), pauseReason: kind === "werewolf" ? "window_incomplete" : kind === "paused" ? "host_unavailable" : null,
+    paused: kind === "paused", pauseReason: kind === "paused" ? "host_unavailable" : null,
     narration: { mode: "text", pending: null, version: voice },
     window: action || ["hunter", "paused"].includes(kind) ? { openedAt: REVIEW_NOW - (kind === "werewolf" ? 30_000 : kind === "paused" ? 18_000 : 0), deadline: REVIEW_NOW + (kind === "werewolf" ? 0 : kind === "paused" ? 12_000 : duration),
-      remainingMs: kind === "werewolf" ? 0 : kind === "paused" ? 12_000 : null } : null,
+      remainingMs: kind === "paused" ? 12_000 : null, ...(kind === "werewolf" ? { waiting: true } : {}) } : null,
     players: Array.from({ length: lobby ? 6 : 12 }, (_, i) => ({ id: `p${i + 1}`, seat: i + 1, name: names[i],
       ...(lobby ? { ready: i !== 0 && i !== 3 } : { alive: end ? recap.participants[i].alive : !(["day", "vote"].includes(kind) && i === 9) && !(kind === "hunter" && i === 0),
         revealedRole: kind === "hunter" && i === 0 ? "hunter" : null }) })),
@@ -87,7 +87,7 @@ export function makeFixture(scene) {
     personal.wolfHistory = [{ nightNo: 1, targetId: "p9" }];
     personal.teammates = recap.participants.filter(p => p.role === "werewolf").map(({ id, seat, name }) => ({ id, seat, name }));
     personal.wolves = { proposals: Object.fromEntries(personal.teammates.map(p => [p.id, "p8"])), confirmations: personal.teammates.slice(1, 3).map(p => p.id),
-      locked: false, discussionPaused: true, consensusId: uuid(300) };
+      locked: false, discussionPaused: false, consensusId: uuid(300) };
   }
   const host = { playerId: "p1", epochId: state.epochId, windowId: state.windowId, narrationMode: "text", canStart: false,
     canBeginNight: phase === "reveal", cueId: null, draftId: uuid(200), dayDraft: kind === "vote" ? { targetId: "p5", confirmed: false } : null };

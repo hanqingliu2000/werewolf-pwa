@@ -55,7 +55,7 @@ function beginNight(game: Game) {
 function activeRole(game: Game, actorId: string, role: NightRole, now: number): Night {
   phase(game, "night_action");
   requireRule(game.nightRole === role, "PHASE_MISMATCH");
-  requireRule(game.window && (game.wolfDiscussionPaused || now < game.window.deadline), "WINDOW_ELAPSED");
+  requireRule(game.window && (game.window.waiting || now < game.window.deadline), "WINDOW_ELAPSED");
   const actor = player(game, actorId);
   requireRule(actor.alive, "ACTOR_ELIMINATED");
   requireRule(actor.role === role, "FORBIDDEN");
@@ -81,6 +81,7 @@ function afterDeaths(game: Game, origin: "night" | "day") {
 
 function pause(game: Game, now: number) {
   game.wolfDiscussionPaused = false;
+  if (game.window) game.window.waiting = false;
   game.paused = true;
   if (game.window) game.window.remainingMs ??= Math.max(0, game.window.deadline - now);
 }
@@ -90,8 +91,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
   const command = parseCommand(input);
   requireRule(Number.isSafeInteger(now) && now >= source.updatedAt, "CLOCK_INVALID");
   player(source, command.actorId);
-  requireRule(!source.paused || ["resume", "abort", "open_hunter_window"].includes(command.type)
-    || (source.wolfDiscussionPaused && ["wolf_propose", "wolf_confirm", "pause"].includes(command.type)), "GAME_PAUSED");
+  requireRule(!source.paused || ["resume", "abort", "open_hunter_window"].includes(command.type), "GAME_PAUSED");
   const game = structuredClone(source);
   const actorId = command.actorId;
   switch (command.type) {
@@ -123,7 +123,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       host(game, actorId);
       phase(game, "night_action");
       requireRule(now >= game.window!.deadline, "WINDOW_STILL_OPEN");
-      if (!windowComplete(game)) { pause(game, now); game.wolfDiscussionPaused = game.nightRole === "werewolf"; }
+      if (!windowComplete(game)) game.window!.waiting = true;
       else { move(game, "CLOSE"); game.window = null; }
       break;
     case "finish_role": {
@@ -195,10 +195,6 @@ export function executeCommand(source: Game, input: unknown, now: number, random
         night.wolfProposals = Object.fromEntries(actors.map((id) => [id, night.wolfProposals[id]!]));
         night.killLocked = true;
         night.killTargetId = tied[index]!;
-        if (game.wolfDiscussionPaused) {
-          game.wolfDiscussionPaused = false; game.paused = false;
-          move(game, "CLOSE"); game.window = null;
-        }
       }
       break;
     }
@@ -242,12 +238,12 @@ export function executeCommand(source: Game, input: unknown, now: number, random
     case "close_hunter_window":
       host(game, actorId); phase(game, "hunter");
       requireRule(game.window && now >= game.window.deadline, "WINDOW_STILL_OPEN");
-      pause(game, now);
+      game.window!.waiting = true;
       break;
     case "hunter": {
       phase(game, "hunter");
       requireRule(game.pendingHunter?.playerId === actorId, "FORBIDDEN");
-      requireRule(game.window && now < game.window.deadline, "WINDOW_ELAPSED");
+      requireRule(game.window && (game.window.waiting || now < game.window.deadline), "WINDOW_ELAPSED");
       const origin = game.pendingHunter.origin;
       if (command.targetId !== null) {
         requireRule(command.targetId !== actorId, "SELF_TARGET_FORBIDDEN");
@@ -320,6 +316,9 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       return createGame(game.config, game.players.map(({ id, name, seat }) => ({ id, name, seat })), game.hostId, id, now);
     }
     default: { const exhaustive: never = command; throw new RuleError(String(exhaustive)); }
+  }
+  if (game.phase === "night_action" && game.window?.waiting && windowComplete(game)) {
+    move(game, "CLOSE"); game.window = null;
   }
   game.updatedAt = now;
   return game;
