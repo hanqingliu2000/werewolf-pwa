@@ -4,7 +4,7 @@ import { preset } from "../../src/game/config";
 import script from "../../src/narration/script.json" with { type: "json" };
 import type { PublicRoom, PrivateRoom, Operation } from "../../src/ui/contracts";
 
-test("cloud smoke: optional trial, guard action and split wolf votes", async ({ browser, baseURL }, info) => {
+test("cloud smoke: optional trial, silent timeout waits and split wolf votes", async ({ browser, baseURL }, info) => {
   test.setTimeout(240_000);
   const contexts: BrowserContext[] = []; const errors: string[] = []; let room = "";
   const headers = info.project.use.extraHTTPHeaders ?? {};
@@ -30,6 +30,14 @@ test("cloud smoke: optional trial, guard action and split wolf votes", async ({ 
     writeFileSync(info.outputPath("created-room-ids.json"), JSON.stringify({ rooms: [room], origin: baseURL }), { mode: 0o600 });
     for (let i = 1; i < 8; i++) await post(contexts[i]!, `rooms/${room}/join`, { requestId: crypto.randomUUID(), epochId: created.epochId, name: `Cloud QA ${i + 1}` });
     const pages = [];
+    await contexts[0]!.addInitScript(() => {
+      const Native = window.AudioContext;
+      const observed = window as unknown as { audioStarts: number }; observed.audioStarts = 0;
+      window.AudioContext = class extends Native {
+        createBufferSource() { const source = super.createBufferSource(); const start = source.start.bind(source);
+          source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => { observed.audioStarts++; start(...args); }; return source; }
+      };
+    });
     for (const context of contexts) { const page = await context.newPage(); page.on("pageerror", e => errors.push(e.message)); pages.push(page); await page.goto(`/r/${room}`); }
     const host = pages[0]!;
     await expect(host.getByRole("button", { name: "准备好了", exact: true })).toBeVisible();
@@ -71,9 +79,17 @@ test("cloud smoke: optional trial, guard action and split wolf votes", async ({ 
     const privatePanel = pages[guard]!.getByRole("dialog", { name: "本人私密视角" });
     await expect(privatePanel).toBeVisible(); await expect(privatePanel.getByText("选择守护", { exact: true })).toBeVisible();
     await pages[guard]!.screenshot({ path: info.outputPath("private-first-action.png") });
+    const guardStarts = await host.evaluate(() => (window as unknown as { audioStarts: number }).audioStarts);
+    await expect.poll(async () => (await view()).window?.waiting, { timeout: 45_000 }).toBe(true);
+    expect((await view()).paused).toBe(false); expect((await view()).pauseReason).toBeNull();
+    expect((await view()).windowId).toBe(current.windowId);
+    expect(await host.evaluate(() => (window as unknown as { audioStarts: number }).audioStarts)).toBe(guardStarts);
+    await expect(privatePanel.getByText("等待操作", { exact: true })).toBeVisible();
     await privatePanel.getByRole("button", { name: "本夜不守", exact: true }).click();
     await privatePanel.getByRole("button", { name: "确认行动", exact: true }).click();
     await expect.poll(async () => (await read<PrivateRoom>(contexts[guard]!, `rooms/${room}/private`)).completed).toBe(true);
+    await expect(privatePanel).not.toBeVisible();
+    await pages[guard]!.getByRole("button", { name: "查看当前任务", exact: true }).click();
     await expect(privatePanel.locator(".waiting-note")).toContainText("本夜不守");
     await expect.poll(async () => { const current = await view(); return `${current.phase}:${current.nightRole}`; }, { timeout: 60_000 }).toBe("night_action:werewolf");
     const wolfWindow = await view(); expect(wolfWindow.window!.deadline - wolfWindow.window!.openedAt).toBe(30_000);
@@ -93,16 +109,24 @@ test("cloud smoke: optional trial, guard action and split wolf votes", async ({ 
     const otherRow = first.locator(".wolf-proposals>div").filter({ has: pages[wolfActors[0]!]!.locator("strong").filter({ hasText: new RegExp(`^${otherSeat} 号$`) }) });
     await expect(otherRow.locator("span").first()).toHaveText("8 号");
     await first.getByRole("button", { name: "确认投票", exact: true }).click();
+    await expect.poll(async () => (await read<PrivateRoom>(contexts[wolfActors[0]!]!, `rooms/${room}/private`)).wolves?.confirmations.length).toBe(1);
+    const wolfStarts = await host.evaluate(() => (window as unknown as { audioStarts: number }).audioStarts);
+    await expect.poll(async () => (await view()).window?.waiting, { timeout: 45_000 }).toBe(true);
+    expect((await view()).paused).toBe(false); expect((await view()).pauseReason).toBeNull();
+    expect((await view()).windowId).toBe(wolfWindow.windowId);
+    expect(await host.evaluate(() => (window as unknown as { audioStarts: number }).audioStarts)).toBe(wolfStarts);
     const second = pages[wolfActors[1]!]!.getByRole("dialog", { name: "本人私密视角" });
     await second.getByRole("button", { name: "确认投票", exact: true }).click();
     await expect.poll(async () => (await read<PrivateRoom>(contexts[wolfActors[0]!]!, `rooms/${room}/private`)).actionResult?.kind).toBe("kill");
     const decisions = await read<PrivateRoom>(contexts[wolfActors[0]!]!, `rooms/${room}/private`);
     expect(decisions.actionResult?.kind).toBe("kill");
     expect([wolfWindow.players[6]!.id, wolfWindow.players[7]!.id]).toContain(decisions.actionResult?.targetId);
+    await expect(first).not.toBeVisible();
+    await pages[wolfActors[0]!]!.getByRole("button", { name: "查看当前任务", exact: true }).click();
     await expect(first.locator(".waiting-note")).toContainText("狼队共同目标");
     await act(0, { type: "abort" }); await expect.poll(async () => (await view()).phase).toBe("end");
     expect((await view()).aborted).toBe(true); expect(errors).toEqual([]);
-    console.log("Cloud smoke passed: 8 isolated sessions, direct voice without trial, 40 decoded clips, guard action, 30-second wolf window, different confirmed votes and a persisted tied decision; aborted before a complete game.");
+    console.log("Cloud smoke passed: 8 isolated sessions, direct voice without trial, 40 decoded clips, silent guard/wolf timeout waits, late actions, preserved partial votes and a persisted tied decision; aborted before a complete game.");
   } finally {
     if (room) writeFileSync(info.outputPath("created-room-ids.json"), JSON.stringify({ rooms: [room], origin: baseURL }), { mode: 0o600 });
     for (const context of contexts) await context.close();
