@@ -17,12 +17,17 @@ export class NarrationPlayer {
   private loading: AbortController | null = null;
   private generation = 0;
   private volume = 0.8;
+  private rate: 1.5 | 2 = 1.5;
   private bankVersion: string | null = null;
   constructor(private readonly interrupted: () => void, private readonly createContext = () => new AudioContext(),
     private readonly fetchAsset: typeof fetch = (input, init) => fetch(input, init)) {}
 
   get ready() { return this.context?.state === "running" && this.buffers.size === clipIds.length && this.bankVersion === NARRATION_VERSION; }
   setVolume(value: number) { this.volume = Math.max(0, Math.min(1, value)); if (this.gain) this.gain.gain.value = this.volume; }
+  setRate(value: 1.5 | 2) {
+    this.rate = value === 2 ? 2 : 1.5;
+    if (this.source) this.source.playbackRate.value = this.rate;
+  }
 
   // Called directly from a click: resume is invoked before any network await.
   async prepare() {
@@ -82,6 +87,7 @@ export class NarrationPlayer {
       caption?.(id);
       await new Promise<void>((resolve, reject) => {
         const source = this.context!.createBufferSource(); source.buffer = buffer; source.connect(this.gain!);
+        source.playbackRate.value = this.rate;
         this.source = source;
         const finish = (error?: PlaybackError) => {
           clearTimeout(timer); source.onended = null; source.disconnect();

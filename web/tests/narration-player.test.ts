@@ -5,6 +5,7 @@ import script from "../src/narration/script.json";
 import { NarrationPlayer } from "../src/narration/player";
 
 class Source {
+  playbackRate = { value: 1 };
   buffer: unknown; onended: (() => void) | null = null; stopped = false;
   connect() {} disconnect() {} start() {} stop() { this.stopped = true; this.onended?.(); }
   finish() { this.onended?.(); }
@@ -42,8 +43,11 @@ describe("verified public audio player", () => {
     const captions: string[] = []; const done = vi.fn();
     const playback = f.player.play(["guard_open", "guard_close"], (id) => captions.push(id)).then(done);
     expect(done).not.toHaveBeenCalled(); expect(f.context.sources).toHaveLength(1);
+    expect(f.context.sources[0]!.playbackRate.value).toBe(1.5);
+    f.player.setRate(2); expect(f.context.sources[0]!.playbackRate.value).toBe(2);
     f.context.sources[0]!.finish(); await Promise.resolve();
     expect(f.context.sources).toHaveLength(2); expect(done).not.toHaveBeenCalled();
+    expect(f.context.sources[1]!.playbackRate.value).toBe(2);
     f.context.sources[1]!.finish(); await playback;
     expect(captions).toEqual(["guard_open", "guard_close"]); expect(done).toHaveBeenCalledTimes(1);
     await f.player.prepare(); expect(f.fetcher).toHaveBeenCalledTimes(41);

@@ -218,6 +218,7 @@ button.seat[aria-pressed=true] { border-color:var(--green); box-shadow:inset 0 0
 .detail-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
 .full-roster { list-style:none; padding:0; margin:0; }
 .full-roster li { display:grid; grid-template-columns:48px minmax(0,1fr); gap:12px; border-top:1px solid var(--soft-line); padding:10px 0; }
+.full-roster li:has(button) { grid-template-columns:48px minmax(0,1fr) 44px; align-items:center; }
 .full-roster strong { color:var(--green); font-weight:400; }
 .full-roster span { overflow-wrap:anywhere; }
 @media (min-width:640px) and (max-height:540px) {
@@ -263,7 +264,9 @@ button.seat[aria-pressed=true] { border-color:var(--green); box-shadow:inset 0 0
 .cue-caption { color:var(--muted); margin-bottom:20px; line-height:1.8; overflow-wrap:anywhere; }
 .voice-status { display:flex; align-items:flex-start; gap:12px; color:var(--green); padding:16px 0; font-size:14px; line-height:1.8; }
 .voice-status svg { flex-shrink:0; margin-top:4px; }
-.voice-status span { overflow-wrap:anywhere; }
+.voice-status span { overflow-wrap:anywhere; flex:1; min-width:0; }
+.voice-status button { flex-shrink:0; min-width:44px; padding:8px; }
+.voice-speed-toggle[aria-pressed="true"] { color:var(--green); border-color:var(--green); }
 .vote-form,.host-roster,.host-maintenance { padding-top:28px; }
 .vote-form .seat-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
 .vote-form .button { width:100%; }

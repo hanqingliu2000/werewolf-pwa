@@ -5,9 +5,9 @@ import { GET } from "../src/app/api/health/route";
 import { config, seats, command, day, finish, open, started, toRole, vote } from "./helpers";
 
 describe("public windows and timing", () => {
-  it("uses 30-second guard and wolf windows", () => {
+  it("uses a 10-second guard and 30-second wolf window", () => {
     const guard = open(started());
-    expect(guard.window!.deadline - guard.window!.openedAt).toBe(30_000);
+    expect(guard.window!.deadline - guard.window!.openedAt).toBe(10_000);
     const wolf = toRole(started(), "werewolf");
     expect(wolf.window!.deadline - wolf.window!.openedAt).toBe(30_000);
   });
@@ -28,16 +28,16 @@ describe("public windows and timing", () => {
   });
   it("preserves remaining time on manual pause and adds the extension", () => {
     let game = open(started());
-    game = command(game, { type: "pause", actorId: "p1" }, 10_000);
-    expect(game.window!.remainingMs).toBe(20_000);
+    game = command(game, { type: "pause", actorId: "p1" }, 4000);
+    expect(game.window!.remainingMs).toBe(6000);
     game = command(game, { type: "resume", actorId: "p1" }, 100_000);
-    expect(game.window!.deadline).toBe(150_000);
+    expect(game.window!.deadline).toBe(116_000);
   });
   it("allows pause before opening without starting the action clock", () => {
     let game = command(started(), { type: "pause", actorId: "p1" });
     expect(game.window).toBeNull();
     game = command(game, { type: "resume", actorId: "p1" }, 1000);
-    expect(open(game).window!.deadline).toBe(31_000);
+    expect(open(game).window!.deadline).toBe(11_000);
   });
   it("rejects commands at the deadline and clocks going backwards", () => {
     const game = open(started());
@@ -50,7 +50,7 @@ describe("public windows and timing", () => {
     initial.players.find((p) => p.role === "guard")!.alive = false;
     const game = open(initial);
     expect(game.nightRole).toBe("guard");
-    expect(game.window!.deadline).toBe(30_000);
+    expect(game.window!.deadline).toBe(10_000);
     expect(finish(game).nightRole).toBe("werewolf");
   });
   it("does not call unconfigured roles", () => {

@@ -8,6 +8,11 @@ const failures: Record<string, string> = {
   AUDIO_VERSION: "播报资源已更新，请刷新页面后启用声音",
 };
 const statuses = { idle: "声音未启用", loading: "正在准备声音", testing: "正在试音", ready: "声音就绪", playing: "正在播报", failed: "声音不可用" };
+export function VoiceSpeedToggle({ voice }: { voice: VoiceController }) {
+  return <button className="button secondary voice-speed-toggle" aria-label="二倍速" aria-pressed={voice.rate === 2}
+    title={voice.rate === 2 ? "恢复1.5倍语速" : "切换2倍语速"}
+    onClick={() => voice.changeRate(voice.rate === 2 ? 1.5 : 2)}>2×</button>;
+}
 export function VoiceControls({ voice, disabled, changeAllowed }: { voice: VoiceController; disabled: boolean; changeAllowed: boolean }) {
   const working = ["loading", "testing"].includes(voice.status);
   return <section className="voice-controls" aria-label="公共播报">
@@ -18,6 +23,7 @@ export function VoiceControls({ voice, disabled, changeAllowed }: { voice: Voice
       {voice.problem && <p className="error" role="alert">{failures[voice.problem] ?? "播放未完成"}。{voice.mode === "voice" ? "请恢复声音，或切换文字主持。" : "可继续文字主持。"}</p>}
       {(voice.status === "failed" || voice.mode === "voice" && !voice.ready && !working) && <button className="button secondary full-width" disabled={disabled || !changeAllowed || working} onClick={() => void voice.enableVoice()}><RotateCcw size={18} aria-hidden />恢复声音</button>}
       <label className="voice-volume"><Volume2 size={19} aria-hidden /><span>播报音量</span><input aria-label="播报音量" type="range" min="10" max="100" step="5" value={voice.volume} onChange={(e) => voice.changeVolume(Number(e.target.value))} /><output>{voice.volume}%</output></label>
+      <div className="section-heading"><span>语速 {voice.rate}×</span><VoiceSpeedToggle voice={voice} /></div>
     </>}
   </section>;
 }

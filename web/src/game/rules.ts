@@ -2,7 +2,7 @@ import { requireRule } from "./errors";
 import type { Death, DeathCause, Game, Night, NightRole, Player, Winner } from "./types";
 
 const order: NightRole[] = ["guard", "werewolf", "witch", "seer"];
-export const actionDuration = (role: NightRole | "hunter") => role === "werewolf" || role === "guard" ? 30_000 : 10_000;
+export const actionDuration = (role: NightRole | "hunter") => role === "werewolf" ? 30_000 : 10_000;
 
 export function nightRoles(game: Game): NightRole[] {
   return order.filter((role) => game.config.roles[role] > 0);
@@ -38,7 +38,11 @@ export function resolveDeaths(game: Game, night: Night): Death[] {
   const save = night.actions.find((a) => a.kind === "save")?.targetId ?? null;
   const poison = night.actions.find((a) => a.kind === "poison")?.targetId ?? null;
   const causes = new Map<string, DeathCause[]>();
-  if (night.killTargetId !== null && night.killTargetId !== guard && night.killTargetId !== save) causes.set(night.killTargetId, ["wolf"]);
+  if (night.killTargetId !== null) {
+    const guarded = night.killTargetId === guard;
+    const saved = night.killTargetId === save;
+    if (guarded === saved) causes.set(night.killTargetId, ["wolf"]);
+  }
   if (poison !== null) causes.set(poison, [...(causes.get(poison) ?? []), "poison"]);
   return game.players.filter((p) => p.alive && causes.has(p.id)).sort((a, b) => a.seat - b.seat)
     .map((p) => ({ playerId: p.id, causes: causes.get(p.id)! }));

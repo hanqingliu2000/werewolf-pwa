@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
-import { ArrowRight, BookOpen, Copy, Eye, History, LogOut, Radio, Settings, Share2, UserRoundPen, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Copy, Eye, History, LogOut, Radio, Settings, Share2, UserMinus, UserRoundPen, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRoom } from "./use-room";
 import { useNarration } from "./use-narration";
 import { Brand, ConfigEditor, IconButton, Modal, NextButton, RuleList, SeatGrid, WindowCountdown } from "./components";
 import { HostControls } from "./host-controls";
+import { VoiceSpeedToggle } from "./voice-controls";
 import { PrivateTask } from "./private-task";
 import { errorText, request } from "./api";
 import { eventText, phaseNames, roleNames, winnerName } from "./content";
@@ -38,7 +39,7 @@ export function RoomScreen({ roomId }: { roomId: string }) {
   async function openHistory() { try { const data = await request<{ games: typeof history }>(`rooms/${roomId}/recaps`); setHistory(data.games); setPane("history"); } catch (e) { c.setError(e); } }
   return <main className={`room-page ${v.phase === "lobby" ? "is-lobby" : ""}`}><Brand back="/" /><div className="room-top"><div><span className="eyebrow">THE TABLE / {v.phase === "lobby" ? "ASSEMBLE" : `ROUND ${v.nightNo || "00"}`}</span><h1>{v.phase === "lobby" ? "入席，等夜来" : v.phase === "end" ? winnerName(v.winner, v.aborted) : "这一桌"}</h1></div><div className="room-code"><span>房间号</span><strong>{roomId}</strong><IconButton icon={Share2} label="邀请朋友" onClick={() => setPane("invite")} /></div></div>
     {!c.revealed && !c.hostOpen && !!c.error && <div className="error-banner" role="alert">{c.pending ? "有一项请求等待确认" : "状态暂未更新"}<button className="text-link" disabled={c.busy} onClick={() => { if (c.pending) void c.send(); else if (voice.completionRetry) voice.retryCompletion(); else { c.setError(null); void c.sync().catch(c.setError); } }}>{c.pending ? "重试原请求" : voice.completionRetry ? "重试播报确认" : "重新同步"}</button></div>}
-    <div className="room-layout"><section className="room-main">{v.phase === "lobby" ? <><div className="section-heading"><h2>席位</h2><span>{v.players.length} / {capacity} 人<IconButton icon={Users} label="完整名单" onClick={() => setPane("roster")} /></span></div><SeatGrid players={v.players} capacity={capacity} ownId={own.id} selected={own.id} mode="lobby" onSelect={(_, n) => { if (!blocked) void c.send({ type: "seat", seat: n }); }} />
+    <div className="room-layout"><section className="room-main">{v.phase === "lobby" ? <><div className="section-heading"><h2>席位</h2><span>{v.players.length} / {capacity} 人<IconButton icon={v.self.isHost ? UserMinus : Users} label={v.self.isHost ? "管理玩家" : "完整名单"} onClick={() => setPane("roster")} /></span></div><SeatGrid players={v.players} capacity={capacity} ownId={own.id} selected={own.id} mode="lobby" onSelect={(_, n) => { if (!blocked) void c.send({ type: "seat", seat: n }); }} />
       <div className="lobby-actions"><NextButton busy={c.busy} disabled={blocked} onClick={() => void c.send({ type: "ready", ready: !isReady })}>{isReady ? "取消准备" : "准备好了"}</NextButton><IconButton icon={UserRoundPen} label="修改昵称" onClick={() => { setName(own.name); setPane("rename"); }} /></div>
       {v.self.isHost && <button className="button secondary full-width" onClick={() => void c.showHost()}><Radio size={18} aria-hidden />主持控制</button>}</> : <>
       <div className="public-stage"><div className="stage-line"><span className="eyebrow">{v.nightNo ? `第 ${v.nightNo} 夜` : "发牌"}</span><span className="stage-status">{v.paused ? "暂停" : phaseNames[v.phase]}</span></div><h2>{cue}</h2><WindowCountdown view={v} receivedAt={c.receivedAt} />
@@ -46,7 +47,7 @@ export function RoomScreen({ roomId }: { roomId: string }) {
         {v.phase === "end" && <div className="end-actions"><Link className="button primary" href={`/r/${roomId}/recap/${v.epochId}`}>查看本局复盘<ArrowRight size={18} aria-hidden /></Link>{v.self.isHost && <button className="button secondary" disabled={blocked || !c.leader || !!v.narration.pending} onClick={() => void c.send({ type: "restart" })}>下一局</button>}</div>}
       </div><div className="section-heading"><h2>这一桌的人</h2><span>{own.seat} 号 · 本人<IconButton icon={Users} label="完整名单" onClick={() => setPane("roster")} /></span></div><SeatGrid players={v.players} ownId={own.id} />
       {v.self.isHost && <button className="button secondary full-width host-entry" onClick={() => void c.showHost()}><Radio size={18} aria-hidden />主持控制</button>}
-      {v.self.isHost && voice.mode === "voice" && <div className="voice-status" role="status"><Radio size={17} aria-hidden /><span>{voice.status === "playing" ? voice.caption : voice.problem ? "播报中断，请打开主持控制" : v.paused ? "对局已暂停" : "语音主持"}</span></div>}
+      {v.self.isHost && voice.mode === "voice" && <div className="voice-status" role="status"><Radio size={17} aria-hidden /><span>{voice.status === "playing" ? voice.caption : voice.problem ? "播报中断，请打开主持控制" : v.paused ? "对局已暂停" : "语音主持"}</span><VoiceSpeedToggle voice={voice} /></div>}
       </>}
     </section><aside className="room-sidebar"><div className="section-heading"><h2>本局配置</h2><IconButton icon={BookOpen} label="公开规则" onClick={() => setPane("rules")} /></div><div className="config-summary"><div><span>胜负规则</span><strong>{v.config.winMode === "edge" ? "屠边" : "人数胜负"}</strong></div>{Object.entries(v.config.roles).filter(([, n]) => n > 0).map(([role, n]) => <div key={role}><span>{roleNames[role as keyof typeof roleNames]}</span><strong>× {n}</strong></div>)}</div>
       {v.phase === "lobby" && v.self.isHost && <button className="text-link" onClick={() => { setConfig(v.config); setPane("config"); }}><Settings size={16} aria-hidden />修改配置</button>}
@@ -56,7 +57,7 @@ export function RoomScreen({ roomId }: { roomId: string }) {
     <Modal open={c.revealed} title="本人私密视角" onClose={c.conceal} privatePanel>{c.revealed && <PrivateTask key={v.windowId} controller={c} />}</Modal>
     <Modal open={c.hostOpen} title="主持控制" onClose={c.closeHost}><HostControls key={`${v.phase}:${v.epochId}`} controller={c} voice={voice} /></Modal>
     <Modal open={pane === "invite"} title="邀请入席" onClose={() => setPane(null)}><Invitation roomId={roomId} /></Modal>
-    <Modal open={pane === "roster"} title="完整名单" onClose={() => setPane(null)}><ol className="full-roster">{v.players.map((p) => <li key={p.id}><strong>{p.seat} 号</strong><span>{p.name}{"alive" in p && <span className="muted"> · {p.alive ? "存活" : "已出局"}</span>}</span></li>)}</ol></Modal>
+    <Modal open={pane === "roster"} title="完整名单" onClose={() => setPane(null)}><ol className="full-roster">{v.players.map((p) => <li key={p.id}><strong>{p.seat} 号</strong><span>{p.name}{"alive" in p && <span className="muted"> · {p.alive ? "存活" : "已出局"}</span>}</span>{v.phase === "lobby" && v.self.isHost && p.id !== v.self.playerId && <IconButton icon={UserMinus} label={`移出${p.seat}号`} disabled={blocked} onClick={() => { if (window.confirm(`移出 ${p.seat} 号 ${p.name}？`)) void c.send({ type: "kick", playerId: p.id }); }} />}</li>)}</ol></Modal>
     <Modal open={pane === "rules"} title="公开规则" onClose={() => setPane(null)}><RuleList config={v.config} /></Modal>
     <Modal open={pane === "rename"} title="修改昵称" onClose={() => setPane(null)}><form onSubmit={async (e) => { e.preventDefault(); if (await c.send({ type: "rename", name })) setPane(null); }}><label className="field">昵称<input disabled={c.busy || !!c.pending} value={name} maxLength={48} required onChange={(e) => setName(e.target.value)} /></label>{!!c.error && <p className="error">{errorText(c.error)}</p>}<NextButton type="submit" busy={c.busy}>{c.pending ? "重试原请求" : "保存昵称"}</NextButton></form></Modal>
     <Modal open={pane === "config"} title="本局配置" onClose={() => setPane(null)}><fieldset disabled={c.busy || !!c.pending}><ConfigEditor value={config} onChange={setConfig} /></fieldset>{!!c.error && <p className="error">{errorText(c.error)}</p>}<NextButton busy={c.busy} onClick={async () => { if (await c.send({ type: "configure", config })) setPane(null); }}>{c.pending ? "重试原请求" : "保存配置"}</NextButton></Modal>

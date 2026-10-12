@@ -32,14 +32,23 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     const pages = [];
     await contexts[0]!.addInitScript(() => {
       const Native = window.AudioContext;
-      const observed = window as unknown as { audioStarts: number }; observed.audioStarts = 0;
+      const observed = window as unknown as { audioStarts: number; audioRates: number[] }; observed.audioStarts = 0; observed.audioRates = [];
       window.AudioContext = class extends Native {
         createBufferSource() { const source = super.createBufferSource(); const start = source.start.bind(source);
-          source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => { observed.audioStarts++; start(...args); }; return source; }
+          source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => { observed.audioStarts++; observed.audioRates.push(source.playbackRate.value); start(...args); }; return source; }
       };
     });
     for (const context of contexts) { const page = await context.newPage(); page.on("pageerror", e => errors.push(e.message)); pages.push(page); await page.goto(`/r/${room}`); }
     const host = pages[0]!;
+    await host.getByRole("button", { name: "管理玩家", exact: true }).click();
+    const roster = host.getByRole("dialog", { name: "完整名单", exact: true });
+    host.once("dialog", dialog => dialog.accept());
+    await roster.getByRole("button", { name: "移出8号", exact: true }).click();
+    await expect.poll(async () => (await view()).players.length).toBe(7);
+    expect((await contexts[7]!.request.get(`/api/v2/rooms/${room}`)).status()).toBe(401);
+    await host.keyboard.press("Escape");
+    await post(contexts[7]!, `rooms/${room}/join`, { requestId: crypto.randomUUID(), epochId: created.epochId, name: "Cloud QA 8" });
+    await pages[7]!.reload(); await expect.poll(async () => (await view()).players.length).toBe(8);
     await expect(host.getByRole("button", { name: "准备好了", exact: true })).toBeVisible();
     await act(1, { type: "ready", ready: true }); await pages[1]!.reload();
     await expect(pages[1]!.getByRole("button", { name: "取消准备", exact: true })).toBeVisible();
@@ -54,6 +63,11 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     await host.getByRole("button", { name: "主持控制", exact: true }).click();
     const panel = host.getByRole("dialog", { name: "主持控制" }); await panel.getByRole("button", { name: "语音", exact: true }).click();
     await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+    await panel.getByRole("button", { name: "试音（可选）", exact: true }).click();
+    await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪");
+    expect(await host.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates)).toEqual([1.5]);
+    await panel.getByRole("button", { name: "二倍速", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "二倍速", exact: true })).toHaveAttribute("aria-pressed", "true");
 
     await expect.poll(async () => (await view()).narration.mode).toBe("voice"); await host.keyboard.press("Escape");
     for (let i = 0; i < 8; i++) if (i !== 1) await act(i, { type: "ready", ready: true });
@@ -71,7 +85,7 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     await panel.getByRole("button", { name: "开始首夜", exact: true }).click();
     await host.keyboard.press("Escape");
     await expect.poll(async () => (await view()).phase, { timeout: 60_000 }).toBe("night_action");
-    const current = await view(); expect(current.nightRole).toBe("guard"); expect(current.window!.deadline - current.window!.openedAt).toBe(30_000);
+    const current = await view(); expect(current.nightRole).toBe("guard"); expect(current.window!.deadline - current.window!.openedAt).toBe(10_000);
     expect(current.players.every(p => "revealedRole" in p && p.revealedRole === null)).toBe(true);
     let guard = -1;
     for (let i = 0; i < 8; i++) if ((await read<PrivateRoom>(contexts[i]!, `rooms/${room}/private`)).action === "guard") guard = i;
@@ -95,6 +109,8 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     await expect(privatePanel.locator(".waiting-note")).toContainText("本夜不守");
     await expect.poll(async () => { const current = await view(); return `${current.phase}:${current.nightRole}`; }, { timeout: 60_000 }).toBe("night_action:werewolf");
     const wolfWindow = await view(); expect(wolfWindow.window!.deadline - wolfWindow.window!.openedAt).toBe(30_000);
+    const rates = await host.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates);
+    expect(rates.slice(1).every(rate => rate === 2)).toBe(true); expect(rates.length).toBeGreaterThan(3);
     const wolfActors: number[] = [];
     for (let i = 0; i < 8; i++) if ((await read<PrivateRoom>(contexts[i]!, `rooms/${room}/private`)).role === "werewolf") wolfActors.push(i);
     expect(wolfActors).toHaveLength(2);

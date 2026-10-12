@@ -61,7 +61,7 @@ export function makeFixture(scene) {
   const action = ["guard", "werewolf", "witch", "seer"].includes(kind);
   const end = ["end", "recap"].includes(kind);
   const isHost = ["lobby", "vote", "paused", "end"].includes(kind);
-  const duration = ["guard", "paused", "werewolf"].includes(kind) ? 30_000 : 10_000;
+  const duration = kind === "werewolf" ? 30_000 : 10_000;
   const phase = lobby ? "lobby" : kind === "identity" ? "reveal" : action || kind === "paused" ? "night_action"
     : kind === "hunter" ? "hunter" : end ? "end" : "day";
   const recap = recapFor(scene, ownRole);
@@ -70,8 +70,8 @@ export function makeFixture(scene) {
     nightRole: action ? kind : kind === "paused" ? "guard" : null,
     paused: kind === "paused", pauseReason: kind === "paused" ? "host_unavailable" : null,
     narration: { mode: "text", pending: null, version: voice },
-    window: action || ["hunter", "paused"].includes(kind) ? { openedAt: REVIEW_NOW - (kind === "werewolf" ? 30_000 : kind === "paused" ? 18_000 : 0), deadline: REVIEW_NOW + (kind === "werewolf" ? 0 : kind === "paused" ? 12_000 : duration),
-      remainingMs: kind === "paused" ? 12_000 : null, ...(kind === "werewolf" ? { waiting: true } : {}) } : null,
+    window: action || ["hunter", "paused"].includes(kind) ? { openedAt: REVIEW_NOW - (kind === "werewolf" ? 30_000 : kind === "paused" ? 4000 : 0), deadline: REVIEW_NOW + (kind === "werewolf" ? 0 : kind === "paused" ? 6000 : duration),
+      remainingMs: kind === "paused" ? 6000 : null, ...(kind === "werewolf" ? { waiting: true } : {}) } : null,
     players: Array.from({ length: lobby ? 6 : 12 }, (_, i) => ({ id: `p${i + 1}`, seat: i + 1, name: names[i],
       ...(lobby ? { ready: i !== 0 && i !== 3 } : { alive: end ? recap.participants[i].alive : !(["day", "vote"].includes(kind) && i === 9) && !(kind === "hunter" && i === 0),
         revealedRole: kind === "hunter" && i === 0 ? "hunter" : null }) })),

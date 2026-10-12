@@ -7,7 +7,7 @@ import type { Role } from "../../src/game/types";
 const production = "https://werewolf-web-v2.vercel.app";
 const names: Record<string, Role> = { 狼人: "werewolf", 预言家: "seer", 女巫: "witch", 守卫: "guard", 猎人: "hunter", 平民: "villager" };
 type Actor = { page: Page; context: BrowserContext; seat: number; id: string; role: Role | null };
-type Sound = { hash: string; startedAt: number; endedAt?: number; durationMs: number };
+type Sound = { hash: string; startedAt: number; endedAt?: number; durationMs: number; rate: number };
 
 test("production: 12 independent players complete a real-time voice game, recap and next lobby", async ({ browser, baseURL }, info) => {
   test.skip(baseURL !== production || process.env.RUN_PRODUCTION_ACCEPTANCE !== "1", "Never run a production game implicitly");
@@ -103,7 +103,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
         createBufferSource() {
           const source = super.createBufferSource(); const start = source.start.bind(source);
           source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => {
-            const sound = { hash: hashes.get(source.buffer!) ?? "", startedAt: Date.now(), durationMs: (source.buffer?.duration ?? 0) * 1000 } as Sound;
+            const sound = { hash: hashes.get(source.buffer!) ?? "", startedAt: Date.now(), durationMs: (source.buffer?.duration ?? 0) * 1000, rate: source.playbackRate.value } as Sound;
             observed.productionSounds.push(sound); source.addEventListener("ended", () => { sound.endedAt = Date.now(); }); start(...args);
           }; return source;
         }
@@ -155,7 +155,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
         const turn = `${current.nightNo}:${current.nightRole}`;
         if (handled.has(turn)) { await host.page.waitForTimeout(700); continue; }
         const duration = current.window!.deadline - current.window!.openedAt;
-        expect(duration).toBe(["guard", "werewolf"].includes(current.nightRole!) ? 30_000 : 10_000);
+        expect(duration).toBe(current.nightRole === "werewolf" ? 30_000 : 10_000);
         if (current.nightNo === 1 && current.nightRole === "werewolf" && !current.window!.waiting) { await host.page.waitForTimeout(700); continue; }
         if (current.window!.waiting) {
           expect(current.paused).toBe(false); expect(current.pauseReason).toBeNull();
@@ -233,7 +233,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
     for (const sound of sounds) {
       const id = Object.keys(manifest.clips).find((key) => manifest.clips[key].sha256 === sound.hash); expect(id).toBeTruthy();
       expect(sound.endedAt, `Audio ${id} ended`).toBeDefined();
-      const fullyPlayed = sound.endedAt! - sound.startedAt >= sound.durationMs - 350;
+      const fullyPlayed = sound.endedAt! - sound.startedAt >= sound.durationMs / sound.rate - 350;
       const counts = fullyPlayed ? report.playedClips : report.interruptedClips; counts[id!] = (counts[id!] ?? 0) + 1;
       if (!fullyPlayed && id !== "pause" && id !== "resume") expect(report.recoveries, `Unexpected interrupted clip ${id}`).toBeGreaterThan(0);
     }

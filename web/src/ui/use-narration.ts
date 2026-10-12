@@ -12,6 +12,7 @@ export function useNarration(controller: RoomController) {
   const [status, setStatus] = useState<"idle" | "loading" | "testing" | "ready" | "playing" | "failed">("idle");
   const [problem, setProblem] = useState<string | null>(null); const [caption, setCaption] = useState("");
   const [volume, setVolume] = useState(80); const [generation, setGeneration] = useState(0);
+  const [rate, setRate] = useState<1.5 | 2>(1.5);
   const [completionRetry, setCompletionRetry] = useState(false);
   const completed = useRef<{ plan: Plan; envelope: { requestId: string; epochId: string; windowId: string; operation: Operation } } | null>(null);
   const delivering = useRef(false);
@@ -104,6 +105,7 @@ export function useNarration(controller: RoomController) {
     const trialSequence = ++sequence.current; verified.current = false; completed.current = null;
     setCompletionRetry(false);
     player.current ??= new NarrationPlayer(() => fail.current(new PlaybackError("AUDIO_INTERRUPTED")));
+    player.current.setRate(rate);
     player.current.cancel(); setStatus("loading"); setProblem(null);
     const preparation = player.current.prepare();
     try {
@@ -130,9 +132,10 @@ export function useNarration(controller: RoomController) {
     }
   }
   function changeVolume(value: number) { setVolume(value); player.current?.setVolume(value / 100); }
+  function changeRate(value: 1.5 | 2) { setRate(value); player.current?.setRate(value); }
   const textPlan = v ? narrationPlan({ ...v, paused: false }) : null;
   const item = completed.current;
-  return { mode, status, problem, caption, volume, ready: mode === "text" || (verified.current && !!player.current?.ready),
+  return { mode, status, problem, caption, volume, rate, changeRate, ready: mode === "text" || (verified.current && !!player.current?.ready),
     completionRetry: completionRetry && !!item && controller.leader && !v?.paused && mode === "voice"
       && item.envelope.epochId === v?.epochId && item.envelope.windowId === v?.windowId, retryCompletion,
     text: textPlan ? captions(textPlan.clips) : "", version: NARRATION_VERSION, trial, enableVoice, textMode, changeVolume };

@@ -7,7 +7,7 @@ import { config, seats, command, day, deepFreeze, nightToDawn, revealed, started
 describe("simultaneous night deaths", () => {
   it.each([
     [null, "pass", false], ["p8", "pass", true],
-    [null, "save", true], ["p8", "save", true],
+    [null, "save", true], ["p8", "save", false],
     [null, "poison", false], ["p8", "poison", false],
   ] as const)("guard %s with %s has survival=%s", (guard, choice, survives) => {
     const game = nightToDawn(started(), { guard, kill: "p8", witch: { choice, targetId: choice === "pass" ? null : "p8" } });
@@ -43,6 +43,12 @@ describe("simultaneous night deaths", () => {
 });
 
 describe("hunter disclosure and reaction", () => {
+  it("treats a double-protected wolf target as wolf-killed, preserving the hunter reaction", () => {
+    const game = day(started(), { guard: "p6", kill: "p6", witch: { choice: "save", targetId: "p6" } });
+    expect(game.nights[0]!.deaths).toEqual([{ playerId: "p6", causes: ["wolf"] }]);
+    expect(game.phase).toBe("hunter");
+    expect(game.pendingHunter?.playerId).toBe("p6");
+  });
   it("publishes a wolf-killed hunter only with the dawn announcement", () => {
     const dawn = nightToDawn(started(), { kill: "p6" });
     expect(dawn.phase).toBe("dawn");

@@ -26,10 +26,10 @@ async function close(page: Page) { await page.keyboard.press("Escape"); await ex
 
 test("voice can be enabled without playing a trial and trial remains optional", async ({ page, context }) => {
   await page.addInitScript(() => {
-    const Native = window.AudioContext; const state = window as unknown as { startedAudio: number }; state.startedAudio = 0;
+    const Native = window.AudioContext; const state = window as unknown as { startedAudio: number; rates: number[] }; state.startedAudio = 0; state.rates = [];
     window.AudioContext = class extends Native {
       createBufferSource() { const source = super.createBufferSource(); const start = source.start.bind(source);
-        source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => { state.startedAudio++; start(...args); }; return source; }
+        source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => { state.startedAudio++; state.rates.push(source.playbackRate.value); start(...args); }; return source; }
     };
   });
   const room = await create(page); const panel = await controls(page);
@@ -42,6 +42,34 @@ test("voice can be enabled without playing a trial and trial remains optional", 
   await expect(panel.locator(".voice-controls [role=status]")).toHaveText("声音就绪", { timeout: 30_000 });
   expect(await page.evaluate(() => (window as unknown as { startedAudio: number }).startedAudio)).toBe(1);
   expect((await view(context, room)).narration.mode).toBe("voice");
+  await expect(panel.getByText("语速 1.5×", { exact: true })).toBeVisible();
+  await panel.getByRole("button", { name: "二倍速", exact: true }).click();
+  await expect(panel.getByRole("button", { name: "二倍速", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await panel.getByRole("button", { name: "试音（可选）", exact: true }).click();
+  await expect(panel.locator(".voice-controls [role=status]")).toHaveText("声音就绪", { timeout: 30_000 });
+  expect(await page.evaluate(() => (window as unknown as { rates: number[] }).rates)).toEqual([1.5, 2]);
+  await panel.getByRole("button", { name: "二倍速", exact: true }).click();
+  await expect(panel.getByText("语速 1.5×", { exact: true })).toBeVisible();
+});
+
+test("only the lobby host can remove players through the roster", async ({ page, context, browser, baseURL }) => {
+  const room = await create(page); const guest = await browser.newContext({ baseURL });
+  try {
+    const guestPage = await guest.newPage(); await guestPage.goto(`/join?room=${room}`);
+    await guestPage.getByLabel("你的昵称").fill("待移出玩家");
+    await guestPage.getByRole("button", { name: "加入房间", exact: true }).last().click();
+    await guestPage.waitForURL(new RegExp(`/r/${room}$`));
+    await guestPage.getByRole("button", { name: "完整名单", exact: true }).click();
+    await expect(guestPage.getByRole("button", { name: /^移出/ })).toHaveCount(0);
+    await page.getByRole("button", { name: "管理玩家", exact: true }).click();
+    const roster = page.getByRole("dialog", { name: "完整名单", exact: true });
+    await expect(roster.getByRole("button", { name: "移出2号", exact: true })).toBeVisible();
+    page.once("dialog", dialog => dialog.accept());
+    await roster.getByRole("button", { name: "移出2号", exact: true }).click();
+    await expect.poll(async () => (await view(context, room)).players.length).toBe(1);
+    expect((await guest.request.get(`/api/v2/rooms/${room}`)).status()).toBe(401);
+    await expect(roster.getByRole("button", { name: /^移出/ })).toHaveCount(0);
+  } finally { await guest.close(); }
 });
 
 test("complete narration bank decodes with matching text, hashes and duration", async ({ page }) => {
@@ -127,7 +155,7 @@ test("direct voice, ended clock, interruption, reload and explicit text fallback
     }
     await expect(privatePanel).toBeVisible(); await close(page);
     await expect.poll(async () => (await view(context, room)).phase, { timeout: 40_000 }).toBe("night_action");
-    const opened = (await view(context, room)).window!; expect(opened.deadline - opened.openedAt).toBe(30_000);
+    const opened = (await view(context, room)).window!; expect(opened.deadline - opened.openedAt).toBe(10_000);
     const allContexts = [context, ...otherContexts];
     for (const member of allContexts) {
       const response = await member.request.get(`/api/v2/rooms/${room}/private`); const own = await response.json();
@@ -148,7 +176,7 @@ test("direct voice, ended clock, interruption, reload and explicit text fallback
     await expect(panel.getByRole("button", { name: "恢复对局" })).toBeEnabled();
     await panel.getByRole("button", { name: "恢复对局" }).click();
     await expect.poll(async () => (await view(context, room)).paused).toBe(false);
-    const resumed = await view(context, room); expect(resumed.window!.deadline - resumed.serverTime).toBeGreaterThan(frozen + 28_000);
+    const resumed = await view(context, room); expect(resumed.window!.deadline - resumed.serverTime).toBeGreaterThan(frozen + 8000);
     await close(page);
     await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" }); document.dispatchEvent(new Event("visibilitychange")); });
     await expect.poll(async () => (await view(context, room)).paused).toBe(true);

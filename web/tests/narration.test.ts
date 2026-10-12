@@ -51,7 +51,7 @@ describe("public narration contract", () => {
     const before = f.envelope({ type: "cue_ack", cueId: f.state().flowId, version: NARRATION_VERSION });
     f.time.now += 7000; await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
     await f.service.mutate(f.id, f.tokens[0]!, before);
-    expect(f.state().game!.window).toMatchObject({ openedAt: f.time.now, deadline: f.time.now + 30_000 });
+    expect(f.state().game!.window).toMatchObject({ openedAt: f.time.now, deadline: f.time.now + 10_000 });
     const game = f.state().game;
     await f.service.mutate(f.id, f.tokens[0]!, before);
     expect(f.state().game).toEqual(game);
@@ -114,13 +114,13 @@ describe("public narration contract", () => {
     const actions = structuredClone(f.state().game!.currentNight!.actions);
     f.time.now += 4000;
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true });
-    expect(f.state().game!.paused).toBe(true); expect(f.state().game!.window!.remainingMs).toBe(26_000);
+    expect(f.state().game!.paused).toBe(true); expect(f.state().game!.window!.remainingMs).toBe(6000);
     expect(f.state().game!.currentNight!.actions).toEqual(actions);
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: "old-bank" });
     await expect(f.act({ type: "resume" })).rejects.toThrow("HOST_NOT_READY");
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
     expect(f.state().game!.paused).toBe(true); await f.act({ type: "resume" });
-    expect(f.state().game!.window!.deadline).toBe(f.time.now + 56_000);
+    expect(f.state().game!.window!.deadline).toBe(f.time.now + 16_000);
   });
 
   it.each(["host-zh-v2", "before-upgrade"])("requires a new trial after upgrading from %s and rejects old callbacks", async (version) => {
