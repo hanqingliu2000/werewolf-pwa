@@ -12,7 +12,7 @@ export const RETENTION_MS = 24 * 60 * 60 * 1000;
 export const hashSession = (token: string) => createHash("sha256").update(token).digest("hex");
 export const mintSession = () => randomBytes(32).toString("base64url");
 const fingerprint = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex");
-const hostOperations = new Set(["configure", "kick", "start", "begin_night", "cue_ack", "pause", "resume", "abort", "restart", "day_draft", "day_confirm", "day_publish", "narration_mode", "announcement_done"]);
+const hostOperations = new Set(["configure", "kick", "start", "begin_night", "cue_ack", "pause", "resume", "abort", "restart", "day_draft", "day_confirm", "day_publish", "narration_mode", "announcement_done", "action_prompt"]);
 const lobbyOperations = new Set(["ready", "configure", "seat", "rename", "kick", "leave", "start"]);
 
 export class RoomService {
@@ -243,6 +243,16 @@ export class RoomService {
         requireRule(!room.game || room.game.phase === "end" || room.game.paused, "PAUSE_BEFORE_MODE_CHANGE");
         requireRule(op.mode === "text" || (room.hostAvailable && now - room.heartbeatAt < 10_000), "HOST_NOT_READY");
         room.narration = { ...(room.narration ?? defaultNarration()), mode: op.mode, version: op.version };
+        return;
+      }
+      if (op.type === "action_prompt") {
+        requireRule(room.game && !room.game.paused && room.narration?.mode === "voice", "PHASE_MISMATCH");
+        requireRule(room.narration.version === NARRATION_VERSION, "STALE_AUDIO");
+        requireRule(room.hostAvailable && now - room.heartbeatAt < 10_000, "HOST_NOT_READY");
+        const cueId = room.game.phase === "night_open" ? room.flowId
+          : room.game.phase === "hunter" ? room.narration.pending?.id : null;
+        requireRule(cueId && op.cueId === cueId, "STALE_CUE");
+        room.narration.promptedCueId = room.flowId;
         return;
       }
       if (op.type === "announcement_done") {

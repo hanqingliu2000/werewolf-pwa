@@ -59,7 +59,7 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     const cookies = await contexts[0]!.cookies(); const session = cookies.find(c => c.name === "ww_session")!;
     expect(session.httpOnly).toBe(true); expect(session.secure).toBe(true); expect(session.sameSite).toBe("Strict");
     const manifestResponse = await contexts[0]!.request.get(`/audio/${script.version}/manifest.json`); expect(manifestResponse.ok()).toBe(true);
-    const manifest = await manifestResponse.json(); expect(Object.keys(manifest.clips)).toHaveLength(40);
+    const manifest = await manifestResponse.json(); expect(Object.keys(manifest.clips)).toHaveLength(Object.keys(script.clips).length);
     await host.getByRole("button", { name: "主持控制", exact: true }).click();
     const panel = host.getByRole("dialog", { name: "主持控制" }); await panel.getByRole("button", { name: "语音", exact: true }).click();
     await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });

@@ -11,7 +11,7 @@ export function PrivateTask({ controller: c }: { controller: RoomController }) {
   const seat = (id: string) => `${view.players.find((p) => p.id === id)?.seat ?? "?"} 号`;
   if (!info) return <p role="status">正在读取本人身份</p>;
   if (!info.role) return <p>尚未发牌</p>;
-  const task = info.hunterReaction ? "hunter" : info.wolves?.locked ? null : info.wolves ? "werewolf" : info.action;
+  const task = info.hunterReaction ? "hunter" : info.wolves?.locked ? null : info.action ?? info.previewAction ?? (info.wolves ? "werewolf" : null);
   if (task) return <PrivateAction controller={c} info={info} task={task} />;
   const result = info.actionResult ?? (info.acceptedAction ? { ...info.acceptedAction, nightNo: view.nightNo }
     : info.wolves?.locked && Object.hasOwn(info.wolves.proposals, info.playerId)

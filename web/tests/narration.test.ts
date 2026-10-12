@@ -69,7 +69,7 @@ describe("public narration contract", () => {
     expect(before.players.every((p) => "alive" in p && p.alive)).toBe(true);
     await cue(f);
     const plan = narrationPlan(await f.service.view(f.id, f.tokens[0]!))!;
-    expect(plan.clips).toEqual(["death_list", `seat_${hunter.seat}`, "hunter_identity", "hunter_open"]);
+    expect(plan.clips).toEqual(["death_list", `seat_${hunter.seat}`, "hunter_identity", "hunter_open", "hunter_action"]);
     expect((await f.service.view(f.id, f.tokens[index]!, "private")).hunterReaction).toBe(false);
     await expect(f.act({ type: "hunter", targetId: null }, index)).rejects.toThrow("ANNOUNCEMENT_PENDING");
     await announce(f);
@@ -166,7 +166,7 @@ describe("public-only script composition", () => {
     const poisoned = events([{ type: "deaths", nightNo: 1, playerIds: ["one", "twelve"], revealedHunters: ["twelve"] }]);
     expect(poisoned.clips).toEqual(["death_list", "seat_1", "seat_12", "hunter_identity", "day"]);
     expect(captions(poisoned.clips)).not.toMatch(/毒|刀口|狼人阵营|查验结果/);
-    expect(events([{ type: "day_vote", nightNo: 1, playerId: "one", revealedHunterId: "one" }], "hunter").clips).toEqual(["vote_list", "seat_1", "hunter_identity", "hunter_open"]);
+    expect(events([{ type: "day_vote", nightNo: 1, playerId: "one", revealedHunterId: "one" }], "hunter").clips).toEqual(["vote_list", "seat_1", "hunter_identity", "hunter_open", "hunter_action"]);
     expect(events([{ type: "day_vote", nightNo: 1, playerId: null, revealedHunterId: null }], "night_open").clips).toEqual(["vote_none"]);
     expect(events([{ type: "hunter_reaction", nightNo: 1, origin: "day", playerId: "one", targetId: "twelve" }]).clips).toEqual(["hunter_shot", "seat_12", "day"]);
     for (const winner of ["good", "wolf", "draw"] as const) expect(events([{ type: "game_end", winner, aborted: false }], "end").clips).toEqual([winner === "draw" ? "draw" : `${winner}_win`]);
@@ -175,11 +175,11 @@ describe("public-only script composition", () => {
   });
   it("calls configured roles uniformly and never repeats old public event history", () => {
     for (const role of ["guard", "werewolf", "witch", "seer"] as const) {
-      expect(narrationPlan({ ...base, phase: "night_open", nightRole: role })?.clips).toEqual(role === "guard" ? ["night_start", "guard_open"] : [`${role}_open`]);
+      expect(narrationPlan({ ...base, phase: "night_open", nightRole: role })?.clips).toEqual(role === "guard" ? ["night_start", "guard_open", "guard_action"] : [`${role}_open`, `${role}_action`]);
       expect(narrationPlan({ ...base, phase: "night_close", nightRole: role })?.clips).toEqual([`${role}_close`]);
     }
     const noGuard = { ...config, roles: { ...config.roles, guard: 0, villager: 3 } };
-    expect(narrationPlan({ ...base, config: noGuard, phase: "night_open", nightRole: "werewolf" })?.clips).toEqual(["night_start", "werewolf_open"]);
+    expect(narrationPlan({ ...base, config: noGuard, phase: "night_open", nightRole: "werewolf" })?.clips).toEqual(["night_start", "werewolf_open", "werewolf_action"]);
     expect(narrationPlan({ ...base, phase: "night_action", nightRole: "guard", events: [{ type: "roles_dealt" }] })).toBeNull();
   });
 });

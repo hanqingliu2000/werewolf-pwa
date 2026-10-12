@@ -65,18 +65,19 @@ describe("wolf voting", () => {
     for (const actorId of ["p1", "p2"]) game = command(game, { type: "wolf_propose", actorId, targetId: "p8" });
     game = command(game, { type: "wolf_confirm", actorId: "p1" });
     expect(command(game, { type: "wolf_propose", actorId: "p1", targetId: "p8" }).currentNight!.wolfConfirmations).toEqual(["p1"]);
-    game = command(game, { type: "wolf_propose", actorId: "p2", targetId: null });
+    game = command(game, { type: "wolf_propose", actorId: "p2", targetId: "p7" });
     expect(game.currentNight!.wolfConfirmations).toEqual(["p1"]);
-    game = command(game, { type: "wolf_propose", actorId: "p1", targetId: null });
+    game = command(game, { type: "wolf_propose", actorId: "p1", targetId: "p7" });
     expect(game.currentNight!.wolfConfirmations).toEqual([]);
   });
-  it("distinguishes a jointly confirmed empty kill from no proposal", () => {
-    const game = wolves(toRole(started(), "werewolf"), null);
-    expect(game.currentNight!.killLocked).toBe(true);
-    expect(game.currentNight!.killTargetId).toBeNull();
+  it("rejects empty wolf proposals and confirmation of a legacy empty choice", () => {
+    const game = toRole(started(), "werewolf");
+    expect(() => command(game, { type: "wolf_propose", actorId: "p1", targetId: null })).toThrow("TARGET_REQUIRED");
+    game.currentNight!.wolfProposals.p1 = null;
+    expect(() => command(game, { type: "wolf_confirm", actorId: "p1" })).toThrow("TARGET_REQUIRED");
   });
   it("locks the same target regardless of proposal and confirmation order", () => {
-    fc.assert(fc.property(fc.boolean(), fc.boolean(), fc.constantFrom("p1", "p2", "p8", null), (reverseProposal, reverseConfirmation, targetId) => {
+    fc.assert(fc.property(fc.boolean(), fc.boolean(), fc.constantFrom("p1", "p2", "p8"), (reverseProposal, reverseConfirmation, targetId) => {
       let game = toRole(started(), "werewolf");
       for (const actorId of reverseProposal ? ["p2", "p1"] : ["p1", "p2"]) game = command(game, { type: "wolf_propose", actorId, targetId });
       for (const actorId of reverseConfirmation ? ["p2", "p1"] : ["p1", "p2"]) game = command(game, { type: "wolf_confirm", actorId });
@@ -112,11 +113,12 @@ describe("witch and seer", () => {
     expect(game.nightRole).toBe("witch");
     expect(witchKnowledge(game, "p4").canSeeWolfTarget).toBe(false);
   });
-  it("rejects wrong, missing or empty-kill save targets", () => {
+  it("rejects wrong, missing or legacy absent save targets", () => {
     const game = toRole(started(), "witch", { kill: "p8" });
     expect(() => command(game, { type: "witch", actorId: "p4", choice: "save", targetId: "p7" })).toThrow("SAVE_TARGET_INVALID");
     expect(() => command(game, { type: "witch", actorId: "p4", choice: "save", targetId: null })).toThrow("TARGET_REQUIRED");
     const empty = toRole(started(), "witch");
+    empty.currentNight!.killTargetId = null; empty.currentNight!.witchKnowledge!.targetId = null;
     expect(witchKnowledge(empty, "p4").wolfTargetId).toBeNull();
     expect(() => command(empty, { type: "witch", actorId: "p4", choice: "save", targetId: "p8" })).toThrow("SAVE_TARGET_INVALID");
   });
@@ -133,7 +135,7 @@ describe("witch and seer", () => {
     game.players.find((p) => p.id === "p4")!.alive = false;
     expect(() => witchKnowledge(game, "p4")).toThrow("ACTOR_ELIMINATED");
   });
-  it("seer receives alignment only, may repeat and may pass", () => {
+  it("seer receives alignment only, may repeat, and must select a target", () => {
     let game = toRole(started(), "seer");
     expect(() => command(game, { type: "seer", actorId: "p3", targetId: "p3" })).toThrow("SELF_TARGET_FORBIDDEN");
     game = command(game, { type: "seer", actorId: "p3", targetId: "p4" });
@@ -145,7 +147,7 @@ describe("witch and seer", () => {
     game = toRole(vote(game, null), "seer");
     game = command(game, { type: "seer", actorId: "p3", targetId: "p4" });
     expect(seerReports(game, "p3")).toHaveLength(2);
-    expect(command(toRole(started(), "seer"), { type: "seer", actorId: "p3", targetId: null }).seerReports).toEqual({});
+    expect(() => command(toRole(started(), "seer"), { type: "seer", actorId: "p3", targetId: null })).toThrow("TARGET_REQUIRED");
     const wolf = command(toRole(started(), "seer"), { type: "seer", actorId: "p3", targetId: "p1" });
     expect(seerReports(wolf, "p3")[0]!.alignment).toBe("wolf");
   });

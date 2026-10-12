@@ -17,12 +17,21 @@ export function PrivateAction({ controller: c, info, task }: { controller: RoomC
   const disabled = (id: string) => (task === "seer" || task === "hunter") && id === info.playerId
     || task === "guard" && info.previousGuardTargetId === id;
   const working = c.busy || !!c.pending || view.paused;
+  const preview = !!info.previewAction && !info.action && !info.hunterReaction;
   const ownProposal = info.wolves?.proposals[info.playerId];
+  const wolfTarget = target ?? ownProposal;
   const liveWolves = info.teammates?.filter((p) => view.players.some((a) => a.id === p.id && (!("alive" in a) || a.alive))) ?? [];
   const title = task === "werewolf" ? "共同选择" : task === "witch" ? "今夜的药" : task === "guard" ? "选择守护" : task === "seer" ? "选择查验" : "最后一枪";
-  const summary = task === "werewolf" ? ownProposal === undefined ? "尚未提议" : ownProposal === null ? "本夜空刀" : `${info.wolves?.locked ? "共同目标" : "本人提议"}：${seat(ownProposal)}`
+  const summary = task === "werewolf" ? wolfTarget == null ? "尚未选择" : `本人目标：${seat(wolfTarget)}`
     : target === undefined ? "尚未选择" : target === null ? "已选择放弃" : `${task === "witch" ? choice === "save" ? "解药" : "毒药" : "当前目标"}：${seat(target)}`;
   async function confirm() {
+    if (preview) return;
+    if (task === "werewolf" && info.wolves && wolfTarget != null) {
+      if (wolfTarget !== ownProposal && !await c.send({ type: "wolf_propose", targetId: wolfTarget })) return;
+      await c.send({ type: "wolf_confirm", consensusId: info.wolves.consensusId, targetId: wolfTarget });
+      setTarget(undefined);
+      return;
+    }
     if (target === undefined) return;
     if (task === "guard" || task === "seer" || task === "hunter") await c.send({ type: task, targetId: target });
     if (task === "witch" && choice) await c.send({ type: "witch", choice, targetId: choice === "pass" ? null : target });
@@ -39,12 +48,12 @@ export function PrivateAction({ controller: c, info, task }: { controller: RoomC
       {task === "werewolf" && info.wolves && <div className="wolf-proposals" data-count={liveWolves.length} aria-label="狼队投票与确认">{liveWolves.map((p) => <div key={p.id}><strong>{p.seat} 号</strong><span>{Object.hasOwn(info.wolves!.proposals, p.id) ? info.wolves!.proposals[p.id] === null ? "空刀" : seat(info.wolves!.proposals[p.id]) : "未投票"}</span><span>{info.wolves!.confirmations.includes(p.id) ? "已确认" : "待确认"}</span></div>)}</div>}
       {task === "witch" && info.witch && <div className="segments potion-choices"><button disabled={working || !info.witch.saveRemaining || !info.witch.wolfTargetId || (info.witch.wolfTargetId === info.playerId && view.nightNo !== 1)} aria-pressed={choice === "save"} onClick={() => { setChoice("save"); setTarget(info.witch!.wolfTargetId); }}>使用解药</button><button disabled={working || !info.witch.poisonRemaining} aria-pressed={choice === "poison"} onClick={() => { setChoice("poison"); setTarget(undefined); }}>使用毒药</button><button disabled={working} aria-pressed={choice === "pass"} onClick={() => { setChoice("pass"); setTarget(null); }}>不用药</button></div>}
     </section><section className="action-board" aria-label="行动目标">
-      {task !== "witch" || choice === "poison" ? <SeatGrid action players={view.players} mode="target" ownId={info.playerId} selected={task === "werewolf" ? ownProposal : target} disabled={(id) => working || disabled(id) || !!info.wolves?.locked} onSelect={(id) => { if (task === "werewolf") { if (id) void c.send({ type: "wolf_propose", targetId: id }); } else setTarget(id); }} />
+      {task !== "witch" || choice === "poison" ? <SeatGrid action players={view.players} mode="target" ownId={info.playerId} selected={task === "werewolf" ? wolfTarget : target} disabled={(id) => working || disabled(id) || !!info.wolves?.locked} onSelect={(id) => { if (task === "werewolf" && !preview) { setTarget(undefined); if (id) void c.send({ type: "wolf_propose", targetId: id }); } else setTarget(id); }} />
         : <div className="witch-selection"><ShieldCheck size={28} aria-hidden /><strong>{choice === "save" ? `解药：${seat(target)}` : choice === "pass" ? "本夜不用药" : "尚未选择药剂"}</strong></div>}
     </section></div>
-    <footer className="private-action-bar"><div className="selection-summary">{summary}</div><div className={`action-buttons${task === "witch" ? " single" : ""}`}>
-      {task === "werewolf" && info.wolves ? <><button className="pass-choice" aria-pressed={ownProposal === null} disabled={working || info.wolves.locked} onClick={() => void c.send({ type: "wolf_propose", targetId: null })}>本夜空刀</button><NextButton disabled={working || ownProposal === undefined || info.wolves.locked || info.wolves.confirmations.includes(info.playerId)} busy={c.busy} onClick={() => void c.send({ type: "wolf_confirm", consensusId: info.wolves!.consensusId, targetId: ownProposal })}>确认投票</NextButton></>
-        : <>{task !== "witch" && <button className="pass-choice" aria-pressed={target === null} disabled={working} onClick={() => setTarget(null)}>{task === "guard" ? "本夜不守" : task === "seer" ? "本夜不查验" : "放弃开枪"}</button>}<NextButton busy={c.busy} disabled={working || target === undefined || (task === "witch" && !choice)} onClick={() => void confirm()}>确认行动</NextButton></>}
+    <footer className="private-action-bar"><div className="selection-summary">{summary}</div><div className={`action-buttons${["witch", "werewolf", "seer"].includes(task) ? " single" : ""}`}>
+      {task === "werewolf" && info.wolves ? <NextButton disabled={working || preview || wolfTarget == null || info.wolves.locked || info.wolves.confirmations.includes(info.playerId)} busy={c.busy} onClick={() => void confirm()}>确认投票</NextButton>
+        : <>{(task === "guard" || task === "hunter") && <button className="pass-choice" aria-pressed={target === null} disabled={working} onClick={() => setTarget(null)}>{task === "guard" ? "本夜不守" : "放弃开枪"}</button>}<NextButton busy={c.busy} disabled={working || preview || target === undefined || (task === "witch" && !choice)} onClick={() => void confirm()}>确认行动</NextButton></>}
     </div></footer>
     <section id={detailId} popover="auto" className="private-detail" aria-labelledby={detailTitle}><div className="detail-heading"><h3 id={detailTitle}>{detail === "rules" ? "角色规则" : detail === "roster" ? "完整名单" : detail === "kills" ? "历次刀口目标" : "本人查验记录"}</h3><IconButton icon={X} label="关闭详情" popoverTarget={detailId} popoverTargetAction="hide" /></div>{detail === "rules" ? <p>{roleRules[info.role!]}</p> : detail === "roster" ? <ol className="full-roster">{view.players.map((p) => <li key={p.id}><strong>{p.seat} 号</strong><span>{p.name}</span></li>)}</ol> : detail === "kills" ? <section className="private-records">{info.wolfHistory?.length ? info.wolfHistory.map((r) => <div key={r.nightNo}><span>第 {r.nightNo} 夜</span><strong>{r.targetId ? seat(r.targetId) : "空刀"}</strong></div>) : <p>暂无历史刀口</p>}</section> : <section className="private-records"><h3>本人查验记录</h3>{info.reports?.map((r) => <div key={r.nightNo}><span>第 {r.nightNo} 夜</span><strong>{seat(r.targetId)}</strong><span>{r.alignment === "wolf" ? "狼人阵营" : "好人阵营"}</span></div>)}</section>}</section>
   </div>;

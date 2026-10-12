@@ -65,8 +65,8 @@ describe("hunter disclosure and reaction", () => {
     expect(done.players[0]!.alive).toBe(false);
     expect(() => command(done, { type: "hunter", actorId: "p6", targetId: null })).toThrow("PHASE_MISMATCH");
   });
-  it.each([null, "p6"])("poison suppresses the hunter gun even with kill=%s", (kill) => {
-    const game = day(started(), { kill, witch: { choice: "poison", targetId: "p6" } });
+  it.each(["p8", "p6"])("poison suppresses the hunter gun even with kill=%s", (kill) => {
+    const game = day(started(), { kill, guard: kill === "p8" ? "p8" : null, witch: { choice: "poison", targetId: "p6" } });
     expect(game.phase).toBe("day");
     expect(game.pendingHunter).toBeNull();
     expect(game.publicEvents.at(-1)).toMatchObject({ revealedHunters: ["p6"] });

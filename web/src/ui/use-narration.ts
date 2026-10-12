@@ -65,7 +65,12 @@ export function useNarration(controller: RoomController) {
     const envelope = { requestId: crypto.randomUUID(), epochId: v.epochId, windowId: v.windowId,
       operation: { type: currentPlan.completion, cueId: currentPlan.cueId, version: NARRATION_VERSION } as Operation };
     setStatus("playing"); setProblem(null);
-    void instance.play(resumed ? ["resume", ...currentPlan.clips] : currentPlan.clips, (id) => setCaption(script.clips[id])).then(() => {
+    void instance.play(resumed ? ["resume", ...currentPlan.clips] : currentPlan.clips, (id) => setCaption(script.clips[id]), async (id) => {
+      if (cancelled || !["guard_open", "werewolf_open", "witch_open", "seer_open", "hunter_open"].includes(id)) return;
+      await latest.current.sendCaptured({ requestId: crypto.randomUUID(), epochId: envelope.epochId, windowId: envelope.windowId,
+        operation: { type: "action_prompt", cueId: currentPlan.cueId, version: NARRATION_VERSION } });
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }).then(() => {
       if (cancelled) return;
       completed.current = { plan: currentPlan, envelope }; setCompletionRetry(false); setStatus("ready"); setGeneration((n) => n + 1);
     }).catch((error) => { if (!cancelled && !(error instanceof PlaybackError && error.code === "PLAYBACK_CANCELLED")) fail.current(error); });

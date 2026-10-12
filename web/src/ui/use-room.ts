@@ -4,6 +4,8 @@ import { ApiError, initialize, request } from "./api";
 import type { HostRoom, Operation, PrivateRoom, PublicRoom, Receipt } from "./contracts";
 import { NARRATION_VERSION } from "../narration/plan";
 
+const actionTurn = (view: PublicRoom) => `${view.epochId}:${view.nightNo}:${view.phase === "hunter" ? "hunter" : "night_action"}:${view.nightRole ?? "hunter"}`;
+
 export function useRoom(roomId: string) {
   const [view, setView] = useState<PublicRoom | null>(null); const [personal, setPersonal] = useState<PrivateRoom | null>(null);
   const [feedback, setFeedback] = useState<{ view: PublicRoom; info: PrivateRoom } | null>(null);
@@ -14,6 +16,7 @@ export function useRoom(roomId: string) {
   const [pending, setPending] = useState<{ requestId: string; epochId: string; windowId: string; operation: Operation } | null>(null);
   const [receivedAt, setReceivedAt] = useState(0);
   const current = useRef<PublicRoom | null>(null); const privateOpen = useRef(false); const maintenanceOpen = useRef(false);
+  const previewOpen = useRef(false);
   const tab = useRef(""); const active = useRef(true); const inFlight = useRef<Promise<void> | null>(null);
   const readAbort = useRef<AbortController | null>(null);
   const heartbeatAborts = useRef(new Set<AbortController>());
@@ -46,7 +49,7 @@ export function useRoom(roomId: string) {
   const conceal = useCallback(() => {
     if (feedbackHold.current) clearTimeout(feedbackHold.current.timer);
     feedbackHold.current = null; setFeedback(null);
-    revealSequence.current++; privateOpen.current = false; setRevealed(false); setPersonal(null);
+    revealSequence.current++; privateOpen.current = false; previewOpen.current = false; setRevealed(false); setPersonal(null);
   }, []);
   const sync = useCallback(() => {
     if (!active.current) return Promise.resolve();
@@ -58,8 +61,12 @@ export function useRoom(roomId: string) {
         const next = await request<PublicRoom>(base, undefined, controller.signal);
         if (!active.current) return;
         const previous = current.current;
+        const startsPreviewWindow = previewOpen.current && previous && previous.epochId === next.epochId && previous.nightNo === next.nightNo
+          && previous.nightRole === next.nightRole && !next.paused
+          && ((previous.phase === "night_open" && next.phase === "night_action")
+            || (previous.phase === "hunter" && next.phase === "hunter" && !!previous.narration.pending && !next.narration.pending));
         if (feedbackHold.current && (next.epochId !== feedbackHold.current.epochId || next.paused)) conceal();
-        if (previous && previous.windowId !== next.windowId && !feedbackHold.current) {
+        if (previous && previous.windowId !== next.windowId && !feedbackHold.current && !startsPreviewWindow) {
           let saved: PrivateRoom | null = null;
           const sequence = revealSequence.current;
           if (privateOpen.current && foreground.current && document.visibilityState === "visible"
@@ -80,21 +87,26 @@ export function useRoom(roomId: string) {
         current.current = next; setView(next); setReceivedAt(Date.now());
         if (privateOpen.current) {
           const info = await request<PrivateRoom>(`${base}/private`, undefined, controller.signal);
-          if (active.current && privateOpen.current && info.windowId === next.windowId && current.current?.windowId === next.windowId) setPersonal(info);
-        } else if (foreground.current && document.visibilityState === "visible" && !next.narration.pending
-          && ["night_action", "hunter"].includes(next.phase)) {
+          if (active.current && privateOpen.current && info.windowId === next.windowId && current.current?.windowId === next.windowId) {
+            previewOpen.current = !!info.previewAction;
+            if (info.action || info.previewAction || info.hunterReaction) autoShown.current.add(actionTurn(next));
+            setPersonal(info);
+          }
+        } else if (foreground.current && document.visibilityState === "visible"
+          && ((!next.narration.pending && ["night_action", "hunter"].includes(next.phase))
+            || (next.narration.promptedCueId === next.windowId && ["night_open", "hunter"].includes(next.phase)))) {
           // A logical turn survives pause/resume flow IDs, so dismissal never reopens it.
-          const turn = `${next.epochId}:${next.nightNo}:${next.phase}:${next.nightRole ?? "hunter"}`;
+          const turn = actionTurn(next);
           if (!autoShown.current.has(turn) && autoCheckedWindow.current !== next.windowId) {
             const sequence = revealSequence.current;
             const info = await request<PrivateRoom>(`${base}/private`, undefined, controller.signal);
             if (active.current && foreground.current && document.visibilityState === "visible"
               && sequence === revealSequence.current && info.windowId === next.windowId && current.current?.windowId === next.windowId) {
               autoCheckedWindow.current = next.windowId;
-              if (info.action || info.hunterReaction || (info.wolves && !info.wolves.locked)) {
+              if (info.action || info.previewAction || info.hunterReaction || (info.wolves && !info.wolves.locked)) {
                 autoShown.current.add(turn);
                 hostSequence.current++; maintenanceOpen.current = false; setHostOpen(false); setHost(null);
-                privateOpen.current = true; setPersonal(info); setRevealed(true);
+                privateOpen.current = true; previewOpen.current = !!info.previewAction; setPersonal(info); setRevealed(true);
               }
             }
           }
@@ -122,7 +134,8 @@ export function useRoom(roomId: string) {
           }
         }
       }
-      if (!stopped) timer = setTimeout(poll, document.visibilityState === "visible" ? 1000 : 5000);
+      if (!stopped) timer = setTimeout(poll, document.visibilityState !== "visible" ? 5000
+        : current.current?.phase === "night_open" || (current.current?.phase === "hunter" && current.current.narration.pending) ? 500 : 1000);
     }
     void poll();
     function hide() { foreground.current = document.visibilityState === "visible"; if (!foreground.current) conceal(); }
@@ -178,7 +191,9 @@ export function useRoom(roomId: string) {
       const info = await request<PrivateRoom>(`${base}/private`);
       if (sequence !== revealSequence.current || document.visibilityState !== "visible") return;
       if (info.windowId !== current.current?.windowId) { await sync(); throw new ApiError("STALE_WINDOW"); }
-      privateOpen.current = true; setPersonal(info); setRevealed(true);
+      privateOpen.current = true; previewOpen.current = !!info.previewAction;
+      if (current.current && (info.action || info.previewAction || info.hunterReaction)) autoShown.current.add(actionTurn(current.current));
+      setPersonal(info); setRevealed(true);
     }
     catch (e) { setError(e); }
   }

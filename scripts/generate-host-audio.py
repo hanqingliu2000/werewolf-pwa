@@ -18,7 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="Comma-separated clip ids; omit for the complete bank")
     parser.add_argument("--force", action="store_true", help="Regenerate only the selected clips")
-    parser.add_argument("--reuse", choices=["host-zh-v2"], help="Reuse unchanged verified clips from a published bank")
+    parser.add_argument("--reuse", choices=["host-zh-v2", "host-zh-v3"], help="Reuse unchanged verified clips from a published bank")
     parser.add_argument("--offline", action="store_true", help="Use only the pinned model in the local cache")
     parser.add_argument("--seed-offset", type=int, default=0)
     parser.add_argument("--publish", action="store_true", help="Promote the fully verified staging bank; does not synthesize")

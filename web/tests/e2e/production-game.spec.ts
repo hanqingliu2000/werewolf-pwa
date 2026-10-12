@@ -171,7 +171,8 @@ test("production: 12 independent players complete a real-time voice game, recap 
           if (current.nightRole !== "witch") await frame(actor, `${turn.replace(":", "-")}-seat-${actor.seat}`);
           if (current.nightRole === "werewolf") {
             if (current.nightNo === 1) await panel.getByRole("button", { name: new RegExp(`^${host.seat}号 `) }).click();
-            else await panel.getByRole("button", { name: "本夜空刀", exact: true }).click();
+            else { const victim = actors.find(a => a.role === "villager" && alive(a, current)) ?? actors.find(a => a.id !== actor.id && alive(a, current))!;
+              await panel.getByRole("button", { name: new RegExp(`^${victim.seat}号 `) }).click(); }
           } else {
             if (current.nightRole === "guard") await panel.getByRole("button", { name: "本夜不守", exact: true }).click();
             if (current.nightRole === "witch") {
@@ -229,7 +230,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
     await expect(host.page.getByRole("heading", { name: "好人阵营获胜", exact: true })).toBeVisible();
     const manifest = await (await host.context.request.get(`/audio/${script.version}/manifest.json`)).json();
     const sounds = await host.page.evaluate(() => (window as unknown as { productionSounds: Sound[] }).productionSounds);
-    report.decodedClips = await host.page.evaluate(() => (window as unknown as { productionDecoded: number }).productionDecoded); expect(report.decodedClips).toBe(40);
+    report.decodedClips = await host.page.evaluate(() => (window as unknown as { productionDecoded: number }).productionDecoded); expect(report.decodedClips).toBe(Object.keys(script.clips).length);
     for (const sound of sounds) {
       const id = Object.keys(manifest.clips).find((key) => manifest.clips[key].sha256 === sound.hash); expect(id).toBeTruthy();
       expect(sound.endedAt, `Audio ${id} ended`).toBeDefined();

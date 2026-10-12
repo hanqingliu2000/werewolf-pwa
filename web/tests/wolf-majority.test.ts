@@ -29,7 +29,7 @@ describe("wolf majority and random ties", () => {
   });
   it("handles fully split votes and ties with an empty kill", () => {
     expect(votes(["p9", "p10", "p11", "p12"], 2).game.currentNight!.killTargetId).toBe("p11");
-    expect(votes(["p9", "p9", null, null], 1).game.currentNight!.killTargetId).toBeNull();
+    expect(votes(["p9", "p9", "p10", "p10"], 1).game.currentNight!.killTargetId).toBe("p10");
   });
   it("permits an individual confirmation but does not lock before all living wolves confirm", () => {
     let game = wolfWindow(); game = command(game, { type: "wolf_propose", actorId: "p1", targetId: "p9" });
@@ -37,7 +37,7 @@ describe("wolf majority and random ties", () => {
     expect(game.currentNight!.killLocked).toBe(false);
     game = command(game, { type: "wolf_propose", actorId: "p2", targetId: "p10" });
     expect(game.currentNight!.wolfConfirmations).toEqual(["p1"]);
-    game = command(game, { type: "wolf_propose", actorId: "p1", targetId: null });
+    game = command(game, { type: "wolf_propose", actorId: "p1", targetId: "p10" });
     expect(game.currentNight!.wolfConfirmations).toEqual([]);
   });
   it.each([-1, 2, 0.5])("rejects an invalid tie RNG index %s", index => {

@@ -37,7 +37,7 @@ describe("verified public audio player", () => {
   it("unlocks synchronously, verifies the complete bank, and sequences actual ended events", async () => {
     const f = setup(); const preparation = f.player.prepare();
     expect(f.context.state).toBe("running"); await preparation;
-    expect(f.player.ready).toBe(true); expect(f.fetcher).toHaveBeenCalledTimes(41);
+    expect(f.player.ready).toBe(true); expect(f.fetcher).toHaveBeenCalledTimes(clipIds.length + 1);
     f.player.setVolume(0.4); expect(f.context.gain.gain.value).toBe(0.4);
     f.player.setVolume(5); expect(f.context.gain.gain.value).toBe(1);
     const captions: string[] = []; const done = vi.fn();
@@ -50,7 +50,7 @@ describe("verified public audio player", () => {
     expect(f.context.sources[1]!.playbackRate.value).toBe(2);
     f.context.sources[1]!.finish(); await playback;
     expect(captions).toEqual(["guard_open", "guard_close"]); expect(done).toHaveBeenCalledTimes(1);
-    await f.player.prepare(); expect(f.fetcher).toHaveBeenCalledTimes(41);
+    await f.player.prepare(); expect(f.fetcher).toHaveBeenCalledTimes(clipIds.length + 1);
     f.player.dispose(); expect(f.player.ready).toBe(false); expect(f.interrupted).not.toHaveBeenCalled();
   });
   it("cancels without completing or advancing into an obsolete queue", async () => {

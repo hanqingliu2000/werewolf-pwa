@@ -144,11 +144,12 @@ it("merges simultaneous wolf confirmations from two pg-backed service instances"
     const current = await service.view(f.id, token);
     return service.mutate(f.id, token, { requestId: randomUUID(), epochId: current.epochId, windowId: current.windowId, operation });
   }
-  for (const token of wolves) await action(f.service, token, { type: "wolf_propose", targetId: null });
+  const targetId = room.members[7]!.id;
+  for (const token of wolves) await action(f.service, token, { type: "wolf_propose", targetId });
   const consensusId = (await f.store.load(f.id))!.room.consensusId;
   await Promise.all(wolves.map((token, index) => action(index === 0 ? f.service : other, token, { type: "wolf_confirm", consensusId })));
   const night = (await f.store.load(f.id))!.room.game!.currentNight!;
-  expect(night.killLocked).toBe(true); expect(night.wolfConfirmations).toHaveLength(wolves.length); expect(night.killTargetId).toBeNull();
+  expect(night.killLocked).toBe(true); expect(night.wolfConfirmations).toHaveLength(wolves.length); expect(night.killTargetId).toBe(targetId);
 });
 
 it.skipIf(live)("isolates schemas, validates readiness, and rejects unavailable tables or unsupported state", async () => {

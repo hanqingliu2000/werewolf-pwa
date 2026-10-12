@@ -40,13 +40,13 @@ describe("identity and role projections", () => {
     expect(publicView(room).players.every(p => "alive" in p && p.alive)).toBe(true);
   });
 
-  it("does not call a wolf proposal confirmed and retains a locked empty kill after the wolf window", async () => {
+  it("does not call a wolf proposal confirmed and retains its locked target after the wolf window", async () => {
     const f = await setup(); await f.begin();
     f.patch(room => { room.game = toRole(room.game!, "werewolf");
-      room.game = command(room.game, { type: "wolf_propose", actorId: room.members[0]!.id, targetId: null }); });
+      room.game = command(room.game, { type: "wolf_propose", actorId: room.members[0]!.id, targetId: room.members[7]!.id }); });
     expect(privateView(f.state(), f.state().members[0]!)).not.toHaveProperty("actionResult");
-    f.patch(room => { room.game = finish(wolves(room.game!, null)); });
-    expect(privateView(f.state(), f.state().members[0]!).actionResult).toEqual({ kind: "kill", targetId: null, nightNo: 1 });
+    f.patch(room => { room.game = finish(wolves(room.game!, room.members[7]!.id)); });
+    expect(privateView(f.state(), f.state().members[0]!).actionResult).toEqual({ kind: "kill", targetId: f.state().members[7]!.id, nightNo: 1 });
     expect(privateView(f.state(), f.state().members[0]!)).not.toHaveProperty("wolves");
     f.patch(room => { room.game = vote(command(nightToDawn(room.game!), { type: "publish_dawn", actorId: room.hostId }), null); });
     expect(f.state().game!.nightNo).toBe(2);

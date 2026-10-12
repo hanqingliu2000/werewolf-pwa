@@ -168,18 +168,20 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
     while ((await status(organizer, room)).phase !== "end") {
       let publicState = await status(organizer, room);
       const hunter = actors.find((a) => a.role === "hunter")!;
-      const nightTarget = round === 1 ? count === 8 ? hunter : voice ? actors.find((a) => a.role === "seer")! : organizer : null;
+      const survivingVillagers = actors.filter(a => a.role === "villager" && publicState.players.some(p => p.id === a.id && "alive" in p && p.alive));
+      const nightTarget = round === 1 ? count === 8 ? hunter : voice ? actors.find((a) => a.role === "seer")! : organizer
+        : survivingVillagers[(round - 2) % survivingVillagers.length]!;
       while (publicState.phase === "night_open") {
         if (!voice) { control = await host(organizer.page); await control.getByRole("button", { name: "当前指令完成" }).click(); await close(organizer.page); }
         await expect.poll(async () => (await status(organizer, room)).phase, { timeout: 45_000 }).toBe("night_action");
         const role = (await status(organizer, room)).nightRole;
         const active = actors.filter((a) => a.role === role && publicState.players.some((p) => p.id === a.id && "alive" in p && p.alive));
         if (voice && count === 12 && round === 1 && role === "werewolf") {
-          await expect.poll(async () => (await status(organizer, room)).paused, { timeout: 35_000 }).toBe(true);
+          await expect.poll(async () => (await status(organizer, room)).window?.waiting, { timeout: 35_000 }).toBe(true);
           const panel = await reveal(active[0]!.page);
           await expect(panel.getByText("0 / 4 已投票", { exact: true })).toBeVisible();
           await expect(panel.getByRole("button", { name: "暂停协商计时" })).toHaveCount(0);
-          await expect(panel.getByRole("button", { name: "本夜空刀" })).toBeEnabled();
+          await expect(panel.getByRole("button", { name: "本夜空刀" })).toHaveCount(0);
           await screenshot(active[0]!.page, info, "wolves-automatic-wait"); await close(active[0]!.page);
         }
         if (voice && role === "seer" && active.length === 0) {
@@ -199,8 +201,7 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
             await screenshot(actor.page, info, `private-${role}-${count}`);
           }
           if (role === "werewolf") {
-            if (nightTarget) await panel.getByRole("button", { name: new RegExp(`^${nightTarget.seat}号 `) }).click();
-            else await panel.getByRole("button", { name: "本夜空刀" }).click();
+            await panel.getByRole("button", { name: new RegExp(`^${nightTarget.seat}号 `) }).click();
           } else if (role === "witch") {
             if (count === 8 && round === 1) {
               let intercepted = false;
@@ -216,7 +217,9 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
               await panel.getByRole("button", { name: "重试原请求" }).click(); await actor.page.unroute("**/commands");
             }
           } else if (role === "guard") {
-            await panel.getByRole("button", { name: "本夜不守" }).click(); await panel.getByRole("button", { name: "确认行动" }).click();
+            if (round === 1) await panel.getByRole("button", { name: "本夜不守" }).click();
+            else await panel.getByRole("button", { name: new RegExp(`^${nightTarget.seat}号 `) }).click();
+            await panel.getByRole("button", { name: "确认行动" }).click();
           } else if (role === "seer") {
             const target = actors.find((a) => a.role === "werewolf" && publicState.players.some((p) => p.id === a.id && "alive" in p && p.alive))!;
             await panel.getByRole("button", { name: new RegExp(`^${target.seat}号 `) }).click(); await panel.getByRole("button", { name: "确认行动" }).click();

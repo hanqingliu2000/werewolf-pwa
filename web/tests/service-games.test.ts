@@ -4,6 +4,11 @@ import { fixture } from "./server-helpers";
 import { config } from "./helpers";
 import { narrationPlan, NARRATION_VERSION } from "../src/narration/plan";
 import { publicView } from "../src/server/views";
+import type { Game } from "../src/game/types";
+
+const guardedTarget = (game: Game) => game.currentNight!.actions.find(a => a.kind === "guard")?.targetId
+  ?? game.players.find(p => p.alive && p.id !== game.lastGuardTargetId)!.id;
+const seerTarget = (game: Game, actorId: string) => game.players.find(p => p.alive && p.id !== actorId && p.role === "werewolf")!.id;
 
 describe("complete persisted games", () => {
   it.each([8, 12])("keeps voice announcements ordered through an entire %i-player game and restart", async (count) => {
@@ -23,9 +28,9 @@ describe("complete persisted games", () => {
           const game = f.state().game!;
           for (const p of game.players.filter((p) => p.alive && p.role === game.nightRole)) {
             const index = f.state().members.findIndex((m) => m.id === p.id);
-            if (p.role === "guard" || p.role === "seer") await f.act({ type: p.role, targetId: null }, index);
+            if (p.role === "guard" || p.role === "seer") await f.act({ type: p.role, targetId: p.role === "guard" ? guardedTarget(game) : seerTarget(game, p.id) }, index);
             if (p.role === "witch") await f.act({ type: "witch", choice: "pass", targetId: null }, index);
-            if (p.role === "werewolf") await f.act({ type: "wolf_propose", targetId: null }, index);
+            if (p.role === "werewolf") await f.act({ type: "wolf_propose", targetId: guardedTarget(game) }, index);
           }
           if (game.nightRole === "werewolf") {
             const consensusId = f.state().consensusId;
@@ -62,10 +67,10 @@ describe("complete persisted games", () => {
           const actors = game.players.filter((p) => p.alive && p.role === game.nightRole);
           for (const p of actors) {
             const index = f.state().members.findIndex((m) => m.id === p.id);
-            if (game.nightRole === "werewolf") await f.act({ type: "wolf_propose", targetId: null }, index);
-            if (game.nightRole === "guard") await f.act({ type: "guard", targetId: null }, index);
+            if (game.nightRole === "werewolf") await f.act({ type: "wolf_propose", targetId: guardedTarget(game) }, index);
+            if (game.nightRole === "guard") await f.act({ type: "guard", targetId: guardedTarget(game) }, index);
             if (game.nightRole === "witch") await f.act({ type: "witch", choice: "pass", targetId: null }, index);
-            if (game.nightRole === "seer") await f.act({ type: "seer", targetId: null }, index);
+            if (game.nightRole === "seer") await f.act({ type: "seer", targetId: seerTarget(game, p.id) }, index);
           }
           if (game.nightRole === "werewolf") {
             const consensusId = f.state().consensusId;

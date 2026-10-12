@@ -24,6 +24,57 @@ async function controls(page: Page) {
 }
 async function close(page: Page) { await page.keyboard.press("Escape"); await expect(page.locator("dialog[open]")).toHaveCount(0); }
 
+test("real opener ended reveals a selectable preview before the instruction ends, preserving the full clock", async ({ page, context, browser, baseURL }) => {
+  const guests: BrowserContext[] = [];
+  await page.addInitScript(() => {
+    const Native = window.AudioContext;
+    const observed = window as unknown as { openerSounds: { startedAt: number; endedAt?: number }[] }; observed.openerSounds = [];
+    window.AudioContext = class extends Native {
+      createBufferSource() { const source = super.createBufferSource(); const start = source.start.bind(source);
+        source.start = (...args: Parameters<AudioBufferSourceNode["start"]>) => {
+          const sound: { startedAt: number; endedAt?: number } = { startedAt: Date.now() }; observed.openerSounds.push(sound);
+          source.addEventListener("ended", () => { sound.endedAt = Date.now(); }); start(...args);
+        }; return source; }
+    };
+  });
+  const room = await create(page); const actors = [context]; const pages = [page];
+  try {
+    for (let i = 2; i <= 8; i++) {
+      const guest = await browser.newContext({ baseURL }); guests.push(guest); actors.push(guest);
+      await guest.request.post("/api/v2/session", { headers: { origin }, data: {} });
+      const current = await view(context, room);
+      const response = await guest.request.post(`/api/v2/rooms/${room}/join`, { headers: { origin }, data: { requestId: crypto.randomUUID(), epochId: current.epochId, name: `预选玩家${i}` } });
+      expect(response.ok()).toBe(true); const guestPage = await guest.newPage(); pages.push(guestPage); await guestPage.goto(`/r/${room}`);
+    }
+    const host = await controls(page); await host.getByRole("button", { name: "语音", exact: true }).click();
+    await expect(host.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+    await close(page); for (const actor of actors) await act(actor, room, { type: "ready", ready: true });
+    await act(context, room, { type: "start" });
+    await expect.poll(async () => (await view(context, room)).narration.pending, { timeout: 30_000 }).toBeNull();
+    let guard = -1;
+    for (let i = 0; i < actors.length; i++) {
+      const response = await actors[i]!.request.get(`/api/v2/rooms/${room}/private`);
+      if ((await response.json()).role === "guard") guard = i;
+    }
+    expect(guard).toBeGreaterThanOrEqual(0); await act(context, room, { type: "begin_night" });
+    const panel = pages[guard]!.getByRole("dialog", { name: "本人私密视角" });
+    await expect(panel).toBeVisible({ timeout: 30_000 });
+    const sounds = await page.evaluate(() => (window as unknown as { openerSounds: { startedAt: number; endedAt?: number }[] }).openerSounds);
+    expect(sounds[2]?.endedAt).toBeDefined(); expect(sounds[3]?.endedAt).toBeUndefined();
+    expect((await view(context, room)).window).toBeNull();
+    await panel.getByRole("button", { name: /^1号 / }).click();
+    await expect(panel.getByRole("button", { name: "确认行动", exact: true })).toBeDisabled();
+    await expect(panel.getByRole("button", { name: "确认行动", exact: true })).toBeEnabled({ timeout: 20_000 });
+    await expect(panel.getByRole("button", { name: /^1号 / })).toHaveAttribute("aria-pressed", "true");
+    const current = await view(context, room); expect(current.window!.deadline - current.window!.openedAt).toBe(10_000);
+    await panel.getByRole("button", { name: "确认行动", exact: true }).click();
+    await expect.poll(async () => {
+      const response = await actors[guard]!.request.get(`/api/v2/rooms/${room}/private`); return (await response.json()).completed;
+    }).toBe(true);
+    await act(context, room, { type: "abort" });
+  } finally { for (const guest of guests) await guest.close(); }
+});
+
 test("voice can be enabled without playing a trial and trial remains optional", async ({ page, context }) => {
   await page.addInitScript(() => {
     const Native = window.AudioContext; const state = window as unknown as { startedAudio: number; rates: number[] }; state.startedAudio = 0; state.rates = [];
@@ -90,7 +141,7 @@ test("complete narration bank decodes with matching text, hashes and duration", 
       }));
     } finally { await audio.close(); }
   }, script.version);
-  expect(clips).toHaveLength(40);
+  expect(clips).toHaveLength(Object.keys(script.clips).length);
   for (const clip of clips) {
     expect(clip.text, clip.id).toBe(script.clips[clip.id as keyof typeof script.clips]);
     expect(clip.hashMatches, clip.id).toBe(true); expect(clip.bytesMatch, clip.id).toBe(true);

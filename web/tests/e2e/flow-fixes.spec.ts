@@ -6,6 +6,48 @@ import type { Mutation } from "../../src/server/input";
 
 const NARRATION_VERSION = script.version;
 
+for (const role of ["guard", "seer", "witch", "werewolf", "hunter"] as const) test(`early ${role} preview keeps its choice when the full action window opens`, async ({ page }) => {
+  const api = await mockRoom(page);
+  api.state.phase = role === "hunter" ? "hunter" : "night_open";
+  api.state.nightRole = role === "hunter" ? null : role; api.state.window = null;
+  api.state.narration.mode = "voice";
+  if (role === "hunter") api.state.narration.pending = { id: "public-announcement", from: 0, to: 0 };
+  api.personal.role = role; api.personal.action = null;
+  await page.goto("/r/ABCDEF12"); const panel = page.getByRole("dialog", { name: "本人私密视角" });
+  await expect(panel).not.toBeVisible();
+  api.state.narration.promptedCueId = api.state.windowId; api.personal.previewAction = role;
+  if (role === "werewolf") {
+    api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
+    api.personal.wolves = { proposals: {}, confirmations: [], locked: false, discussionPaused: false, consensusId: "votes" };
+  }
+  await expect(panel).toBeVisible();
+  if (role === "witch") await panel.getByRole("button", { name: "使用毒药", exact: true }).click();
+  await panel.getByRole("button", { name: "2号 玩家2", exact: true }).click();
+  const submit = panel.getByRole("button", { name: role === "werewolf" ? "确认投票" : "确认行动", exact: true });
+  await expect(submit).toBeDisabled(); expect(api.commands).toHaveLength(0);
+  await expect(panel.getByRole("button", { name: /本夜空刀|本夜不查验/ })).toHaveCount(0);
+  api.state.phase = role === "hunter" ? "hunter" : "night_action";
+  api.state.narration.pending = null; api.state.windowId = "full-action-window";
+  api.state.window = { openedAt: Date.now(), deadline: Date.now() + (role === "werewolf" ? 30_000 : 10_000), remainingMs: null };
+  api.personal.previewAction = undefined; api.personal.action = role === "hunter" ? null : role;
+  api.personal.hunterReaction = role === "hunter";
+  await expect(submit).toBeEnabled();
+  await expect(panel.getByRole("button", { name: "2号 玩家2", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await submit.click();
+  await expect.poll(() => api.commands.at(-1)?.operation.type).toBe(role === "werewolf" ? "wolf_confirm" : role);
+  expect(api.commands.at(-1)?.operation).toMatchObject({ targetId: "p2" });
+  expect(api.errors).toEqual([]);
+});
+
+test("dismissed early preview does not reopen at the action-window transition", async ({ page }) => {
+  const api = await mockRoom(page); api.state.phase = "night_open"; api.state.nightRole = "guard"; api.state.window = null;
+  api.state.narration.promptedCueId = api.state.windowId; api.personal.role = "guard"; api.personal.action = null; api.personal.previewAction = "guard";
+  await page.goto("/r/ABCDEF12"); const panel = page.getByRole("dialog", { name: "本人私密视角" });
+  await expect(panel).toBeVisible(); await page.keyboard.press("Escape"); await expect(panel).not.toBeVisible();
+  api.state.phase = "night_action"; api.state.windowId = "active-same-turn"; api.personal.previewAction = undefined; api.personal.action = "guard";
+  await page.waitForTimeout(1500); await expect(panel).not.toBeVisible();
+});
+
 for (const dismissal of ["close", "background", "pause"] as const) test(`${dismissal} immediately redacts a held private receipt`, async ({ page }) => {
   const api = await mockRoom(page); api.state.nightRole = "guard"; api.state.window!.waiting = true;
   api.personal.role = "guard"; api.personal.action = "guard";
@@ -234,7 +276,8 @@ test("all five action roles fit every target and control without scrolling", asy
 test("seer, guard, hunter and wolf waiting keep usable pinned actions", async ({ page }) => {
   const api = await mockRoom(page); api.personal.role = "seer"; api.personal.action = "seer"; api.state.nightRole = "seer";
   await page.goto("/r/ABCDEF12"); const panel = page.getByRole("dialog", { name: "本人私密视角" });
-  await expect(panel).toBeVisible(); await panel.getByRole("button", { name: "本夜不查验", exact: true }).click();
+  await expect(panel).toBeVisible(); await expect(panel.getByRole("button", { name: "本夜不查验", exact: true })).toHaveCount(0);
+  await panel.getByRole("button", { name: "2号 玩家2", exact: true }).click();
   await expect(panel.getByRole("button", { name: "确认行动", exact: true })).toBeEnabled();
   await page.keyboard.press("Escape"); api.state.nightNo = 2; api.state.windowId = "guard-window"; api.state.nightRole = "guard";
   api.personal.role = "guard"; api.personal.action = "guard"; api.personal.previousGuardTargetId = "p2";

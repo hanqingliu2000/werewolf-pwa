@@ -48,6 +48,17 @@ export interface NightChoices {
   see?: string | null;
 }
 
+function knifeTarget(game: Game, choices: NightChoices) {
+  if (choices.kill !== undefined) return choices.kill;
+  const guarded = game.currentNight?.actions.find((a) => a.kind === "guard")?.targetId ?? choices.guard;
+  return guarded ?? game.players.find((p) => p.alive && p.role === "villager" && p.id !== game.lastGuardTargetId)?.id
+    ?? game.players.find((p) => p.alive && p.id !== game.lastGuardTargetId)?.id ?? game.players.find((p) => p.alive)!.id;
+}
+function seerTarget(game: Game, actor: string, choices: NightChoices) {
+  return choices.see !== undefined ? choices.see : game.players.find((p) => p.alive && p.id !== actor && p.role === "werewolf")?.id
+    ?? game.players.find((p) => p.alive && p.id !== actor)!.id;
+}
+
 export function nightToDawn(source: Game, choices: NightChoices = {}): Game {
   let game = source;
   while (game.phase === "night_open") {
@@ -55,10 +66,10 @@ export function nightToDawn(source: Game, choices: NightChoices = {}): Game {
     const role = game.nightRole as NightRole;
     const actor = actorForRole(game, role);
     if (actor) {
-      if (role === "guard") game = command(game, { type: "guard", actorId: actor, targetId: choices.guard ?? null });
-      if (role === "werewolf") game = wolves(game, choices.kill ?? null);
+      if (role === "guard") game = command(game, { type: "guard", actorId: actor, targetId: choices.guard !== undefined ? choices.guard : choices.kill === undefined ? knifeTarget(game, choices) : null });
+      if (role === "werewolf") game = wolves(game, knifeTarget(game, choices));
       if (role === "witch") game = command(game, { type: "witch", actorId: actor, ...(choices.witch ?? { choice: "pass", targetId: null }) });
-      if (role === "seer") game = command(game, { type: "seer", actorId: actor, targetId: choices.see ?? null });
+      if (role === "seer") game = command(game, { type: "seer", actorId: actor, targetId: seerTarget(game, actor, choices) });
     }
     game = finish(game);
   }
@@ -72,8 +83,8 @@ export function toRole(source: Game, wanted: NightRole, choices: NightChoices = 
     const role = game.nightRole!;
     const actor = actorForRole(game, role);
     if (actor) {
-      if (role === "guard") game = command(game, { type: "guard", actorId: actor, targetId: choices.guard ?? null });
-      if (role === "werewolf") game = wolves(game, choices.kill ?? null);
+      if (role === "guard") game = command(game, { type: "guard", actorId: actor, targetId: choices.guard !== undefined ? choices.guard : choices.kill === undefined ? knifeTarget(game, choices) : null });
+      if (role === "werewolf") game = wolves(game, knifeTarget(game, choices));
       if (role === "witch") game = command(game, { type: "witch", actorId: actor, ...(choices.witch ?? { choice: "pass", targetId: null }) });
     }
     game = finish(game);

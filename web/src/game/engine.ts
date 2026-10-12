@@ -170,7 +170,7 @@ export function executeCommand(source: Game, input: unknown, now: number, random
     case "wolf_propose": {
       const night = activeRole(game, actorId, "werewolf", now);
       requireRule(!night.killLocked, "ACTION_LOCKED");
-      if (command.targetId !== null) livingTarget(game, command.targetId);
+      livingTarget(game, command.targetId);
       if (!Object.hasOwn(night.wolfProposals, actorId) || night.wolfProposals[actorId] !== command.targetId) {
         night.wolfProposals[actorId] = command.targetId;
         night.wolfConfirmations = night.wolfConfirmations.filter((id) => id !== actorId);
@@ -182,13 +182,14 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       requireRule(!night.killLocked, "ACTION_LOCKED");
       const actors = actorIds(game);
       requireRule(Object.hasOwn(night.wolfProposals, actorId), "WOLF_CONSENSUS_REQUIRED");
+      requireRule(night.wolfProposals[actorId] !== null, "TARGET_REQUIRED");
       if (!night.wolfConfirmations.includes(actorId)) night.wolfConfirmations.push(actorId);
-      if (actors.every((id) => night.wolfConfirmations.includes(id))) {
-        const counts = new Map<string | null, number>();
+      if (actors.every((id) => night.wolfConfirmations.includes(id) && night.wolfProposals[id] != null)) {
+        const counts = new Map<string, number>();
         for (const id of actors) { const target = night.wolfProposals[id]!; counts.set(target, (counts.get(target) ?? 0) + 1); }
         const highest = Math.max(...counts.values());
         const tied = [...counts.keys()].filter((target) => counts.get(target) === highest)
-          .sort((a, b) => (a === null ? 13 : player(game, a).seat) - (b === null ? 13 : player(game, b).seat));
+          .sort((a, b) => player(game, a).seat - player(game, b).seat);
         const index = tied.length === 1 ? 0 : (random.randomIndex ?? randomInt)(tied.length);
         requireRule(Number.isInteger(index) && index >= 0 && index < tied.length, "RANDOM_INDEX_INVALID");
         night.wolfConfirmations = [...actors];
@@ -201,12 +202,10 @@ export function executeCommand(source: Game, input: unknown, now: number, random
     case "seer": {
       const night = activeRole(game, actorId, "seer", now);
       unusedAction(night, actorId);
-      if (command.targetId !== null) {
-        requireRule(command.targetId !== actorId, "SELF_TARGET_FORBIDDEN");
-        const target = livingTarget(game, command.targetId);
-        if (!Object.hasOwn(game.seerReports, actorId)) game.seerReports[actorId] = [];
-        game.seerReports[actorId]!.push({ nightNo: game.nightNo, targetId: target.id, alignment: target.role === "werewolf" ? "wolf" : "good" });
-      }
+      requireRule(command.targetId !== actorId, "SELF_TARGET_FORBIDDEN");
+      const target = livingTarget(game, command.targetId);
+      if (!Object.hasOwn(game.seerReports, actorId)) game.seerReports[actorId] = [];
+      game.seerReports[actorId]!.push({ nightNo: game.nightNo, targetId: target.id, alignment: target.role === "werewolf" ? "wolf" : "good" });
       night.actions.push({ actorId, kind: "see", targetId: command.targetId });
       night.completedActorIds.push(actorId);
       break;

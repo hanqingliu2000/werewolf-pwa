@@ -22,7 +22,8 @@ try {
   check(home.headers()["x-frame-options"] === "SAMEORIGIN" && home.headers()["x-content-type-options"] === "nosniff", "page security headers");
   const injection = await host.get("/api/v2/rooms/%27%20OR%201%3D1--"); check(injection.status() === 404, "SQL-shaped route rejected");
   const bank = await host.get(`/audio/${script.version}/manifest.json`); check(bank.ok(), "bank manifest"); const manifest = await bank.json();
-  check(Object.keys(manifest.clips).length === 40, "40 clips");
+  const clipCount = Object.keys(script.clips).length;
+  check(Object.keys(manifest.clips).length === clipCount, "complete clip bank");
   for (const [id, entry] of Object.entries(manifest.clips)) {
     const clip = await host.get(`/audio/${script.version}/${id}.mp3`); check(clip.ok(), `clip ${id}`); const bytes = await clip.body();
     check(bytes.length === entry.bytes && createHash("sha256").update(bytes).digest("hex") === entry.sha256 && entry.text === script.clips[id], `clip fingerprint ${id}`);
@@ -40,8 +41,8 @@ try {
   const input = { requestId: randomUUID(), epochId: view.epochId, windowId: view.windowId, operation: { type: "ready", ready: true } };
   const accepted = await post(guest, `rooms/${created.roomId}/commands`, input); const repeated = await post(guest, `rooms/${created.roomId}/commands`, input);
   check(isDeepStrictEqual(accepted, repeated), "durable request receipt");
-  report.passed = true; report.clipsVerified = 40; report.secureCookies = true; report.isolatedSessions = 3;
-  console.log(JSON.stringify({ passed: true, clipsVerified: 40, isolatedSessions: 3, completeGame: false }));
+  report.passed = true; report.clipsVerified = clipCount; report.secureCookies = true; report.isolatedSessions = 3;
+  console.log(JSON.stringify({ passed: true, clipsVerified: clipCount, isolatedSessions: 3, completeGame: false }));
 } finally {
   writeFileSync(reportPath, JSON.stringify(report), { mode: 0o600 });
   for (const actor of actors) await actor.dispose();

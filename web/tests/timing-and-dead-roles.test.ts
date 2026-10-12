@@ -21,7 +21,7 @@ it.each(["guard", "seer", "witch"] as const)("%s waits silently and accepts a la
   const actorId = game.players.find((p) => p.role === role)!.id;
   const late = game.updatedAt + 120_000;
   game = role === "witch" ? command(game, { type: "witch", actorId, choice: "pass", targetId: null }, late)
-    : command(game, { type: role, actorId, targetId: null }, late);
+    : command(game, { type: role, actorId, targetId: role === "seer" ? "p1" : null }, late);
   expect(game.phase).toBe("night_close");
   expect(game.paused).toBe(false);
   expect(game.window).toBeNull();
@@ -72,7 +72,7 @@ it.each(["guard", "witch", "seer"] as const)("fully calls a %s killed in the pre
     for (const actor of game.players.filter((p) => p.alive && p.role === game.nightRole)) {
       const index = f.state().members.findIndex((p) => p.id === actor.id);
       if (game.nightRole === "guard") await f.act({ type: "guard", targetId: null }, index);
-      if (game.nightRole === "werewolf") await f.act({ type: "wolf_propose", targetId: null }, index);
+      if (game.nightRole === "werewolf") await f.act({ type: "wolf_propose", targetId: game.players.find(p => p.alive && p.role === "werewolf")!.id }, index);
       if (game.nightRole === "witch") await f.act({ type: "witch", choice: "pass", targetId: null }, index);
     }
     if (game.nightRole === "werewolf") for (const actor of game.players.filter((p) => p.alive && p.role === "werewolf")) {
@@ -83,7 +83,7 @@ it.each(["guard", "witch", "seer"] as const)("fully calls a %s killed in the pre
     await f.service.view(f.id, f.tokens[0]!); await cue(f);
   }
   const opening = narrationPlan(await f.service.view(f.id, f.tokens[0]!))!;
-  expect(opening.clips).toEqual(role === "guard" ? ["night_start", "guard_open"] : [`${role}_open`]);
+  expect(opening.clips).toEqual(role === "guard" ? ["night_start", "guard_open", "guard_action"] : [`${role}_open`, `${role}_action`]);
   expect(f.state().game!.window).toBeNull();
   await cue(f);
   const window = f.state().game!.window!;
@@ -142,8 +142,8 @@ it("automatically waits at 30 seconds and counts different confirmed votes", () 
 
 it("preserves partial confirmations at the deadline without accepting non-wolf or dead-wolf decisions", () => {
   let game = toRole(started(), "werewolf");
-  game = command(game, { type: "wolf_propose", actorId: "p1", targetId: null });
-  game = command(game, { type: "wolf_propose", actorId: "p2", targetId: null });
+  game = command(game, { type: "wolf_propose", actorId: "p1", targetId: "p8" });
+  game = command(game, { type: "wolf_propose", actorId: "p2", targetId: "p8" });
   game = command(game, { type: "wolf_confirm", actorId: "p1" });
   game = command(game, { type: "close_window", actorId: "p1" }, game.window!.deadline);
   expect(game.currentNight!.wolfConfirmations).toEqual(["p1"]);
@@ -151,12 +151,12 @@ it("preserves partial confirmations at the deadline without accepting non-wolf o
   const dead = structuredClone(game); dead.players[1]!.alive = false;
   expect(() => command(dead, { type: "wolf_confirm", actorId: "p2" })).toThrow("ACTOR_ELIMINATED");
   game = command(game, { type: "wolf_confirm", actorId: "p2" }, game.updatedAt + 120_000);
-  expect(game.phase).toBe("night_close"); expect(game.currentNight!.killTargetId).toBeNull();
+  expect(game.phase).toBe("night_close"); expect(game.currentNight!.killTargetId).toBe("p8");
 });
 
 it("keeps an early completed vote in the fixed 30-second window", () => {
   let game = toRole(started(), "werewolf");
-  for (const actorId of ["p1", "p2"]) game = command(game, { type: "wolf_propose", actorId, targetId: null });
+  for (const actorId of ["p1", "p2"]) game = command(game, { type: "wolf_propose", actorId, targetId: "p8" });
   for (const actorId of ["p1", "p2"]) game = command(game, { type: "wolf_confirm", actorId });
   expect(game.phase).toBe("night_action");
   expect(() => command(game, { type: "close_window", actorId: "p1" }, game.window!.deadline - 1)).toThrow("WINDOW_STILL_OPEN");

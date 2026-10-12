@@ -4,7 +4,7 @@ import type { PublicEvent, NightRole, Phase, RuleConfig } from "../game/types";
 export const NARRATION_VERSION = script.version;
 export type ClipId = keyof typeof script.clips;
 export type Announcement = { id: string; from: number; to: number } | { id: string; kind: "new_lobby" };
-export interface NarrationState { mode: "text" | "voice"; pending: Announcement | null; version?: string }
+export interface NarrationState { mode: "text" | "voice"; pending: Announcement | null; version?: string; promptedCueId?: string }
 export const defaultNarration = (): NarrationState => ({ mode: "text", pending: null, version: NARRATION_VERSION });
 export interface NarrationView {
   epochId: string; windowId: string; phase: Phase; nightNo: number; nightRole: NightRole | null;
@@ -46,7 +46,7 @@ export function narrationPlan(view: NarrationView): Plan | null {
           case "game_end": clips.push(event.aborted ? "abort" : event.winner === "good" ? "good_win" : event.winner === "wolf" ? "wolf_win" : "draw"); break;
         }
       }
-      if (view.phase === "hunter") clips.push("hunter_open");
+      if (view.phase === "hunter") clips.push("hunter_open", "hunter_action");
       if (view.phase === "day") clips.push("day");
     }
     return { id: `${view.epochId}:${pending.id}`, clips, completion: "announcement_done", cueId: pending.id };
@@ -57,6 +57,7 @@ export function narrationPlan(view: NarrationView): Plan | null {
     const first = (["guard", "werewolf", "witch", "seer"] as const).find((role) => view.config.roles[role] > 0);
     if (view.phase === "night_open" && first === view.nightRole) clips.push("night_start");
     clips.push(`${view.nightRole}_${view.phase === "night_open" ? "open" : "close"}` as ClipId);
+    if (view.phase === "night_open") clips.push(`${view.nightRole}_action` as ClipId);
   }
   if (!clips.length) return null;
   return { id: `${view.epochId}:${view.windowId}`, clips, completion: "cue_ack", cueId: view.windowId };

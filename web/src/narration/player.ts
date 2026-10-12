@@ -77,7 +77,7 @@ export class NarrationPlayer {
     if (!this.ready) throw new PlaybackError("AUDIO_INTERRUPTED");
   }
 
-  async play(clips: ClipId[], caption?: (id: ClipId) => void) {
+  async play(clips: ClipId[], caption?: (id: ClipId) => void, clipEnded?: (id: ClipId) => void | Promise<void>) {
     this.cancel(); const generation = this.generation;
     if (!this.ready) throw new PlaybackError("AUDIO_BLOCKED");
     for (const id of clips) {
@@ -99,6 +99,8 @@ export class NarrationPlayer {
         source.onended = () => generation === this.generation ? finish() : finish(new PlaybackError("PLAYBACK_CANCELLED"));
         try { source.start(); } catch { finish(new PlaybackError("AUDIO_BLOCKED")); }
       });
+      const notification = clipEnded?.(id);
+      if (notification) await notification;
     }
     if (generation !== this.generation || !this.ready) throw new PlaybackError("PLAYBACK_CANCELLED");
   }

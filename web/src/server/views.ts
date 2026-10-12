@@ -46,6 +46,10 @@ export function privateView(room: Room, member: Member) {
   const events = announced(game?.publicEvents ?? []);
   const visibleAlive = !events.dead.has(member.id);
   const active = own?.alive && !game?.paused && game?.phase === "night_action" && own.role === game.nightRole;
+  const prompted = !!game && !game.paused && room.narration?.promptedCueId === room.flowId;
+  const nightPreview = prompted && game?.phase === "night_open" && own?.alive && own.role === game.nightRole
+    && (own.role !== "witch" || game.witchPotions.save || game.witchPotions.poison);
+  const hunterPreview = prompted && game?.phase === "hunter" && !!room.narration?.pending && game.pendingHunter?.playerId === member.id;
   const completed = game?.currentNight?.completedActorIds.includes(member.id) ?? false;
   const knowledge = game?.currentNight?.witchKnowledge;
   const accepted = game?.currentNight?.actions.find((a) => a.actorId === member.id) ?? null;
@@ -63,6 +67,7 @@ export function privateView(room: Room, member: Member) {
     acknowledged: own?.role != null,
     action: active && !completed && !(own?.role === "werewolf" && game!.currentNight!.killLocked) ? game!.nightRole : null,
     completed,
+    ...(hunterPreview || nightPreview ? { previewAction: hunterPreview ? "hunter" as const : game!.nightRole } : {}),
     acceptedAction: accepted,
     ...(actionResult ? { actionResult } : {}),
     hunterReaction: game?.phase === "hunter" && !game.paused && !room.narration?.pending && game.pendingHunter?.playerId === member.id,
@@ -74,14 +79,15 @@ export function privateView(room: Room, member: Member) {
     ...(own?.role === "seer" ? { reports: seerReports(game!, member.id) } : {}),
     ...(own?.role === "witch" && visibleAlive ? { witch: {
       saveRemaining: game!.witchPotions.save, poisonRemaining: game!.witchPotions.poison,
-      canSeeWolfTarget: knowledge?.actorId === member.id,
-      ...(knowledge?.actorId === member.id ? { wolfTargetId: knowledge.targetId } : {}),
+      canSeeWolfTarget: knowledge?.actorId === member.id || !!(nightPreview && game!.witchPotions.save),
+      ...(knowledge?.actorId === member.id ? { wolfTargetId: knowledge.targetId }
+        : nightPreview && game!.witchPotions.save ? { wolfTargetId: game!.currentNight!.killTargetId } : {}),
     },
       action: active && !completed && (game!.witchPotions.save || game!.witchPotions.poison) ? "witch" : null } : {}),
     ...(own?.role === "werewolf" && visibleAlive ? {
       wolfHistory: game!.nights.filter((night) => night.killLocked).map((night) => ({ nightNo: night.number, targetId: night.killTargetId })),
       teammates: game!.players.filter((p) => p.role === "werewolf").map((p) => ({ id: p.id, seat: p.seat, name: p.name })),
-      ...(active ? { wolves: { proposals: game!.currentNight!.wolfProposals,
+      ...(active || nightPreview ? { wolves: { proposals: game!.currentNight!.wolfProposals,
         discussionPaused: false,
         confirmations: game!.currentNight!.wolfConfirmations, locked: game!.currentNight!.killLocked,
         consensusId: room.consensusId } } : {}),
