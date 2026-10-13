@@ -4,7 +4,7 @@ import script from "../../src/narration/script.json" with { type: "json" };
 import type { PublicRoom, PrivateRoom, Recap } from "../../src/ui/contracts";
 import type { Role } from "../../src/game/types";
 
-const production = "https://werewolf-web-v2.vercel.app";
+const production = process.env.FULL_GAME_URL ?? "https://werewolf-web-v2.vercel.app";
 const names: Record<string, Role> = { 狼人: "werewolf", 预言家: "seer", 女巫: "witch", 守卫: "guard", 猎人: "hunter", 平民: "villager" };
 type Actor = { page: Page; context: BrowserContext; seat: number; id: string; role: Role | null };
 type Sound = { hash: string; startedAt: number; endedAt?: number; durationMs: number; rate: number };
@@ -21,9 +21,14 @@ test("production: 12 independent players complete a real-time voice game, recap 
   const reportPath = info.outputPath("production-report.json");
   const save = () => writeFileSync(reportPath, JSON.stringify(report), { mode: 0o600 });
   let room = "";
+  const observedViews = new Map<BrowserContext, { value: PublicRoom; at: number; cache: string }>();
   async function view(actor = actors[0]!) {
+    const cached = observedViews.get(actor.context);
+    if (cached && Date.now() - cached.at < 1500) {
+      expect(cached.cache).toContain("no-store"); return cached.value;
+    }
     const response = await actor.context.request.get(`/api/v2/rooms/${room}`);
-    expect(response.ok(), "Public room read").toBe(true);
+    expect(response.ok(), `Public room read HTTP ${response.status()}`).toBe(true);
     expect(response.headers()["cache-control"]).toContain("no-store");
     return await response.json() as PublicRoom;
   }
@@ -83,8 +88,14 @@ test("production: 12 independent players complete a real-time voice game, recap 
   const handled = new Set<string>();
   try {
     for (let i = 0; i < 12; i++) {
-      const context = await browser.newContext({ baseURL: production, viewport: { width: 390, height: 844 } });
+      const context = await browser.newContext({ baseURL: production, extraHTTPHeaders: info.project.use.extraHTTPHeaders, viewport: { width: 390, height: 844 } });
       const page = await context.newPage(); page.on("pageerror", (error) => errors.push({ seat: i + 1, message: error.message }));
+      page.on("response", response => {
+        if (!room || new URL(response.url()).pathname !== `/api/v2/rooms/${room}` || !response.ok()) return;
+        void response.json().then((value: PublicRoom) => {
+          if ((observedViews.get(context)?.value.revision ?? 0) <= value.revision) observedViews.set(context, { value, at: Date.now(), cache: response.headers()["cache-control"] ?? "" });
+        }).catch(() => undefined);
+      });
       actors.push({ context, page, seat: i + 1, id: "", role: null });
     }
     const host = actors[0]!;
@@ -121,7 +132,7 @@ test("production: 12 independent players complete a real-time voice game, recap 
     for (const actor of actors) {
       actor.id = (await view(actor)).self.playerId;
       await actor.page.getByRole("button", { name: "准备好了", exact: true }).click(); await expect(actor.page.getByRole("button", { name: "取消准备", exact: true })).toBeVisible();
-      const cookie = (await actor.context.cookies()).find((c) => c.name === "ww_session"); expect(cookie).toMatchObject({ secure: true, httpOnly: true, sameSite: "Strict" });
+      const cookie = (await actor.context.cookies()).find((c) => c.name === "ww_session"); expect(cookie).toMatchObject({ secure: production.startsWith("https:"), httpOnly: true, sameSite: "Strict" });
     }
     await host.page.screenshot({ path: info.outputPath("ready-lobby.png"), fullPage: true });
     await actors[1]!.page.reload(); await expect(actors[1]!.page.getByRole("button", { name: "取消准备", exact: true })).toBeVisible();
@@ -146,6 +157,15 @@ test("production: 12 independent players complete a real-time voice game, recap 
       if (current.phase === "end") {
         await expect.poll(async () => (await view()).narration.pending, { timeout: 60_000 }).toBeNull();
         expect(current.aborted).toBe(false); expect(current.winner).toBe("good"); report.winner = current.winner; report.completeGame = true; break;
+      }
+      if (current.phase === "dawn" && (current.sheriffElection === "hands" || current.sheriffElection === "speech")) {
+        expect(current.nightNo).toBe(1);
+        expect(current.events.some(e => e.type === "deaths")).toBe(false);
+        expect(current.players.every(p => "alive" in p && p.alive)).toBe(true);
+        await close(host.page);
+        await host.page.getByRole("button", { name: current.sheriffElection === "hands" ? "举手结束，开始竞选" : "竞选完成，公布昨夜结果", exact: true }).click();
+        await expect.poll(async () => (await view()).sheriffElection).not.toBe(current.sheriffElection);
+        continue;
       }
       if (current.paused) {
         await recover(); continue;
@@ -230,9 +250,10 @@ test("production: 12 independent players complete a real-time voice game, recap 
     await expect(host.page.getByRole("heading", { name: "好人阵营获胜", exact: true })).toBeVisible();
     const manifest = await (await host.context.request.get(`/audio/${script.version}/manifest.json`)).json();
     const sounds = await host.page.evaluate(() => (window as unknown as { productionSounds: Sound[] }).productionSounds);
-    report.decodedClips = await host.page.evaluate(() => (window as unknown as { productionDecoded: number }).productionDecoded); expect(report.decodedClips).toBe(Object.keys(script.clips).length);
+    report.decodedClips = await host.page.evaluate(() => (window as unknown as { productionDecoded: number }).productionDecoded); expect(report.decodedClips).toBe(Object.keys(script.clips).length * 2);
     for (const sound of sounds) {
-      const id = Object.keys(manifest.clips).find((key) => manifest.clips[key].sha256 === sound.hash); expect(id).toBeTruthy();
+      const id = Object.keys(manifest.clips).find((key) => Object.values(manifest.rates as Record<string, Record<string, { sha256: string }>>).some(entries => entries[key]?.sha256 === sound.hash)); expect(id).toBeTruthy();
+      expect(sound.rate, "Pitch-safe native playback").toBe(1);
       expect(sound.endedAt, `Audio ${id} ended`).toBeDefined();
       const fullyPlayed = sound.endedAt! - sound.startedAt >= sound.durationMs / sound.rate - 350;
       const counts = fullyPlayed ? report.playedClips : report.interruptedClips; counts[id!] = (counts[id!] ?? 0) + 1;
@@ -241,12 +262,14 @@ test("production: 12 independent players complete a real-time voice game, recap 
     for (const role of ["guard", "werewolf", "witch", "seer"]) {
       expect(report.playedClips[`${role}_open`]).toBeGreaterThanOrEqual((await view()).nightNo); expect(report.playedClips[`${role}_close`]).toBeGreaterThanOrEqual((await view()).nightNo);
     }
+    expect(report.playedClips.sheriff_hands).toBe(1); expect(report.playedClips.sheriff_speech).toBe(1); expect(report.playedClips.first_result).toBe(1);
     const recapResponse = await host.context.request.get(`/api/v2/rooms/${room}/recaps/${report.gameId}`); expect(recapResponse.ok()).toBe(true);
     const recap = await recapResponse.json() as Recap; expect(recap.winner).toBe("good"); expect(recap.aborted).toBe(false); expect(recap.participants).toHaveLength(12);
     await host.page.getByRole("link", { name: "查看本局复盘", exact: true }).click(); await expect(host.page.getByRole("heading", { name: "揭开身份", exact: true })).toBeVisible();
     await host.page.screenshot({ path: info.outputPath("completed-recap.png"), fullPage: true }); report.recapChecked = true;
     await host.page.getByRole("link", { name: "返回这一桌", exact: true }).click(); await trial();
     await host.page.getByRole("button", { name: "下一局", exact: true }).click(); await expect(host.page.getByRole("heading", { name: "入席，等夜来", exact: true })).toBeVisible();
+    await expect.poll(async () => (await view()).epochId).not.toBe(report.gameId);
     await expect.poll(async () => (await view()).narration.pending, { timeout: 60_000 }).toBeNull();
     const next = await view(); expect(next.epochId).not.toBe(report.gameId); expect(next.players).toHaveLength(12); expect(next.players.every((p) => "ready" in p && !p.ready)).toBe(true);
     await actors[1]!.page.reload(); await expect(actors[1]!.page.getByRole("button", { name: "准备好了", exact: true })).toBeVisible();

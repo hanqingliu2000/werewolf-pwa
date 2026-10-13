@@ -28,6 +28,14 @@ try {
     const clip = await host.get(`/audio/${script.version}/${id}.mp3`); check(clip.ok(), `clip ${id}`); const bytes = await clip.body();
     check(bytes.length === entry.bytes && createHash("sha256").update(bytes).digest("hex") === entry.sha256 && entry.text === script.clips[id], `clip fingerprint ${id}`);
   }
+  for (const rate of ["1.5", "2"]) {
+    check(Object.keys(manifest.rates?.[rate] ?? {}).length === clipCount, `complete pitch-safe bank ${rate}`);
+    for (const [id, entry] of Object.entries(manifest.rates[rate])) {
+      const clip = await host.get(`/audio/${script.version}/rates/${rate}/${id}.mp3`); check(clip.ok(), `rate clip ${rate}/${id}`);
+      const bytes = await clip.body();
+      check(bytes.length === entry.bytes && createHash("sha256").update(bytes).digest("hex") === entry.sha256 && entry.text === script.clips[id], `rate fingerprint ${rate}/${id}`);
+    }
+  }
   for (const actor of actors) await post(actor, "session", {});
   const cookie = (await host.storageState()).cookies.find(c => c.name === "ww_session"); check(cookie?.secure && cookie.httpOnly && cookie.sameSite === "Strict", "secure session cookie");
   const config = { version: "werewolf-web-v1", winMode: "edge", roles: { werewolf: 2, seer: 1, witch: 1, guard: 1, hunter: 1, villager: 2 } };

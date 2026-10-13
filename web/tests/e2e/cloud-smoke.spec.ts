@@ -110,7 +110,7 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     await expect.poll(async () => { const current = await view(); return `${current.phase}:${current.nightRole}`; }, { timeout: 60_000 }).toBe("night_action:werewolf");
     const wolfWindow = await view(); expect(wolfWindow.window!.deadline - wolfWindow.window!.openedAt).toBe(30_000);
     const rates = await host.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates);
-    expect(rates.slice(1).every(rate => rate === 2)).toBe(true); expect(rates.length).toBeGreaterThan(3);
+    expect(rates.every(rate => rate === 1)).toBe(true); expect(rates.length).toBeGreaterThan(3);
     const wolfActors: number[] = [];
     for (let i = 0; i < 8; i++) if ((await read<PrivateRoom>(contexts[i]!, `rooms/${room}/private`)).role === "werewolf") wolfActors.push(i);
     expect(wolfActors).toHaveLength(2);
@@ -146,7 +146,7 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     await expect(first.locator(".waiting-note")).toContainText("狼队共同目标");
     await act(0, { type: "abort" }); await expect.poll(async () => (await view()).phase).toBe("end");
     expect((await view()).aborted).toBe(true); expect(errors).toEqual([]);
-    console.log("Cloud smoke passed: 8 isolated sessions, direct voice without trial, 40 decoded clips, silent guard/wolf timeout waits, late private receipts before concealment, preserved partial votes and a persisted tied decision; aborted before a complete game.");
+    console.log(`Cloud smoke passed: 8 isolated sessions, direct voice without trial, ${Object.keys(script.clips).length * 2} pitch-safe clips, silent guard/wolf timeout waits, late private receipts before concealment, preserved partial votes and a persisted tied decision; aborted before a complete game.`);
   } finally {
     if (room) writeFileSync(info.outputPath("created-room-ids.json"), JSON.stringify({ rooms: [room], origin: baseURL }), { mode: 0o600 });
     for (const context of contexts) await context.close();
