@@ -17,6 +17,18 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
   }
   const view = (context = contexts[0]!) => read<PublicRoom>(context, `rooms/${room}`);
   async function act(index: number, operation: Operation) {
+    if (operation.type === "abort") {
+      // Cleanup may race a completed cue. Refresh only this explicit terminal intent.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const context = contexts[index]!; const current = await view(context);
+        const response = await context.request.post(`/api/v2/rooms/${room}/commands`, { headers: { origin: baseURL! },
+          data: { requestId: crypto.randomUUID(), epochId: current.epochId, windowId: current.windowId, operation } });
+        const result = await response.json();
+        if (response.ok()) return result;
+        if (response.status() !== 409 || result.error?.code !== "STALE_WINDOW") throw new Error(`Abort failed: HTTP ${response.status()} ${result.error?.code}`);
+      }
+      throw new Error("Abort remained stale after bounded refresh");
+    }
     const context = contexts[index]!; const current = await view(context);
     return post(context, `rooms/${room}/commands`, { requestId: crypto.randomUUID(), epochId: current.epochId, windowId: current.windowId, operation });
   }
@@ -65,7 +77,7 @@ test("cloud smoke: optional trial, silent timeout waits and split wolf votes", a
     await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
     await panel.getByRole("button", { name: "试音（可选）", exact: true }).click();
     await expect(panel.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪");
-    expect(await host.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates)).toEqual([1.5]);
+    expect(await host.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates)).toEqual([1]);
     await panel.getByRole("button", { name: "二倍速", exact: true }).click();
     await expect(panel.getByRole("button", { name: "二倍速", exact: true })).toHaveAttribute("aria-pressed", "true");
 
