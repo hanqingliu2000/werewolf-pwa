@@ -4,7 +4,7 @@
 
 **首次正式发布：prod1.0** · 应用包 `1.0.0` · 规则标识 `werewolf-web-v1` · 音频 `host-zh-v7`
 
-[进入正式站](https://werewolf-web-v2.vercel.app/) · [当前语音试听](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) · [发布说明](releases/prod1.0.md) · [文档目录](docs/README.md) · [安全策略](SECURITY.md)
+[进入正式站](https://werewolf-web-v2.vercel.app/) · [当前语音试听](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) · [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0) · [发布说明](releases/prod1.0.md) · [文档目录](docs/README.md) · [安全策略](SECURITY.md)
 
 ## 目录
 
