@@ -6,6 +6,17 @@ import script from "../src/narration/script.json";
 import voice from "../src/narration/voice.json";
 
 describe("new static narration bank", () => {
+  it("only replaces the two sheriff clips from v6 and records pronunciation guidance", () => {
+    const root = resolve(`public/audio/${script.version}`);
+    const manifest = JSON.parse(readFileSync(resolve(root, "manifest.json"), "utf8"));
+    const replacements = new Set(["sheriff_hands", "sheriff_speech"]);
+    for (const id of Object.keys(script.clips)) {
+      const current = readFileSync(resolve(root, `${id}.mp3`));
+      const previous = readFileSync(resolve(`public/audio/host-zh-v6/${id}.mp3`));
+      expect(current.equals(previous), id).toBe(!replacements.has(id));
+      if (replacements.has(id)) expect(manifest.clips[id].instruction).toContain("zhǎng");
+    }
+  });
   it("announces dealing without asking players to confirm identity", () => {
     expect(script.clips.roles_dealt).toBe("身份已发放，请查看身份。");
     expect(script.clips.roles_dealt).not.toContain("确认");

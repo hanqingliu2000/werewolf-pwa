@@ -22,3 +22,19 @@ Human pronunciation confirmation remains pending. Production still uses V6;
 no published audio was replaced and no deployment was promoted. Once the
 candidates are approved, integrate them into a new immutable audio version,
 regenerate its pitch-preserving speed variants, and run asset verification.
+
+## V7 Release
+
+The user requested production publication after receiving these auditions.
+V7 integrates those exact two samples without further synthesis. The other
+46 original clips are byte-identical to V6. Its 96 pitch-preserving 1.5/2x
+variants were regenerated using the existing FFmpeg atempo pipeline;
+action durations and game logic are unchanged. V6 assets remain immutable.
+
+Both replacement MP3s passed decoding, finite-sample, non-clipping and hash
+checks. Offline ASR recognized the intended surrounding text, but rendered
+the speech phrase as `竞长投票`; this is not proof of correct polyphone
+pronunciation. Publication uses the exact samples presented to the user,
+not a claim of independent human listening verification.
+
+Release checks and deployment identifiers will be recorded after promotion.
