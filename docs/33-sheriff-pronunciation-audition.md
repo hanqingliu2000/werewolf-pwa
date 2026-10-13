@@ -37,4 +37,27 @@ the speech phrase as `竞长投票`; this is not proof of correct polyphone
 pronunciation. Publication uses the exact samples presented to the user,
 not a claim of independent human listening verification.
 
-Release checks and deployment identifiers will be recorded after promotion.
+Type checking, lint, all 301 tests and the production build passed. The new
+asset regression checks confirm exactly two changed originals and retained
+pronunciation guidance. Candidate API checks verified all 48 originals and
+96 speed variants, database readiness, secure cookies, request deduplication,
+session isolation, origin rejection and SQL-shaped route rejection.
+
+The candidate browser regression passed with eight isolated sessions in
+1.3 minutes: optional trial, 96 pitch-safe assets, native playback rate 1,
+silent guard/wolf timeout waits, late private feedback and persisted split
+votes. This was a partial regression, not another complete game.
+
+Application commit: `9f4b915d76dc2aed9b7edc79f6138dd53afa4537`.
+Deployment: `dpl_CETgDzarNz7U46HZMbXbCGsVMeft`.
+Candidate: https://werewolf-web-v2-9oag7kukq-barrylius-projects-d58e2788.vercel.app .
+Production: https://werewolf-web-v2.vercel.app .
+Audition: https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html .
+
+After manual promotion, Vercel readback confirmed this deployment and commit
+as production with `autoAssignCustomDomains=false`. The production API and
+all 144 audio fingerprints passed again. Exactly three rooms from this
+release's QA reports were deleted using bound room IDs plus the `Cloud QA`
+host-name condition; other rooms, schemas and permissions were untouched.
+No new paid resources or services were enabled. Real-phone playback and
+independent human pronunciation verification remain outside these checks.
