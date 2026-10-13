@@ -430,8 +430,15 @@ for (const { completion, unknown } of [{ completion: "cue_ack", unknown: false }
   else api.state.narration.pending = { id: "second-announcement", from: 0, to: 1 };
   await expect(retry).toBeVisible({ timeout: 30_000 });
   api.state.phase = "end"; api.state.nightRole = null; api.state.narration.pending = null; api.state.windowId = "next-game-window";
+  await expect(controls.getByRole("heading", { name: "本局结束", exact: true })).toBeVisible();
   await expect(retry).not.toBeVisible(); expect(api.errors).toEqual([]);
-  expect(api.commands.filter((c) => c.operation.type === completion)).toHaveLength(3);
+  const acceptedBeforeSync = api.commands.filter((c) => c.operation.type === completion);
+  expect(acceptedBeforeSync.length).toBeGreaterThanOrEqual(3);
+  expect(acceptedBeforeSync.length).toBeLessThanOrEqual(6);
+  for (const request of acceptedBeforeSync.slice(2)) expect(request).toEqual(acceptedBeforeSync[2]);
+  // A retry may precede the poll that observes the new window; none may follow that observation.
+  await page.waitForTimeout(3500);
+  expect(api.commands.filter((c) => c.operation.type === completion)).toHaveLength(acceptedBeforeSync.length);
 });
 
 test("changed vote targets require resaving and confirmation, including null and another tab's draft", async ({ page }) => {

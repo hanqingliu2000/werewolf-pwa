@@ -1,87 +1,222 @@
-# 狼人杀自动主持：网页版重构基线
+# 狼人杀自动主持
 
-这是一个面向朋友线下聚会的狼人杀主持工具：每个人都能参与游戏，系统组织夜晚秘密行动、结算与胜负判断，白天讨论留在桌边。
+面向8至12人线下聚会的中文网页版狼人杀主持工具。每位玩家都能参与，系统负责夜间秘密行动、语音节奏、结算与复盘，讨论、投票和遗言留在桌边。
 
-2026-10-13，应用 `9f4b915` 已发布到 [正式站](https://werewolf-web-v2.vercel.app)：host-zh-v7整合两段警长读音调整样本，其余46段原音与V6一致；1.5/2倍仍保持原音调，不改变行动时间。301项测试、生产构建、候选8会话局部回归及正式API与144个音频资源复核通过；本次未重复整局。发布记录见[33](docs/33-sheriff-pronunciation-audition.md)，此前V6完整对局验收见[32](docs/32-voice-style-and-full-release.md)。[正式语音试听](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html)。真实手机后台及外放仍待验证，旧页面需刷新后重新启用声音。
+**首次正式发布：prod1.0** · 应用包 `1.0.0` · 规则标识 `werewolf-web-v1` · 音频 `host-zh-v7`
 
-截至2026-10-12，应用版本 `e0709f3` 已正式发布到 [werewolf-web-v2.vercel.app](https://werewolf-web-v2.vercel.app)：同守同救的狼刀目标死亡；守卫与女巫、预言家统一10秒，狼人仍30秒；声音默认1.5倍，可切2倍，不缩减行动窗；大厅房主可从“管理玩家”移出他人。此前狼人本人目标确认、3秒私密回执和超时只等待不变，白天投票保持原样，音频素材仍为 `host-zh-v3`。当前候选与公开网址的8人局部验收通过，发布记录见29；真实手机和聚会现场仍待验证。
+[进入正式站](https://werewolf-web-v2.vercel.app/) · [当前语音试听](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) · [发布说明](releases/prod1.0.md) · [文档目录](docs/README.md) · [安全策略](SECURITY.md)
 
-同日使用当时的 `fc99511` 完成12个独立会话、两夜正常计时的完整V3语音模拟局，包含白天猎人反应、好人胜利、复盘和重开；没有音频中断或安全恢复。流程与可用性评审见28；其后的确认与回执修订只做针对性回归和线上局部验收，没有重跑整局。真实新手及真实手机仍未验证。
+## 目录
 
-发牌后默认遮蔽、可选私密查看，播报结束后房主直接开始首夜，不等待逐人确认。本机验收与兼容说明见23，正式发布记录见24。推送不自动替换正式版本；刷新后需重新启用声音，试音可选，真正的安全暂停仍需明确恢复。
+- [产品能力](#产品能力)
+- [开始一局](#开始一局)
+- [规则摘要](#规则摘要)
+- [本地开发](#本地开发)
+- [检查与测试](#检查与测试)
+- [架构与目录](#架构与目录)
+- [部署与配置](#部署与配置)
+- [数据与安全](#数据与安全)
+- [素材与语音](#素材与语音)
+- [限制与常见问题](#限制与常见问题)
+- [维护与贡献](#维护与贡献)
+- [许可与来源](#许可与来源)
 
-正式站已包含放大的身份牌立绘、紧凑玩家/行动卡片和私密行动结果；本机布局验收见12与25，正式发布及不增加登录/验证码的必要安全防护见26。
+## 产品能力
 
-## 当前范围
+- 手机优先的响应式网页，桌面可用，不安装App、不注册账号。
+- 创建、分享、加入、准备、改名与换座；房主仅开局前可移出其他玩家。
+- 六角色随机发牌，身份默认遮蔽，查看可选，没有身份确认环节。
+- 文字或中文平直播报主持；试音可选，默认1.5倍，可切2倍，保持原音调。
+- 前台自动打开合法行动窗口，紧凑目标网格与私密完成反馈。
+- 狼人最高票决定、平票随机、队友与历次刀口展示。
+- 首夜警长竞选先于夜晚结果，只主持、不记录警长或票权。
+- 服务端权威状态、并发与去重，原浏览器刷新恢复及系统中断自动恢复。
+- 结束后参与者专属复盘，保留席位准备下一局。
 
-- 只开发响应式网页版，手机浏览器优先。
-- Android 和 iOS 用户都通过浏览器加入，不开发原生 App 或 WebView 壳。
-- 首版支持 8 至 12 人与六角色，提供候选预设及受限自定义配比。
-- 每人使用个人手机；仅房主的玩家手机承担公共播报，不支持额外设备或主持接管。
-- 首版需要联网，重点支持刷新、短时断线和音频失败后的恢复。
-- 全新暗黑奇幻美术和中文男声主持；原浏览器可恢复，不支持换设备恢复。
-- 优先验证小范围熟人局，不扩展复杂社交、付费体系或远程匹配。
+## 开始一局
 
-## 文档导航
+1. 房主在正式站填写昵称、人数、配比和胜负模式，创建房间并分享链接、二维码或房间号。
+2. 每人使用自己的浏览器入席并准备。满员且全员准备后，房主发牌。
+3. 玩家可私密查看身份，无需逐人确认。房主选择文字或语音主持，试音不是启用语音的前提。
+4. 发牌公告结束后房主开始首夜。按播报和本人行动窗操作；确认后直接显示有权知道的结果。
+5. 首夜结束先闭眼举手、睁眼竞选发言与现场投票。房主推进竞选阶段，完成后才公布夜晚结果。
+6. 白天现场讨论投票，房主录入淘汰结果，确认后发布。系统完成猎人反应与胜负判断。
+7. 结束后查看复盘或保留席位再开一局。遗言由现场人工组织。
 
-| 文档 | 内容 |
+房主也参与对局，组织权限不展示他人身份；房主出局后仍可主持。公共播报只在房主设备播放，建议保持该页面前台亮屏。
+
+## 规则摘要
+
+完整定义见[游戏规则](docs/02-rules-and-decisions.md)。
+
+| 角色 | 规则 |
 | --- | --- |
-| [00 产品愿景](docs/00-product-vision.md) | 用户、场景、价值与范围决定 |
-| [01 产品需求](docs/01-product-requirements.md) | 首版必需能力、增强项与验收目标 |
-| [02 规则与决策](docs/02-rules-and-decisions.md) | 已选六角色规则、胜负方式、配置与决策记录 |
-| [03 对局流程与隐私](docs/03-gameplay-and-privacy.md) | 完整一局、信息边界、主持节奏与故障恢复 |
-| [04 UX 与页面地图](docs/04-ux-and-screens.md) | 玩家、房主与公共视角的交互设计 |
-| [05 播报与素材](docs/05-narration-and-assets.md) | 语音脚本、素材需求与保留材料的使用条件 |
-| [06 网页与开发原则](docs/06-web-and-development.md) | 浏览器边界、共享规则、版本与技术选型原则 |
-| [07 验证与重构路线](docs/07-validation-and-roadmap.md) | 阶段交付、质量门槛与真实对局验证 |
-| [08 归档与保留记录](docs/08-archive-and-retention.md) | 存档提交、资料取舍、本地备份与恢复方式 |
-| [09 分阶段开发计划](docs/09-phased-development-plan.md) | 实施顺序、交付物、验收门槛、旧数据清理与逐玩家 agent 仿真 |
-| [10 骨架与规则核心验收](docs/10-foundation-and-rule-core-acceptance.md) | 本轮范围、版本、118个测试、覆盖率、HTTP验收与未完成边界 |
-| [11 本地保存与权限验收](docs/11-persistence-and-permissions-acceptance.md) | 身份、持久化、恢复、169个测试和真实 HTTP 重启验收 |
-| [12 手机网页流程设计](docs/12-web-flow-design.md) | 页面、私密任务、同机主持、故障恢复与组件设计 |
-| [13 房间接口契约](docs/13-room-service-contract.md) | 数据分层、会话、命令、去重、权限与错误处理 |
-| [14 网页设计与验收](docs/14-web-design-and-acceptance.md) | 完整页面、新美术、175项测试与两种浏览器验收 |
-| [15 主持语音与播放器验收](docs/15-narration-and-playback-acceptance.md) | 新脚本、40段候选音频、播放器、197项测试与14项浏览器回归 |
-| [16 平直播报更新](docs/16-neutral-narration-acceptance.md) | 已选B风格、40段V2、版本升级保护与202项测试 |
-| [17 多人语音验收](docs/17-voice-game-acceptance.md) | 本机完整语音局及故障恢复，不等同真机 |
-| [18 计时与死亡角色验收](docs/18-timing-and-dead-role-acceptance.md) | 15/10秒窗口、死亡角色播报与前台自动行动面板 |
-| [19 云端部署](docs/19-cloud-deployment.md) | 免费资源、私有schema、维护与正式部署、预览验收和恢复 |
-| [20 试玩前流程修复](docs/20-pre-play-flow-fixes.md) | 紧凑行动窗、播报回执重试、白天改选防误发布和局部回归 |
-| [21 单屏行动与流程验收](docs/21-single-screen-action-acceptance.md) | 五角色一屏目标、180个布局组合、完整文字流程和本机来源修正 |
-| [22 正式语音整局验收](docs/22-production-voice-game-acceptance.md) | 正式部署、12个独立会话、正常计时3夜、复盘重开与验收边界 |
-| [23 取消身份确认](docs/23-identity-viewing-without-confirmation.md) | 可选私密查看、首夜推进、旧客户端兼容与V3发牌台词 |
-| [24 身份流程正式发布](docs/24-identity-flow-production-release.md) | V3正式部署、候选与公开网址短程验收、测试数据清理和回退边界 |
-| [25 身份牌立绘调整](docs/25-identity-portrait-layout.md) | 手机与桌面的大比例立绘、固定收起入口、240个身份布局及180个行动布局组合 |
-| [26 必要安全防护与发布](docs/26-public-site-security-release.md) | 请求早拒绝、宽松数据库前过滤、SQL与私有表核验、270项回归及最新正式部署 |
-| [27 狼人多数投票与可选试音](docs/27-wolf-voting-and-optional-trial.md) | 30秒窗口、平票随机、刀口历史、直接语音启用、286项测试、超时静默等待及正式发布 |
-| [28 正式站模拟与操作评审](docs/28-production-simulation-and-usability-review.md) | 12会话两夜完整V3语音局、复盘重开、操作摩擦和待优化建议 |
-| [29 守救 语速与大厅移出](docs/29-guard-rule-voice-speed-and-lobby-removal.md) | 同守同救死亡、守卫10秒、1.5/2倍播报、开局前管理玩家及正式发布 |
-| [30 精简播报与提前预选](docs/30-concise-narration-and-action-preview.md) | 必选目标、v4短句、睁眼段真实结束触发预选、完整计时与本地验收 |
-| [本地语音生成](scripts/README.md) | 锁定环境、模型版本、生成参数与声音复核 |
-| [视觉规范](design-system/werewolf-web/MASTER.md) | 全站色彩、文字、控件与页面应用 |
-| [新应用运行说明](web/README.md) | 安装、检查、构建、健康入口与规则核心边界 |
-| [参考素材说明](materials/README.md) | 材料目录、状态和完整性清单 |
+| 狼人 | 每名存活狼人选择目标并确认，允许自刀和刀队友，不提供空刀；全体投完后最高票生效，最高票平票随机并保存，改票不撤销他人的确认。 |
+| 预言家 | 必须查验其他存活玩家的阵营，可重复查验，不提供放弃查验。 |
+| 女巫 | 解药、毒药各一瓶，每夜最多一瓶，也可不用药；仅首夜可自救，解药只救本夜刀口，有解药才可获知新刀口。 |
+| 守卫 | 可自守、不守，不可连续守同一人；狼刀目标同守同救仍死亡，保护不挡毒。 |
+| 猎人 | 被刀或白天投票出局可开枪/放弃，只要本批死亡包含毒药就禁枪；出局公开身份。 |
+| 平民 | 参与现场讨论投票，无夜间动作；出局不自动公开身份。 |
 
-阶段6采用新的 `https://werewolf-web-v2.vercel.app`，旧站不变；用户要求暂不重跑完整局。后续阶段7线上独立agent试玩另行执行，iOS Safari、Android Chrome和聚会现场仍需验收；配比不宣称已经证明平衡。
+默认狼人胜利方式为**屠边**：平民或神职全部出局。也可选**人数规则**：存活狼人不少于存活好人。完整结算及合法猎人反应后判胜，狼人全灭好人胜，全员出局平局。
 
-## 归档
+狼人操作30秒，守卫、女巫、预言家和猎人10秒。语音加速不缩短时间，超时未完成只静默等待，不代选、不自动放弃、不播放暂停语音。死亡神职仍保留完整播报与窗口，避免泄露身份。
 
-- 归档提交：`1416abd20e88befed14a0e8a4e66f8d19ec43e66`。
-- 归档标签：`archive/pre-rewrite-2026-10-06`。
-- 原实现、旧文档和锁文件均可从标签恢复；归档不代表发布或规则认可。
+## 本地开发
 
-规则核心、保存权限和流程基线已以 `0c54cf7` 推送至 [GitHub 仓库](https://github.com/hanqingliu2000/werewolf-pwa)，网页设计另行独立保存。旧4张游戏表与14个函数已备份删除，平台结构保留，旧项目仍暂停。没有恢复旧实现或替换线上网站。
+### 环境
 
-## 本地验收
+- Git。
+- Node.js `>=24.14.1 <25`，仓库锁定版本见 `web/.node-version`。
+- npm，使用已提交的 `web/package-lock.json`。
 
-临时 UI 评审服务见 [评审工具说明](scripts/ui-review/README.md)：`node scripts/ui-review/start.mjs` 组织14个真实组件示例，以左右按钮切换并提供固定编号供批注；默认本机3010端口，模拟数据独立于真实房间，不进入正式页面。
+普通开发不需要Supabase账号、Python、语音模型或付费服务。音频与美术已经包含在仓库中。
+
+### 快速启动
 
 ```sh
-npm --prefix web ci
-npm --prefix web run check
-npm --prefix web run build
-npm --prefix web run smoke
-npm --prefix web run test:ui
+git clone https://github.com/hanqingliu2000/werewolf-pwa.git
+cd werewolf-pwa/web
+npm ci
+npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-`npm --prefix web run dev -- --hostname 127.0.0.1 --port 3000` 启动完整网页。默认文字主持，大厅内可真实试音后启用语音。SQLite 保存在被忽略的 `web/.data/`，不上传 Git，也不用于云端多实例部署。
+打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)。默认SQLite写入 `web/.data/rooms.sqlite`，数据不进入Git。端口占用时改用空闲端口。
+
+本地默认不需要环境文件。需要显式配置时参考[.env.example](web/.env.example)，将私人配置放到被忽略的 `web/.env.local`。非localhost联调必须指定准确的 `WEREWOLF_ORIGIN`。
+
+### 本地生产模式
+
+在 `web/`：
+
+```sh
+npm run build
+npm run start -- --hostname 127.0.0.1 --port 3000
+```
+
+SQLite仅适用于本地单机运行，不用于公网Vercel部署。
+
+## 检查与测试
+
+以下命令均在 `web/` 执行：
+
+```sh
+npm run repo:check
+npm run check
+npm run build
+npm run smoke
+npx playwright install chromium webkit
+npm run test:ui
+```
+
+| 命令 | 范围 |
+| --- | --- |
+| repo:check | 文档链接、版本、当前素材指纹、禁止提交的文件、客户端运行时依赖 |
+| typecheck / lint | TypeScript及代码检查 |
+| test / test:coverage | 规则、服务、保存、权限、播放器及覆盖率 |
+| check | 类型、lint、测试与覆盖率门槛 |
+| smoke | 隔离SQLite、并发末席、独立会话、真实服务重启恢复 |
+| test:ui | Chromium/WebKit的本地页面与音频回归，先构建 |
+| playwright.cloud.config.ts | 显式指定受信任部署的线上局部验收 |
+| playwright.production.config.ts | 显式启用的真实计时完整浏览器局，不默认触及线上 |
+
+本地测试不要带入正式数据库配置。浏览器报告、数据库、会话及截图在忽略目录，不上传。多会话脚本验收不等于真人手机、现场体验或独立agent对局。最新结果与边界见[发布说明](releases/prod1.0.md)。
+
+临时UI评审在仓库根目录运行 `node scripts/ui-review/start.mjs`，使用本地应用和14个隔离示例，不操作真实房间；见[工具说明](scripts/ui-review/README.md)。
+
+## 架构与目录
+
+技术栈：Next.js16.4、React19.3、TypeScript6、Zod、XState、Node SQLite、pg、Vitest与Playwright。具体锁定版本以package.json/lock为准。
+
+请求路径：浏览器 → `/api/v2` → 会话/权限/上下文校验 → 唯一TypeScript规则核心 → 事务保存状态与回执 → 分权限视图。
+
+```text
+.
+├── README.md                 项目入口
+├── SECURITY.md               安全策略与防泄密检查
+├── releases/                 正式发布说明
+├── docs/                     当前产品、规则、流程、接口与部署
+├── design-system/            视觉规范
+├── scripts/                  仓库检查、离线音频、临时UI评审
+├── supabase/migrations/      私有保存结构与清理任务
+└── web/
+    ├── src/game/             唯一规则与阶段核心
+    ├── src/server/           会话、权限、SQLite/PG与HTTP
+    ├── src/narration/        台词与公开播放器
+    ├── src/ui/               响应式界面与恢复
+    ├── src/app/              Next.js页面与API
+    ├── public/               当前音频、美术、字体
+    └── tests/                单元、契约与浏览器测试
+```
+
+不在SQL、评审工具或浏览器中复制权威游戏结算。保留必要旧请求/存档兼容，不恢复旧玩法；见[架构原则](docs/06-web-and-development.md)。
+
+## 部署与配置
+
+正式站使用Vercel和Supabase PostgreSQL。Vercel根目录为 `web/`、Node24、Node runtime、`iad1`；数据库 `us-east-1`。Preview与Production使用独立私有schema及账号。
+
+| 环境变量 | 用途 |
+| --- | --- |
+| WEREWOLF_STORAGE | 本地sqlite；线上必须postgres |
+| WEREWOLF_DB_PATH | 本地数据库文件路径 |
+| WEREWOLF_SCHEMA | werewolf_preview或werewolf_prod |
+| WEREWOLF_DATABASE_URL | 对应服务账号的transaction pooler URL，6543端口 |
+| WEREWOLF_DATABASE_CA | 官方TLS根证书PEM |
+| WEREWOLF_ORIGIN | 可信同源网址，无尾部斜杠 |
+| WEREWOLF_MAINTENANCE | 1时关闭游戏入口并使健康返回维护状态 |
+
+数据库配置只进入服务端秘密配置，禁止 `NEXT_PUBLIC_`；线上缺失配置必须失败，不回退SQLite。每函数实例最多一个连接，验证TLS服务器证书。
+
+推送只产生候选，不自动提升正式域名。候选验收通过后手动发布，再核验正式网址。Production候选即使未提升，也使用prod schema，不是数据库沙箱。失败回退维护或上一兼容部署，不删除数据库。详见[部署维护](docs/19-cloud-deployment.md)。
+
+免费后端可能闲置暂停，聚会前检查 `/api/health` 和项目控制台。没有保活任务，重新创建资源须重新确认费用，不把历史免费结论当永久保证。
+
+## 数据与安全
+
+- 原浏览器随机会话Cookie，无注册模块；HTTPS下Secure、HttpOnly、SameSite=Strict。
+- 会话只能操作本房间合法角色；房主组织视图不包含别人的秘密状态。
+- 所有私密响应no-store，写请求校验Origin、JSON、大小及上下文。
+- 参数化SQL、严格schema白名单、最小权限、RLS、输入校验和限流。
+- 房间状态与回执同事务，CAS并发重试，重复请求不重复消耗药剂或重新随机。
+- 房间在实际业务状态变更后24小时到期，轮询/普通心跳不续期；历史档案按结束时间24小时。
+- 日志不记录Cookie、身份、目标、密码或完整快照。
+- 凭据、私人环境、会话、数据库、模型缓存、备份和QA报告不提交或附加到Release。
+
+审查方法、结果和未覆盖范围见[prod1.0安全报告](docs/security-prod1.0.md)。必要防护不等于全面DDoS防御或绝对安全。
+
+## 素材与语音
+
+当前V7有48段原速及96段保音调倍速音频，网页仅加载公开静态文件，不运行模型、不实时上传对局内容。八张WebP含入口场景、统一牌背和六角色立绘；字体本地加载。
+
+音频与美术清单记录文本、来源及SHA-256。已发布声音不可覆盖；改动需新版本、试听、指纹和播放验收。[素材说明](docs/05-narration-and-assets.md)、[音频工具](scripts/README.md)、[美术来源](web/public/art/README.md)。
+
+旧声音库、试音和参考素材已从当前树移除，可通过 `archive/pre-prod1.0-2026-10-13` 找回；见[清理记录](docs/08-archive-and-retention.md)。
+
+## 限制与常见问题
+
+**为什么房主要保持页面前台？**
+浏览器后台、锁屏、来电及系统省电可挂起音频和计时。应用申请Wake Lock并尝试自动恢复，但不能保证锁屏后台持续主持。
+
+**切回页面还需要手动恢复吗？**
+系统中断会自动同步、尝试恢复；浏览器有时仍需普通点击解锁，失败才用“恢复声音”或文字主持兜底。人工暂停必须明确继续，不能被自动恢复取消。
+
+**刷新会丢身份吗？**
+有效房间和原浏览器会话可以恢复。清除Cookie、切换无痕会话或换设备不能找回原身份；不提供房主接管。
+
+**为什么只能看自己的结果？**
+当前对局不公开他人身份、目标或死因；猎人出局公开身份是例外。完整记录只在结束后提供给该局参与者。
+
+**能不能离线或远程匹配？**
+不能。prod1.0面向联网的线下熟人聚会，不提供离线联机、原生App、匹配或聊天体系。
+
+真实iOS/Android外放、前后台及聚会体验仍需验收；配比不宣称经过平衡实测。
+
+## 维护与贡献
+
+问题反馈请包含设备、浏览器、版本、阶段、复现步骤与脱敏截图，不包含真实身份、Cookie或凭据。安全问题遵循[安全策略](SECURITY.md)，不要公开漏洞利用所需的秘密。
+
+修改行为时同步规则/需求与测试；修改声音时保持版本不可变。遵循[AGENTS.md](AGENTS.md)，验证后提交推送；正式发布独立验收。仓库只保留当前文档，阶段性日志由Git历史保存。
+
+## 许可与来源
+
+仓库目前没有项目级LICENSE，不把公开仓库自动称为已经授权开源。字体采用随附[OFL](web/public/fonts/OFL.txt)；语音清单中的Apache-2.0描述模型来源，不等于整个项目的统一许可证。素材来源与生成过程见各目录清单，历史参考素材不随正式版本分发。

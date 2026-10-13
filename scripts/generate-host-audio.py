@@ -4,6 +4,7 @@ import hashlib
 import importlib.metadata
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -18,18 +19,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="Comma-separated clip ids; omit for the complete bank")
     parser.add_argument("--force", action="store_true", help="Regenerate only the selected clips")
-    parser.add_argument("--reuse", choices=["host-zh-v2", "host-zh-v3", "host-zh-v4", "host-zh-v5"], help="Reuse unchanged verified clips from a published bank")
+    parser.add_argument("--reuse", help="Reuse unchanged verified clips from a retained published bank")
     parser.add_argument("--offline", action="store_true", help="Use only the pinned model in the local cache")
     parser.add_argument("--seed-offset", type=int, default=0)
     parser.add_argument("--publish", action="store_true", help="Promote the fully verified staging bank; does not synthesize")
     parser.add_argument("--audition-instruction", help="Additional pronunciation guidance for an isolated, unpublished audition")
     args = parser.parse_args()
+    if args.reuse and not re.fullmatch(r"host-zh-v[1-9][0-9]*", args.reuse):
+        parser.error("Reuse requires a versioned host-zh-v<number> bank")
     if args.audition_instruction and (not args.only or args.publish or args.reuse):
         parser.error("Audition pronunciation guidance requires --only and cannot publish or reuse a bank")
     if args.offline:
         os.environ["HF_HUB_OFFLINE"] = "1"
     script = json.loads((ROOT / "web/src/narration/script.json").read_text())
     voice = json.loads((ROOT / "web/src/narration/voice.json").read_text())
+    if script["version"] != voice["version"] or not re.fullmatch(r"host-zh-v[1-9][0-9]*", voice["version"]):
+        raise ValueError("Script and voice must share a safe versioned bank name")
     destination = ROOT / f".local-generation/banks/{voice['version']}"
     if args.audition_instruction:
         audition_id = hashlib.sha256(args.audition_instruction.encode()).hexdigest()[:12]

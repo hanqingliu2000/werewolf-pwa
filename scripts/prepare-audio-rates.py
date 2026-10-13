@@ -1,12 +1,15 @@
 """Derive pitch-preserving public audio variants; run before publishing a new bank."""
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import imageio_ffmpeg
 
 ROOT = Path(__file__).resolve().parents[1]
 version = json.loads((ROOT / "web/src/narration/script.json").read_text())["version"]
+if not re.fullmatch(r"host-zh-v[1-9][0-9]*", version):
+    raise ValueError("Invalid bank version")
 bank = ROOT / f".local-generation/banks/{version}"
 manifest = json.loads((bank / "manifest.json").read_text())
 rates = {}

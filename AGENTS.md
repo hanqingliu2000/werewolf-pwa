@@ -5,3 +5,4 @@
 - A Git push is not authorization to promote a production deployment. Follow the deployment acceptance gates and keep preview data isolated from production.
 - Keep the old website, old cloud project, and archived private backups unchanged during the web-v2 deployment.
 - Report the commit, push result, verification performed, and anything that remains unverified. Do not claim that a partial browser test is a complete game or real-phone acceptance.
+- Before committing, run `npm --prefix web run repo:check` and scan staged changes for secrets. Update the current rules, requirements and tests together when behavior changes; keep historical stage logs in Git history rather than in the active documentation.

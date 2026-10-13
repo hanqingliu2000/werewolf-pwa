@@ -6,6 +6,10 @@ web/test-results/
 web/coverage/
 web/node_modules/
 web/.next/
-materials/
 **/.env
 **/.env.*
+**/*.sqlite*
+**/*.db
+**/*.key
+**/*.pem
+**/*.log

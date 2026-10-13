@@ -123,7 +123,7 @@ describe("public narration contract", () => {
     expect(f.state().game!.window!.deadline).toBe(f.time.now + 6000);
   });
 
-  it.each(["host-zh-v2", "before-upgrade"])("requires a new trial after upgrading from %s and rejects old callbacks", async (version) => {
+  it.each(["retired-bank", "before-upgrade"])("requires current-bank preparation after upgrading from %s and rejects old callbacks", async (version) => {
     const f = await setup(); await begin(f); await cue(f); await f.act({ type: "guard", targetId: null }, 4);
     f.patch((room) => { room.narration!.version = version; });
     const phase = await f.service.view(f.id, f.tokens[0]!);

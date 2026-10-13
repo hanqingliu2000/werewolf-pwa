@@ -1,12 +1,13 @@
 {
   "name": "werewolf-web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24.14.1 <25"
   },
   "scripts": {
+    "repo:check": "node ../scripts/check-repository.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

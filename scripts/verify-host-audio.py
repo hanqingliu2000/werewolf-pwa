@@ -3,6 +3,7 @@ import hashlib
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import time
@@ -15,10 +16,13 @@ os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="Verify selected replacement clips")
-    parser.add_argument("--bank", choices=["host-zh-v1", "host-zh-v2", "host-zh-v3", "host-zh-v4", "host-zh-v5", "host-zh-v6", "host-zh-v7", "host-zh-calm-pilot"], default="host-zh-v7")
+    current_version = json.loads((ROOT / "web/src/narration/script.json").read_text())["version"]
+    parser.add_argument("--bank", default=current_version)
     parser.add_argument("--staged", action="store_true")
     parser.add_argument("--offline", action="store_true", help="Use only the pinned ASR model in the local cache")
     args = parser.parse_args()
+    if not re.fullmatch(r"host-zh-v[1-9][0-9]*", args.bank):
+        parser.error("Bank must be a versioned host-zh-v<number> directory")
     if args.offline:
         os.environ["HF_HUB_OFFLINE"] = "1"
     import numpy as np
@@ -33,7 +37,7 @@ def main():
     if not args.offline:
         revision = model_info(model_id, revision=revision).sha
     model_path = snapshot_download(model_id, revision=revision, local_files_only=args.offline)
-    report_path = ROOT / (".local-generation/verification.json" if args.bank == "host-zh-v1" else f".local-generation/{args.bank}-verification.json")
+    report_path = ROOT / f".local-generation/{args.bank}-verification.json"
     results = json.loads(report_path.read_text())["clips"] if report_path.exists() else {}
     for key, entry in manifest["clips"].items():
         if args.only and key not in args.only.split(","):

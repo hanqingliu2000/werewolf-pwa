@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { once } from "node:events";
 import { createReviewServer } from "./server.mjs";
-import { scenes, makeFixture, REVIEW_NOW } from "./fixtures.mjs";
+import { scenes, makeFixture, applyPreviewOperation, REVIEW_NOW } from "./fixtures.mjs";
 
 const requests = [];
 const upstream = http.createServer((request, response) => {
@@ -27,6 +27,21 @@ test("fourteen stable scenes use synthetic views, frozen clocks and valid recap 
     assert.match(scene.roomId, /^[A-F0-9]{8}$/); assert.equal(fixture.recap.participants.length, 12);
     assert.equal(fixture.recap.participants.filter(p => p.role === "werewolf").length, 4);
     assert.ok(fixture.recap.participants.filter(p => p.role === "villager").every(p => !p.alive));
+  }
+});
+test("review wolf decisions use highest votes without requiring unanimity", () => {
+  const f = makeFixture(scenes.find(s => s.kind === "werewolf"));
+  for (const [index, p] of f.personal.teammates.entries()) f.personal.wolves.proposals[p.id] = index < 3 ? "p8" : "p9";
+  f.personal.wolves.confirmations = f.personal.teammates.filter(p => p.id !== "p1").map(p => p.id);
+  applyPreviewOperation(f, { type: "wolf_confirm" });
+  assert.equal(f.personal.wolves.locked, true);
+  assert.equal(f.personal.actionResult.targetId, "p8");
+});
+test("review scenes do not accept empty wolf or seer targets", () => {
+  for (const kind of ["werewolf", "seer"]) {
+    const f = makeFixture(scenes.find(s => s.kind === kind));
+    assert.throws(() => applyPreviewOperation(f, { type: kind === "seer" ? "seer" : "wolf_propose", targetId: null }), /TARGET_REQUIRED/);
+    assert.equal(f.personal.completed, false);
   }
 });
 test("all API operations stay local and never set ww_session cookies", async () => {

@@ -1,0 +1,16 @@
+.git/
+.data/
+.next/
+node_modules/
+coverage/
+test-results/
+playwright-report/
+.env
+.env.*
+**/*.sqlite*
+**/*.db
+**/*.key
+**/*.pem
+**/*.log
+**/app-credentials.json
+**/preview-auth.json

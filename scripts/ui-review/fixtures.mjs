@@ -85,7 +85,7 @@ export function makeFixture(scene) {
     ...(ownRole === "seer" ? { reports: [{ nightNo: 1, targetId: "p3", alignment: "wolf" }] } : {}) };
   if (kind === "werewolf") {
     personal.wolfHistory = [{ nightNo: 1, targetId: "p9" }];
-    personal.teammates = recap.participants.filter(p => p.role === "werewolf").map(({ id, seat, name }) => ({ id, seat, name }));
+    personal.teammates = recap.participants.filter(p => p.role === "werewolf").map(({ id, seat, name }) => ({ id, seat, name, alive: true }));
     personal.wolves = { proposals: Object.fromEntries(personal.teammates.map(p => [p.id, "p8"])), confirmations: personal.teammates.slice(1, 3).map(p => p.id),
       locked: false, discussionPaused: false, consensusId: uuid(300) };
   }
@@ -100,17 +100,26 @@ export function applyPreviewOperation(fixture, operation) {
   if (op.type === "ready") state.players[0].ready = !!op.ready;
   else if (op.type === "rename") state.players[0].name = String(op.name ?? "").trim().slice(0, 48) || names[0];
   else if (["guard", "seer", "witch", "hunter"].includes(op.type)) {
+    if (op.type === "seer" && !op.targetId) throw new Error("TARGET_REQUIRED");
     personal.action = null; personal.hunterReaction = false; personal.completed = true;
     personal.acceptedAction = { actorId: "p1", kind: op.type === "seer" ? "see" : op.type === "witch" ? op.choice : op.type === "hunter" ? "pass" : op.type, targetId: op.targetId ?? null };
     personal.actionResult = { kind: op.type === "hunter" ? "shot" : personal.acceptedAction.kind, targetId: op.targetId ?? null, nightNo: state.nightNo };
     if (op.type === "seer" && op.targetId) personal.reports.push({ nightNo: 2, targetId: op.targetId, alignment: fixture.recap.participants.find(p => p.id === op.targetId)?.role === "werewolf" ? "wolf" : "good" });
-  } else if (op.type === "wolf_propose" && personal.wolves) { personal.wolves.proposals.p1 = op.targetId; personal.wolves.confirmations = personal.wolves.confirmations.filter(id => id !== "p1"); }
+  } else if (op.type === "wolf_propose" && personal.wolves) {
+    if (!op.targetId) throw new Error("TARGET_REQUIRED");
+    personal.wolves.proposals.p1 = op.targetId; personal.wolves.confirmations = personal.wolves.confirmations.filter(id => id !== "p1");
+  }
   else if (op.type === "wolf_confirm" && personal.wolves && !personal.wolves.confirmations.includes("p1")) {
     personal.wolves.confirmations.push("p1");
     const ids = personal.teammates.map(p => p.id);
-    if (ids.every(id => personal.wolves.confirmations.includes(id)) && new Set(ids.map(id => personal.wolves.proposals[id])).size === 1) {
+    if (ids.every(id => personal.wolves.confirmations.includes(id))) {
+      const counts = new Map();
+      for (const id of ids) { const target = personal.wolves.proposals[id]; counts.set(target, (counts.get(target) ?? 0) + 1); }
+      const highest = Math.max(...counts.values());
+      // Stable tied-target selection keeps a review scene reproducible; real games use the rule core RNG.
+      const target = [...counts].find(([, count]) => count === highest)[0];
       personal.wolves.locked = true; personal.wolves.discussionPaused = false; personal.action = null;
-      personal.actionResult = { kind: "kill", targetId: personal.wolves.proposals.p1, nightNo: state.nightNo };
+      personal.actionResult = { kind: "kill", targetId: target, nightNo: state.nightNo };
       state.paused = false; state.pauseReason = null;
     }
   }

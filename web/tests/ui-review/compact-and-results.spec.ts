@@ -43,7 +43,6 @@ const cases = [
   { scene: "S07", choice: "不用药", expected: "本夜不用药" },
   { scene: "S08", target: 3, expected: "查验：3 号 · 小周", effect: "查验结果：狼人阵营" },
   { scene: "S08", target: 6, expected: "查验：6 号 · 木木", effect: "查验结果：好人阵营" },
-  { scene: "S08", choice: "本夜不查验", expected: "本夜不查验" },
   { scene: "S09", target: 2, expected: "开枪目标：2 号 · 阿青" },
   { scene: "S09", choice: "放弃开枪", expected: "已放弃开枪" },
 ];
@@ -69,9 +68,9 @@ test("each accepted action shows its own target and permitted effect immediately
   }
 });
 
-test("locked wolf targets and empty kills use the same private completed-result position", async ({ page }) => {
+test("locked wolf targets use the private completed-result position", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const targetId of ["p8", null]) {
+  for (const targetId of ["p8", "p9"]) {
     await page.route("**/api/v2/rooms/FA000006/private", async route => {
       const response = await route.fetch(); const personal = await response.json();
       await route.fulfill({ json: { ...personal, action: null, wolves: { ...personal.wolves, locked: true },
@@ -79,7 +78,7 @@ test("locked wolf targets and empty kills use the same private completed-result 
     });
     await page.goto("/r/FA000006?reviewScene=S06");
     const panel = page.getByRole("dialog", { name: "本人私密视角" });
-    await expect(panel.locator(".waiting-note")).toContainText(targetId ? "狼队共同目标：8 号 · 安安" : "狼队已决定空刀");
+    await expect(panel.locator(".waiting-note")).toContainText(targetId === "p8" ? "狼队共同目标：8 号 · 安安" : "狼队共同目标：9 号 · 小余");
     await expect(panel.locator(".waiting-note")).toContainText("共同决策已锁定");
     await expect(panel.locator(".single-screen")).toHaveCount(0);
     await page.unroute("**/api/v2/rooms/FA000006/private");

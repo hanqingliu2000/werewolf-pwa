@@ -27,7 +27,7 @@ describe("wolf majority and random ties", () => {
     const { game, rng } = votes(["p9", "p9", "p10", "p10"], index);
     expect(game.currentNight!.killTargetId).toBe(index === 0 ? "p9" : "p10"); expect(rng).toHaveBeenCalledWith(2);
   });
-  it("handles fully split votes and ties with an empty kill", () => {
+  it("handles fully split votes and tied highest non-empty targets", () => {
     expect(votes(["p9", "p10", "p11", "p12"], 2).game.currentNight!.killTargetId).toBe("p11");
     expect(votes(["p9", "p9", "p10", "p10"], 1).game.currentNight!.killTargetId).toBe("p10");
   });
