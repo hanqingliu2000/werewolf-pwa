@@ -17,6 +17,9 @@ export function useNarration(controller: RoomController) {
   const completed = useRef<{ plan: Plan; envelope: { requestId: string; epochId: string; windowId: string; operation: Operation } } | null>(null);
   const delivering = useRef(false);
   const attempted = useRef<string | null>(null); const wasPaused = useRef(false); const ambientDone = useRef<string | null>(null);
+  const recoveryAttempts = useRef(0); const recovering = useRef(false);
+  const preparing = useRef(false); const completionAttempts = useRef({ id: "", count: 0 });
+  const recover = useRef<(gesture?: boolean) => void>(() => undefined);
   const v = controller.view; const mode = v?.narration.mode ?? "text";
   const plan = v ? narrationPlan(v) : null;
   const fail = useRef<(error: unknown) => void>(() => undefined);
@@ -24,6 +27,7 @@ export function useNarration(controller: RoomController) {
     sequence.current++; player.current?.cancel(); verified.current = false; completed.current = null;
     setCompletionRetry(false);
     setStatus("failed"); setProblem(error instanceof PlaybackError ? error.code : "AUDIO_BLOCKED");
+    if (error instanceof PlaybackError && error.code === "AUDIO_TIMEOUT") player.current?.resetContext();
     if (latest.current.view?.narration.mode === "voice") void latest.current.reportAudio(false);
   };
   useEffect(() => {
@@ -35,21 +39,26 @@ export function useNarration(controller: RoomController) {
     function hide(event: Event) {
       if (event.type === "pagehide" || document.visibilityState !== "visible") {
         sequence.current++; player.current?.cancel(); verified.current = false; completed.current = null;
+        recoveryAttempts.current = 0; player.current?.abortPreparation();
         if (latest.current.view?.narration.mode === "voice") fail.current(new PlaybackError("AUDIO_INTERRUPTED"));
         else setStatus("idle");
-      }
+      } else { void latest.current.sync().catch(() => undefined); recover.current(); }
     }
-    document.addEventListener("visibilitychange", hide); window.addEventListener("pagehide", hide);
-    return () => { sequence.current++; verified.current = false; completed.current = null; player.current?.dispose(); player.current = null; document.removeEventListener("visibilitychange", hide); window.removeEventListener("pagehide", hide); };
+    const show = () => { if (document.visibilityState === "visible") { void latest.current.sync().catch(() => undefined); recover.current(); } };
+    const gesture = () => recover.current(true);
+    document.addEventListener("visibilitychange", hide); window.addEventListener("pagehide", hide); window.addEventListener("pageshow", show);
+    document.addEventListener("pointerdown", gesture); document.addEventListener("keydown", gesture);
+    return () => { sequence.current++; verified.current = false; completed.current = null; player.current?.dispose(); player.current = null; document.removeEventListener("visibilitychange", hide); window.removeEventListener("pagehide", hide); window.removeEventListener("pageshow", show); document.removeEventListener("pointerdown", gesture); document.removeEventListener("keydown", gesture); };
   }, []);
 
   // Polls, private panels and individual submissions must not restart public audio.
   useEffect(() => {
     player.current?.cancel();
-    const resumed = wasPaused.current && !v?.paused; wasPaused.current = v?.paused ?? false;
-    if (!v?.self.isHost || !controller.leader || mode !== "voice" || !verified.current) return;
+    const resumed = wasPaused.current && !v?.paused; wasPaused.current = !!v?.paused && v.pauseReason === "manual";
+    if (!v?.self.isHost || !controller.leader || mode !== "voice" || !verified.current || preparing.current) return;
     const currentPlan = v.paused ? null : narrationPlan(v);
     if (v.paused || (!currentPlan && resumed)) {
+      if (v.paused && v.pauseReason !== "manual") return;
       const id = `${v.windowId}:${v.paused ? "pause" : "resume"}`;
       if (ambientDone.current === id) return;
       ambientDone.current = id;
@@ -98,6 +107,14 @@ export function useNarration(controller: RoomController) {
     attempted.current = null;
     setCompletionRetry(false); setGeneration((n) => n + 1);
   }
+  useEffect(() => {
+    const item = completed.current;
+    if (!completionRetry || !item || v?.paused || !controller.leader || controller.busy || controller.pending) return;
+    if (completionAttempts.current.id !== item.envelope.requestId) completionAttempts.current = { id: item.envelope.requestId, count: 0 };
+    if (completionAttempts.current.count >= 3) return;
+    const timer = setTimeout(() => { completionAttempts.current.count++; retryCompletion(); }, 1000 * (completionAttempts.current.count + 1));
+    return () => clearTimeout(timer);
+  }, [completionRetry, v?.paused, controller.leader, controller.busy, controller.pending]);
 
   useEffect(() => {
     if (!controller.leader && player.current) {
@@ -105,29 +122,46 @@ export function useNarration(controller: RoomController) {
     }
   }, [controller.leader]);
 
-  async function prepareVoice(sample: boolean) {
+  async function prepareVoice(sample: boolean, recovery = false) {
     if (!latest.current.leader) return;
     const trialSequence = ++sequence.current; verified.current = false; completed.current = null;
+    preparing.current = true;
     setCompletionRetry(false);
     player.current ??= new NarrationPlayer(() => fail.current(new PlaybackError("AUDIO_INTERRUPTED")));
     player.current.setRate(rate);
     player.current.cancel(); setStatus("loading"); setProblem(null);
     const preparation = player.current.prepare();
     try {
-      await preparation;
+      try { await preparation; if (recovery) await player.current.verifyClock(); } catch (error) {
+        if (!recovery || !(error instanceof PlaybackError) || !["AUDIO_TIMEOUT", "AUDIO_INTERRUPTED"].includes(error.code)) throw error;
+        player.current.resetContext(); await player.current.prepare(); await player.current.verifyClock();
+      }
       if (trialSequence !== sequence.current || document.visibilityState !== "visible") return;
       if (sample) { setStatus("testing"); setCaption(script.clips.sample); await player.current.play(["sample"]); }
       if (trialSequence !== sequence.current || !player.current.ready || document.visibilityState !== "visible" || !latest.current.leader) return;
       verified.current = true; await latest.current.reportAudio(true);
       if (trialSequence !== sequence.current || !player.current.ready || document.visibilityState !== "visible" || !latest.current.leader) return;
-      if (!sample && !await latest.current.send({ type: "narration_mode", mode: "voice", version: NARRATION_VERSION, trialConfirmed: false })) {
+      if (!sample && (latest.current.view?.narration.mode !== "voice" || latest.current.view.narration.version !== NARRATION_VERSION) && !await latest.current.send({ type: "narration_mode", mode: "voice", version: NARRATION_VERSION, trialConfirmed: false })) {
         verified.current = false; setStatus("failed"); setProblem("AUDIO_MODE_FAILED"); return;
       }
-      setStatus("ready"); setCaption(""); setGeneration((n) => n + 1);
+      preparing.current = false; setStatus("ready"); setCaption(""); setGeneration((n) => n + 1);
     } catch (error) { if (trialSequence === sequence.current) fail.current(error); }
+    finally { if (trialSequence === sequence.current) preparing.current = false; }
   }
+  recover.current = (gesture = false) => {
+    const c = latest.current;
+    if (!c.leader || !c.view?.self.isHost || c.view.narration.mode !== "voice" || c.view.narration.version !== NARRATION_VERSION
+      || document.visibilityState !== "visible" || verified.current || recovering.current) return;
+    if (!gesture && recoveryAttempts.current >= 2) return;
+    recoveryAttempts.current++; recovering.current = true;
+    void prepareVoice(false, true).finally(() => {
+      recovering.current = false; preparing.current = false;
+      if (!verified.current && document.visibilityState === "visible") recover.current();
+    });
+  };
+  useEffect(() => { if (mode === "voice" && controller.leader && (status === "failed" || status === "idle")) recover.current(); }, [mode, controller.leader, status]);
   const trial = () => prepareVoice(true);
-  const enableVoice = () => prepareVoice(false);
+  const enableVoice = () => recovering.current ? Promise.resolve() : prepareVoice(false);
   async function textMode() {
     const c = latest.current;
     sequence.current++; player.current?.cancel(); completed.current = null;

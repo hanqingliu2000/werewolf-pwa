@@ -2,6 +2,7 @@
 import { Check, EyeOff } from "lucide-react";
 import { IconButton } from "./components";
 import { PrivateAction } from "./private-action";
+import { WolfTeam } from "./wolf-team";
 import { roleNames, roleRules } from "./content";
 import { errorText } from "./api";
 import type { RoomController } from "./use-room";
@@ -31,5 +32,6 @@ export function PrivateTask({ controller: c }: { controller: RoomController }) {
     {view.phase !== "reveal" && <div className="waiting-note"><Check size={24} aria-hidden /><h3>{result || info.completed ? "行动已确认" : info.alive ? "等待当前窗口" : "已出局"}</h3>{summary && <p>{summary}</p>}{effect && <p className="action-effect">{effect}</p>}</div>}
     {!!info.reports?.length && <section className="private-records"><h3>本人查验记录</h3>{info.reports.map((r) => <div key={r.nightNo}><span>第 {r.nightNo} 夜</span><strong>{seat(r.targetId)}</strong><span>{r.alignment === "wolf" ? "狼人阵营" : "好人阵营"}</span></div>)}</section>}
     {!!info.wolfHistory?.length && <section className="private-records"><h3>历次刀口目标</h3>{info.wolfHistory.map((r) => <div key={r.nightNo}><span>第 {r.nightNo} 夜</span><strong>{r.targetId ? seat(r.targetId) : "空刀"}</strong></div>)}</section>}
+    <WolfTeam info={info} />
   </div><div className="privacy-close"><IconButton icon={EyeOff} label="收起私密信息" onClick={c.conceal} /></div></div>;
 }

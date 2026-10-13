@@ -3,7 +3,8 @@ import script from "./script.json";
 import { clipIds, NARRATION_VERSION, type ClipId } from "./plan";
 
 const record = z.object({ text: z.string(), sha256: z.string().regex(/^[a-f0-9]{64}$/), bytes: z.number().int().positive(), durationSeconds: z.number().positive().max(30) });
-const manifestSchema = z.object({ version: z.literal(NARRATION_VERSION), rulesVersion: z.literal(script.rulesVersion), clips: z.record(z.string(), record) });
+const manifestSchema = z.object({ version: z.literal(NARRATION_VERSION), rulesVersion: z.literal(script.rulesVersion), clips: z.record(z.string(), record),
+  rates: z.object({ "1.5": z.record(z.string(), record), "2": z.record(z.string(), record) }) });
 export class PlaybackError extends Error {
   constructor(public readonly code: "AUDIO_BLOCKED" | "AUDIO_ASSET" | "AUDIO_INTERRUPTED" | "AUDIO_TIMEOUT" | "AUDIO_VERSION" | "PLAYBACK_CANCELLED") { super(code); }
 }
@@ -11,7 +12,7 @@ export class PlaybackError extends Error {
 export class NarrationPlayer {
   private context: AudioContext | null = null;
   private gain: GainNode | null = null;
-  private buffers = new Map<ClipId, AudioBuffer>();
+  private buffers = new Map<string, AudioBuffer>();
   private source: AudioBufferSourceNode | null = null;
   private cancelCurrent: (() => void) | null = null;
   private loading: AbortController | null = null;
@@ -22,11 +23,11 @@ export class NarrationPlayer {
   constructor(private readonly interrupted: () => void, private readonly createContext = () => new AudioContext(),
     private readonly fetchAsset: typeof fetch = (input, init) => fetch(input, init)) {}
 
-  get ready() { return this.context?.state === "running" && this.buffers.size === clipIds.length && this.bankVersion === NARRATION_VERSION; }
+  get ready() { return this.context?.state === "running" && this.buffers.size === clipIds.length * 2 && this.bankVersion === NARRATION_VERSION; }
   setVolume(value: number) { this.volume = Math.max(0, Math.min(1, value)); if (this.gain) this.gain.gain.value = this.volume; }
   setRate(value: 1.5 | 2) {
     this.rate = value === 2 ? 2 : 1.5;
-    if (this.source) this.source.playbackRate.value = this.rate;
+    // A new rate applies at the next clip boundary, never by changing pitch mid-word.
   }
 
   // Called directly from a click: resume is invoked before any network await.
@@ -39,7 +40,11 @@ export class NarrationPlayer {
       };
     }
     const context = this.context;
-    try { await context.resume(); } catch { throw new PlaybackError("AUDIO_BLOCKED"); }
+    let timerResume: ReturnType<typeof setTimeout> | undefined;
+    try { await Promise.race([context.resume(), new Promise<never>((_, reject) => {
+      timerResume = setTimeout(() => reject(new PlaybackError("AUDIO_TIMEOUT")), 2000);
+    })]); } catch (error) { throw error instanceof PlaybackError ? error : new PlaybackError("AUDIO_BLOCKED"); }
+    finally { clearTimeout(timerResume); }
     if (context.state !== "running") throw new PlaybackError("AUDIO_BLOCKED");
     if (this.ready) return;
     this.loading?.abort(); const controller = new AbortController(); this.loading = controller;
@@ -49,13 +54,15 @@ export class NarrationPlayer {
       const response = await this.fetchAsset(`${root}/manifest.json`, { signal: controller.signal, cache: "no-cache" });
       if (!response.ok) throw new PlaybackError("AUDIO_ASSET");
       const manifest = manifestSchema.parse(await response.json());
-      const remaining = [...clipIds]; const decoded = new Map<ClipId, AudioBuffer>();
+      const remaining = clipIds.flatMap((id) => ([1.5, 2] as const).map((rate) => ({ id, rate })));
+      const decoded = new Map<string, AudioBuffer>();
       await Promise.all(Array.from({ length: 4 }, async () => {
-        let id: ClipId | undefined;
-        while ((id = remaining.shift()) !== undefined) {
-          const entry = manifest.clips[id];
+        let item: { id: ClipId; rate: 1.5 | 2 } | undefined;
+        while ((item = remaining.shift()) !== undefined) {
+          const { id, rate } = item;
+          const entry = manifest.rates[String(rate) as "1.5" | "2"][id];
           if (!entry || entry.text !== script.clips[id]) throw new PlaybackError("AUDIO_ASSET");
-          const asset = await this.fetchAsset(`${root}/${id}.mp3`, { signal: controller.signal });
+          const asset = await this.fetchAsset(`${root}/rates/${rate}/${id}.mp3`, { signal: controller.signal });
           if (!asset.ok) throw new PlaybackError("AUDIO_ASSET");
           const bytes = await asset.arrayBuffer();
           const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -63,7 +70,7 @@ export class NarrationPlayer {
           if (bytes.byteLength !== entry.bytes || hash !== entry.sha256) throw new PlaybackError("AUDIO_ASSET");
           const buffer = await context.decodeAudioData(bytes);
           if (buffer.duration < 0.25 || buffer.duration > 30 || Math.abs(buffer.duration - entry.durationSeconds) > 0.3) throw new PlaybackError("AUDIO_ASSET");
-          decoded.set(id, buffer);
+          decoded.set(`${id}:${rate}`, buffer);
         }
       }));
       if (controller.signal.aborted) throw new PlaybackError("PLAYBACK_CANCELLED");
@@ -82,12 +89,12 @@ export class NarrationPlayer {
     if (!this.ready) throw new PlaybackError("AUDIO_BLOCKED");
     for (const id of clips) {
       if (generation !== this.generation) throw new PlaybackError("PLAYBACK_CANCELLED");
-      const buffer = this.buffers.get(id);
+      const buffer = this.buffers.get(`${id}:${this.rate}`);
       if (!buffer) throw new PlaybackError("AUDIO_ASSET");
       caption?.(id);
       await new Promise<void>((resolve, reject) => {
         const source = this.context!.createBufferSource(); source.buffer = buffer; source.connect(this.gain!);
-        source.playbackRate.value = this.rate;
+        source.playbackRate.value = 1;
         this.source = source;
         const finish = (error?: PlaybackError) => {
           clearTimeout(timer); source.onended = null; source.disconnect();
@@ -105,6 +112,17 @@ export class NarrationPlayer {
     if (generation !== this.generation || !this.ready) throw new PlaybackError("PLAYBACK_CANCELLED");
   }
   cancel() { this.generation++; this.cancelCurrent?.(); }
+  abortPreparation() { this.loading?.abort(); }
+  async verifyClock() {
+    const context = this.context; const start = context?.currentTime;
+    await new Promise(resolve => setTimeout(resolve, 120));
+    if (!context || context !== this.context || context.state !== "running" || context.currentTime <= (start ?? 0)) throw new PlaybackError("AUDIO_TIMEOUT");
+  }
+  resetContext() {
+    this.cancel(); this.loading?.abort();
+    if (this.context) { this.context.onstatechange = null; void this.context.close().catch(() => undefined); }
+    this.context = null; this.gain = null;
+  }
   dispose() {
     this.cancel(); this.loading?.abort();
     if (this.context) { this.context.onstatechange = null; void this.context.close().catch(() => undefined); }

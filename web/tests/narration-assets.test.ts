@@ -37,4 +37,18 @@ describe("new static narration bank", () => {
       expect(clip.generation ?? manifest.generationDefaults).toEqual(voice.generation);
     }
   });
+  it("fingerprints both pitch-preserving rates without touching the original clips", () => {
+    const root = resolve(`public/audio/${script.version}`);
+    const manifest = JSON.parse(readFileSync(resolve(root, "manifest.json"), "utf8"));
+    expect(manifest.timeStretch).toMatchObject({ method: "FFmpeg atempo", preservesPitch: true, rates: [1.5, 2] });
+    for (const rate of [1.5, 2]) {
+      expect(Object.keys(manifest.rates[rate]).sort()).toEqual(Object.keys(script.clips).sort());
+      for (const [id, text] of Object.entries(script.clips)) {
+        const entry = manifest.rates[rate][id]; const bytes = readFileSync(resolve(root, `rates/${rate}/${id}.mp3`));
+        expect(entry.text).toBe(text); expect(entry.bytes).toBe(bytes.length);
+        expect(entry.sha256).toBe(createHash("sha256").update(bytes).digest("hex"));
+        expect(Math.abs(entry.durationSeconds - manifest.clips[id].durationSeconds / rate)).toBeLessThan(0.4);
+      }
+    }
+  });
 });

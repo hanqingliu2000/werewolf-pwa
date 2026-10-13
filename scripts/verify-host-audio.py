@@ -15,7 +15,7 @@ os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="Verify selected replacement clips")
-    parser.add_argument("--bank", choices=["host-zh-v1", "host-zh-v2", "host-zh-v3", "host-zh-v4", "host-zh-calm-pilot"], default="host-zh-v4")
+    parser.add_argument("--bank", choices=["host-zh-v1", "host-zh-v2", "host-zh-v3", "host-zh-v4", "host-zh-v5", "host-zh-calm-pilot"], default="host-zh-v5")
     parser.add_argument("--staged", action="store_true")
     parser.add_argument("--offline", action="store_true", help="Use only the pinned ASR model in the local cache")
     args = parser.parse_args()

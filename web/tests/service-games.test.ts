@@ -43,7 +43,11 @@ describe("complete persisted games", () => {
           }
           expect(f.state().game!.phase).toBe("night_close"); await done();
         }
-        expect(f.state().game!.phase).toBe("dawn"); await done();
+        expect(f.state().game!.phase).toBe("dawn");
+        if (f.state().game!.sheriffElection === "hands_prompt") {
+          await done(); await f.act({ type: "sheriff_speech" }); await done(); await f.act({ type: "sheriff_complete" });
+        }
+        await done();
         expect(f.state().narration!.pending).not.toBeNull(); await done();
         const wolf = f.state().game!.players.find((p) => p.alive && p.role === "werewolf")!;
         await f.act({ type: "day_draft", targetId: wolf.id }); await f.act({ type: "day_confirm", draftId: f.state().draftId! });
@@ -84,7 +88,11 @@ describe("complete persisted games", () => {
           expect(f.state().game!.phase).toBe("night_close");
           await f.act({ type: "cue_ack" });
         }
-        expect(f.state().game!.phase).toBe("dawn"); await f.act({ type: "cue_ack" });
+        expect(f.state().game!.phase).toBe("dawn");
+        if (f.state().game!.sheriffElection === "hands_prompt") {
+          await f.act({ type: "cue_ack" }); await f.act({ type: "sheriff_speech" }); await f.act({ type: "cue_ack" }); await f.act({ type: "sheriff_complete" });
+        }
+        await f.act({ type: "cue_ack" });
         const wolf = f.state().game!.players.find((p) => p.alive && p.role === "werewolf")!;
         await f.act({ type: "day_draft", targetId: wolf.id });
         const draftId = f.state().draftId!;

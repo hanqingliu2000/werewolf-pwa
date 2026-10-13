@@ -31,7 +31,8 @@ export function publicView(room: Room) {
     roomId: room.id, epochId: epochId(room), windowId: room.flowId, revision: room.publicRevision,
     config: room.config, phase: game?.phase ?? "lobby", nightNo: game?.nightNo ?? 0,
     nightRole: game?.nightRole ?? null, paused: game?.paused ?? false, pauseReason: room.pauseReason,
-    narration: { ...(room.narration ?? defaultNarration()), version: NARRATION_VERSION },
+    ...(game?.phase === "dawn" ? { sheriffElection: game.sheriffElection ?? null } : {}),
+    narration: { ...(room.narration ?? defaultNarration()), version: room.narration?.version ?? NARRATION_VERSION },
     window: game?.window ? { openedAt: game.window.openedAt, deadline: game.window.deadline,
       remainingMs: game.window.remainingMs, ...(game.window.waiting ? { waiting: true } : {}) } : null,
     players: room.members.map(({ id, seat, name, ready }) => ({ id, seat, name,
@@ -84,9 +85,10 @@ export function privateView(room: Room, member: Member) {
         : nightPreview && game!.witchPotions.save ? { wolfTargetId: game!.currentNight!.killTargetId } : {}),
     },
       action: active && !completed && (game!.witchPotions.save || game!.witchPotions.poison) ? "witch" : null } : {}),
+    ...(own?.role === "werewolf" ? { teammates: game!.players.filter((p) => p.role === "werewolf")
+      .map((p) => ({ id: p.id, seat: p.seat, name: p.name, alive: !events.dead.has(p.id) })) } : {}),
     ...(own?.role === "werewolf" && visibleAlive ? {
       wolfHistory: game!.nights.filter((night) => night.killLocked).map((night) => ({ nightNo: night.number, targetId: night.killTargetId })),
-      teammates: game!.players.filter((p) => p.role === "werewolf").map((p) => ({ id: p.id, seat: p.seat, name: p.name })),
       ...(active || nightPreview ? { wolves: { proposals: game!.currentNight!.wolfProposals,
         discussionPaused: false,
         confirmations: game!.currentNight!.wolfConfirmations, locked: game!.currentNight!.killLocked,
@@ -102,7 +104,8 @@ export function hostView(room: Room, member: Member) {
       && room.members.every((p) => p.ready),
     canBeginNight: room.game?.phase === "reveal" && !room.game.paused && !room.narration?.pending,
     dayDraft: room.game?.phase === "day" ? room.game.dayDraft : null, draftId: room.draftId,
-    cueId: room.game && ["night_open", "night_close", "dawn"].includes(room.game.phase) ? room.flowId : null,
+    cueId: room.game && ["night_open", "night_close", "dawn"].includes(room.game.phase)
+      && !(room.game.phase === "dawn" && ["hands", "speech"].includes(room.game.sheriffElection ?? "")) ? room.flowId : null,
   };
 }
 

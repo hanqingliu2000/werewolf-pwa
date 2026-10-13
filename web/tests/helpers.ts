@@ -59,7 +59,7 @@ function seerTarget(game: Game, actor: string, choices: NightChoices) {
     ?? game.players.find((p) => p.alive && p.id !== actor)!.id;
 }
 
-export function nightToDawn(source: Game, choices: NightChoices = {}): Game {
+export function nightToDawn(source: Game, choices: NightChoices = {}, election = true): Game {
   let game = source;
   while (game.phase === "night_open") {
     game = open(game);
@@ -72,6 +72,12 @@ export function nightToDawn(source: Game, choices: NightChoices = {}): Game {
       if (role === "seer") game = command(game, { type: "seer", actorId: actor, targetId: seerTarget(game, actor, choices) });
     }
     game = finish(game);
+  }
+  if (election && game.sheriffElection === "hands_prompt") {
+    game = command(game, { type: "election_prompt_done", actorId: game.hostId });
+    game = command(game, { type: "sheriff_speech", actorId: game.hostId });
+    game = command(game, { type: "election_prompt_done", actorId: game.hostId });
+    game = command(game, { type: "sheriff_complete", actorId: game.hostId });
   }
   return game;
 }

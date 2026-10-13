@@ -6,6 +6,7 @@ import { ArrowRight, BookOpen, Copy, Eye, History, LogOut, Radio, Settings, Shar
 import { useRouter } from "next/navigation";
 import { useRoom } from "./use-room";
 import { useNarration } from "./use-narration";
+import { useWakeLock } from "./use-wake-lock";
 import { Brand, ConfigEditor, IconButton, Modal, NextButton, RuleList, SeatGrid, WindowCountdown } from "./components";
 import { HostControls } from "./host-controls";
 import { VoiceSpeedToggle } from "./voice-controls";
@@ -25,6 +26,7 @@ function Invitation({ roomId }: { roomId: string }) {
 }
 export function RoomScreen({ roomId }: { roomId: string }) {
   const c = useRoom(roomId); const voice = useNarration(c); const router = useRouter(); const v = c.view;
+  const wakeUnavailable = useWakeLock(!!v?.self.isHost && c.leader && voice.mode === "voice" && v.phase !== "end");
   const [pane, setPane] = useState<"rules" | "invite" | "rename" | "config" | "history" | "roster" | null>(null);
   const [name, setName] = useState(""); const [config, setConfig] = useState<RuleConfig>(preset(8));
   const [history, setHistory] = useState<{ gameId: string; winner: string | null; aborted: boolean }[]>([]);
@@ -34,7 +36,7 @@ export function RoomScreen({ roomId }: { roomId: string }) {
   const own = v.players.find((p) => p.id === v.self.playerId)!;
   const isReady = "ready" in own && own.ready;
   const seat = (id: string) => `${v.players.find((p) => p.id === id)?.seat ?? "?"} 号`;
-  const cue = v.paused ? "对局已暂停" : v.narration.pending ? "公共公告" : v.nightRole ? `${roleNames[v.nightRole]}${v.phase === "night_close" ? "请闭眼" : v.phase === "night_open" ? "请睁眼" : "行动窗口"}` : phaseNames[v.phase];
+  const cue = v.paused ? v.pauseReason === "host_unavailable" ? "正在恢复主持" : "对局已暂停" : v.sheriffElection && v.sheriffElection !== "complete" ? "警长竞选" : v.narration.pending ? "公共公告" : v.nightRole ? `${roleNames[v.nightRole]}${v.phase === "night_close" ? "请闭眼" : v.phase === "night_open" ? "请睁眼" : "行动窗口"}` : phaseNames[v.phase];
   const blocked = c.busy || !!c.pending;
   async function openHistory() { try { const data = await request<{ games: typeof history }>(`rooms/${roomId}/recaps`); setHistory(data.games); setPane("history"); } catch (e) { c.setError(e); } }
   return <main className={`room-page ${v.phase === "lobby" ? "is-lobby" : ""}`}><Brand back="/" /><div className="room-top"><div><span className="eyebrow">THE TABLE / {v.phase === "lobby" ? "ASSEMBLE" : `ROUND ${v.nightNo || "00"}`}</span><h1>{v.phase === "lobby" ? "入席，等夜来" : v.phase === "end" ? winnerName(v.winner, v.aborted) : "这一桌"}</h1></div><div className="room-code"><span>房间号</span><strong>{roomId}</strong><IconButton icon={Share2} label="邀请朋友" onClick={() => setPane("invite")} /></div></div>
@@ -48,6 +50,8 @@ export function RoomScreen({ roomId }: { roomId: string }) {
       </div><div className="section-heading"><h2>这一桌的人</h2><span>{own.seat} 号 · 本人<IconButton icon={Users} label="完整名单" onClick={() => setPane("roster")} /></span></div><SeatGrid players={v.players} ownId={own.id} />
       {v.self.isHost && <button className="button secondary full-width host-entry" onClick={() => void c.showHost()}><Radio size={18} aria-hidden />主持控制</button>}
       {v.self.isHost && voice.mode === "voice" && <div className="voice-status" role="status"><Radio size={17} aria-hidden /><span>{voice.status === "playing" ? voice.caption : voice.problem ? "播报中断，请打开主持控制" : v.paused ? "对局已暂停" : "语音主持"}</span><VoiceSpeedToggle voice={voice} /></div>}
+      {wakeUnavailable && <p className="muted" role="status">自动保持亮屏不可用，请留意屏幕锁定。</p>}
+      {v.self.isHost && !v.paused && (v.sheriffElection === "hands" || v.sheriffElection === "speech") && <NextButton disabled={blocked || !c.leader} onClick={() => void c.send({ type: v.sheriffElection === "hands" ? "sheriff_speech" : "sheriff_complete" })}>{v.sheriffElection === "hands" ? "举手结束，开始竞选" : "竞选完成，公布昨夜结果"}</NextButton>}
       </>}
     </section><aside className="room-sidebar"><div className="section-heading"><h2>本局配置</h2><IconButton icon={BookOpen} label="公开规则" onClick={() => setPane("rules")} /></div><div className="config-summary"><div><span>胜负规则</span><strong>{v.config.winMode === "edge" ? "屠边" : "人数胜负"}</strong></div>{Object.entries(v.config.roles).filter(([, n]) => n > 0).map(([role, n]) => <div key={role}><span>{roleNames[role as keyof typeof roleNames]}</span><strong>× {n}</strong></div>)}</div>
       {v.phase === "lobby" && v.self.isHost && <button className="text-link" onClick={() => { setConfig(v.config); setPane("config"); }}><Settings size={16} aria-hidden />修改配置</button>}

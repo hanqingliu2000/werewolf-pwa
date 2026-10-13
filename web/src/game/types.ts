@@ -47,6 +47,7 @@ export interface Game {
   nightRole: NightRole | null;
   window: Window | null;
   paused: boolean;
+  sheriffElection?: "hands_prompt" | "hands" | "speech_prompt" | "speech" | "complete";
   wolfDiscussionPaused?: boolean;
   currentNight: Night | null;
   nights: Night[];

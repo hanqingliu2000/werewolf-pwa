@@ -1,5 +1,5 @@
 {
-  "version": "host-zh-v4",
+  "version": "host-zh-v5",
   "rulesVersion": "werewolf-web-v1",
   "speaker": "Uncle_Fu",
   "language": "Chinese",
@@ -20,6 +20,9 @@
     "seer_action": "请选择查验目标。",
     "seer_close": "预言家请闭眼。",
     "dawn": "天亮了，所有玩家请睁眼。",
+    "sheriff_hands": "请保持闭眼。竞选警长的玩家请举手。",
+    "sheriff_speech": "所有玩家请睁眼。竞选玩家请依次发言，随后进行警长投票。",
+    "first_result": "现在公布昨夜结果。",
     "no_death": "昨夜是平安夜。",
     "death_list": "昨夜出局的玩家是：",
     "hunter_identity": "身份为猎人。",

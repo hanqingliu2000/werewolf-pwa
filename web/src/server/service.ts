@@ -12,7 +12,7 @@ export const RETENTION_MS = 24 * 60 * 60 * 1000;
 export const hashSession = (token: string) => createHash("sha256").update(token).digest("hex");
 export const mintSession = () => randomBytes(32).toString("base64url");
 const fingerprint = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex");
-const hostOperations = new Set(["configure", "kick", "start", "begin_night", "cue_ack", "pause", "resume", "abort", "restart", "day_draft", "day_confirm", "day_publish", "narration_mode", "announcement_done", "action_prompt"]);
+const hostOperations = new Set(["configure", "kick", "start", "begin_night", "cue_ack", "pause", "resume", "abort", "restart", "day_draft", "day_confirm", "day_publish", "narration_mode", "announcement_done", "action_prompt", "sheriff_speech", "sheriff_complete"]);
 const lobbyOperations = new Set(["ready", "configure", "seat", "rename", "kick", "leave", "start"]);
 
 export class RoomService {
@@ -122,7 +122,7 @@ export class RoomService {
       else if (before.game && !room.game) room.narration.pending = { id: randomUUID(), kind: "new_lobby" };
     }
     const shape = (r: Room) => [epochId(r), r.game?.phase, r.game?.nightRole, r.game?.nightNo, r.game?.paused,
-      r.narration?.mode ?? "text", r.narration?.pending?.id, r.narration?.version];
+      r.narration?.mode ?? "text", r.narration?.pending?.id, r.narration?.version, r.game?.sheriffElection];
     if (JSON.stringify(shape(room)) !== JSON.stringify(shape(before))) {
       room.flowId = randomUUID();
       if (epochId(room) !== epochId(before) || room.game?.nightNo !== before.game?.nightNo
@@ -147,6 +147,13 @@ export class RoomService {
       game.wolfDiscussionPaused = false;
       game.window.waiting = true;
       game.window.remainingMs = null;
+      room.pauseReason = null;
+    }
+    if (game.paused && room.pauseReason === "host_unavailable" && room.hostAvailable && now - room.heartbeatAt < 10_000
+      && (room.narration?.mode !== "voice" || room.narration.version === NARRATION_VERSION)) {
+      // System recovery preserves the frozen remainder; manual resume retains its existing grace.
+      game.paused = false;
+      if (game.window) { game.window.deadline = now + (game.window.remainingMs ?? 0); game.window.remainingMs = null; }
       room.pauseReason = null;
     }
     if (game.paused) return room;
@@ -294,7 +301,10 @@ export class RoomService {
           requireRule(op.version === NARRATION_VERSION, "STALE_AUDIO");
           requireRule(op.cueId === room.flowId, "STALE_CUE");
         }
-        const type = ({ night_open: "open_window", night_close: "finish_role", dawn: "publish_dawn" } as const)[room.game.phase as "night_open" | "night_close" | "dawn"];
+        const election = room.game.phase === "dawn" ? room.game.sheriffElection : undefined;
+        requireRule(election !== "hands" && election !== "speech", "ELECTION_PENDING");
+        const type = election === "hands_prompt" || election === "speech_prompt" ? "election_prompt_done"
+          : ({ night_open: "open_window", night_close: "finish_role", dawn: "publish_dawn" } as const)[room.game.phase as "night_open" | "night_close" | "dawn"];
         requireRule(type, "PHASE_MISMATCH");
         command = { type, actorId: member!.id };
       } else if (["wolf_confirm", "day_confirm", "day_publish"].includes(op.type)) {

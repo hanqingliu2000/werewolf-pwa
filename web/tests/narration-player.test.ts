@@ -21,9 +21,11 @@ class Context {
 }
 const bytes = new Uint8Array([1, 2, 3, 4]);
 function bank() {
-  return { version: script.version, rulesVersion: script.rulesVersion, clips: Object.fromEntries(clipIds.map((id) => [id, {
+  const clips = Object.fromEntries(clipIds.map((id) => [id, {
     text: script.clips[id], sha256: createHash("sha256").update(bytes).digest("hex"), bytes: bytes.length, durationSeconds: 1,
-  }])) };
+  }]));
+  return { version: script.version, rulesVersion: script.rulesVersion, clips,
+    rates: { "1.5": structuredClone(clips), "2": structuredClone(clips) } };
 }
 function setup() {
   const context = new Context(); const interrupted = vi.fn();
@@ -37,20 +39,20 @@ describe("verified public audio player", () => {
   it("unlocks synchronously, verifies the complete bank, and sequences actual ended events", async () => {
     const f = setup(); const preparation = f.player.prepare();
     expect(f.context.state).toBe("running"); await preparation;
-    expect(f.player.ready).toBe(true); expect(f.fetcher).toHaveBeenCalledTimes(clipIds.length + 1);
+    expect(f.player.ready).toBe(true); expect(f.fetcher).toHaveBeenCalledTimes(clipIds.length * 2 + 1);
     f.player.setVolume(0.4); expect(f.context.gain.gain.value).toBe(0.4);
     f.player.setVolume(5); expect(f.context.gain.gain.value).toBe(1);
     const captions: string[] = []; const done = vi.fn();
     const playback = f.player.play(["guard_open", "guard_close"], (id) => captions.push(id)).then(done);
     expect(done).not.toHaveBeenCalled(); expect(f.context.sources).toHaveLength(1);
-    expect(f.context.sources[0]!.playbackRate.value).toBe(1.5);
-    f.player.setRate(2); expect(f.context.sources[0]!.playbackRate.value).toBe(2);
+    expect(f.context.sources[0]!.playbackRate.value).toBe(1);
+    f.player.setRate(2); expect(f.context.sources[0]!.playbackRate.value).toBe(1);
     f.context.sources[0]!.finish(); await Promise.resolve();
     expect(f.context.sources).toHaveLength(2); expect(done).not.toHaveBeenCalled();
-    expect(f.context.sources[1]!.playbackRate.value).toBe(2);
+    expect(f.context.sources[1]!.playbackRate.value).toBe(1);
     f.context.sources[1]!.finish(); await playback;
     expect(captions).toEqual(["guard_open", "guard_close"]); expect(done).toHaveBeenCalledTimes(1);
-    await f.player.prepare(); expect(f.fetcher).toHaveBeenCalledTimes(clipIds.length + 1);
+    await f.player.prepare(); expect(f.fetcher).toHaveBeenCalledTimes(clipIds.length * 2 + 1);
     f.player.dispose(); expect(f.player.ready).toBe(false); expect(f.interrupted).not.toHaveBeenCalled();
   });
   it("cancels without completing or advancing into an obsolete queue", async () => {
@@ -77,6 +79,22 @@ describe("verified public audio player", () => {
     vi.spyOn(f.context, "resume").mockResolvedValueOnce();
     await expect(f.player.prepare()).rejects.toThrow("AUDIO_BLOCKED"); f.player.dispose();
   });
+  it("bounds a hung resume and rebuilds only the context while retaining verified buffers", async () => {
+    const f = setup(); await f.player.prepare(); const requests = f.fetcher.mock.calls.length;
+    vi.spyOn(f.context, "resume").mockImplementationOnce(() => new Promise(() => undefined));
+    vi.useFakeTimers(); const stalled = expect(f.player.prepare()).rejects.toThrow("AUDIO_TIMEOUT");
+    await vi.advanceTimersByTimeAsync(2000); await stalled;
+    f.player.resetContext(); f.context.state = "suspended";
+    await f.player.prepare(); expect(f.player.ready).toBe(true); expect(f.fetcher.mock.calls).toHaveLength(requests);
+    f.player.dispose();
+  });
+  it("checks an advancing audio clock instead of trusting running state alone", async () => {
+    const f = setup(); await f.player.prepare();
+    Object.defineProperty(f.context, "currentTime", { configurable: true, value: 0 });
+    await expect(f.player.verifyClock()).rejects.toThrow("AUDIO_TIMEOUT");
+    Object.defineProperty(f.context, "currentTime", { get: () => performance.now() / 1000 });
+    await f.player.verifyClock(); f.player.dispose();
+  });
   it.each(["missing", "version", "text", "bytes", "hash", "decode", "network", "http"]) ("rejects %s assets instead of quietly skipping them", async (failure) => {
     const f = setup(); const manifest = bank();
     if (failure === "missing") delete manifest.clips.sample;
@@ -85,6 +103,7 @@ describe("verified public audio player", () => {
     if (failure === "bytes") manifest.clips.sample!.bytes = 100;
     if (failure === "hash") manifest.clips.sample!.sha256 = "0".repeat(64);
     if (failure === "decode") vi.spyOn(f.context, "decodeAudioData").mockResolvedValue({ duration: 50 });
+    manifest.rates = { "1.5": structuredClone(manifest.clips), "2": structuredClone(manifest.clips) };
     f.fetcher.mockImplementation(async (url) => {
       if (failure === "network") throw new Error("Network failure");
       if (failure === "http") return new Response(null, { status: 404 });

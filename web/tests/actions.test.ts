@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { actorForRole, seerReports, witchKnowledge } from "../src/game/engine";
-import { command, day, deepFreeze, finish, open, roleId, started, toRole, vote, wolves } from "./helpers";
+import { command, day, deepFreeze, finish, nightToDawn, open, roleId, started, toRole, vote, wolves } from "./helpers";
 
 describe("role actions and confirmation", () => {
   it("rejects duplicate first-night starts and late legacy identity requests", () => {
@@ -143,7 +143,7 @@ describe("witch and seer", () => {
     const copy = seerReports(game, "p3"); copy.pop();
     expect(seerReports(game, "p3")).toHaveLength(1);
     expect(() => seerReports(game, "p1")).toThrow("FORBIDDEN");
-    game = command(finish(game), { type: "publish_dawn", actorId: "p1" });
+    game = command(nightToDawn(finish(game)), { type: "publish_dawn", actorId: "p1" });
     game = toRole(vote(game, null), "seer");
     game = command(game, { type: "seer", actorId: "p3", targetId: "p4" });
     expect(seerReports(game, "p3")).toHaveLength(2);

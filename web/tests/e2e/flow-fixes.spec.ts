@@ -17,7 +17,7 @@ for (const role of ["guard", "seer", "witch", "werewolf", "hunter"] as const) te
   await expect(panel).not.toBeVisible();
   api.state.narration.promptedCueId = api.state.windowId; api.personal.previewAction = role;
   if (role === "werewolf") {
-    api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
+    api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1", alive: true }];
     api.personal.wolves = { proposals: {}, confirmations: [], locked: false, discussionPaused: false, consensusId: "votes" };
   }
   await expect(panel).toBeVisible();
@@ -82,7 +82,7 @@ for (const role of ["guard", "seer", "witch", "werewolf", "hunter"] as const) te
   api.personal.role = role; api.personal.action = role === "hunter" ? null : role;
   api.personal.hunterReaction = role === "hunter";
   if (role === "werewolf") {
-    api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
+    api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1", alive: true }];
     api.personal.wolves = { proposals: { p1: "p2" }, confirmations: [], locked: false, consensusId: "votes", discussionPaused: false };
   }
   const original = api.command;
@@ -193,11 +193,100 @@ async function inViewport(locator: ReturnType<Page["locator"]>) {
   })).toBe(true);
 }
 
+test("wolf teammates stay private, readable and do not displace action controls", async ({ page }, info) => {
+  const api = await mockRoom(page); api.state.nightRole = "werewolf";
+  api.personal.role = "werewolf"; api.personal.action = "werewolf";
+  api.personal.teammates = [1, 3, 4, 5].map(seat => ({ id: `p${seat}`, seat, name: `玩家${seat}`, alive: seat !== 5 }));
+  api.personal.wolves = { proposals: {}, confirmations: [], discussionPaused: false, locked: false, consensusId: crypto.randomUUID() };
+  await page.goto("/r/ABCDEF12"); const panel = page.getByRole("dialog", { name: "本人私密视角" });
+  await expect(panel).toBeVisible(); await inViewport(panel.getByRole("button", { name: "确认投票", exact: true }));
+  await panel.getByRole("button", { name: "狼人队友", exact: true }).click();
+  const team = panel.getByRole("region", { name: "狼人队友" });
+  await expect(team.getByText("玩家3", { exact: true })).toBeVisible(); await expect(team.getByText("已出局", { exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("wolf-team.png") });
+  await panel.getByRole("button", { name: "关闭详情", exact: true }).click();
+  await inViewport(panel.getByRole("button", { name: "确认投票", exact: true }));
+  expect(api.errors).toEqual([]);
+});
+
+test("election controls finish physical stages without offering premature death publication", async ({ page }, info) => {
+  const api = await mockRoom(page); api.state.self.isHost = true; api.state.phase = "dawn"; api.state.nightRole = null;
+  api.state.window = null; api.state.sheriffElection = "hands"; api.personal.action = null;
+  const original = api.command;
+  api.command = async (route, input) => {
+    if (input.operation.type === "sheriff_speech") api.state.sheriffElection = "speech";
+    if (input.operation.type === "sheriff_complete") { api.state.sheriffElection = "complete"; api.host.cueId = "dawn-cue"; }
+    return original(route, input);
+  };
+  await page.goto("/r/ABCDEF12");
+  await expect(page.getByRole("button", { name: "举手结束，开始竞选", exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("sheriff-election.png") });
+  await page.getByRole("button", { name: "举手结束，开始竞选", exact: true }).click();
+  await page.getByRole("button", { name: "竞选完成，公布昨夜结果", exact: true }).click();
+  expect(api.commands.map(c => c.operation.type)).toEqual(["sheriff_speech", "sheriff_complete"]);
+  expect(api.errors).toEqual([]);
+});
+
+test("host wake lock is reacquired on foreground and released when the game ends", async ({ page }) => {
+  await page.addInitScript(() => {
+    const state = window as unknown as { wakeRequests: number; wakeReleases: number }; state.wakeRequests = 0; state.wakeReleases = 0;
+    Object.defineProperty(navigator, "wakeLock", { configurable: true, value: { async request() {
+      state.wakeRequests++; const lock = new EventTarget() as EventTarget & { released: boolean; release: () => Promise<void> }; lock.released = false;
+      lock.release = async () => { if (!lock.released) { lock.released = true; state.wakeReleases++; lock.dispatchEvent(new Event("release")); } };
+      return lock;
+    } } });
+  });
+  const api = await mockRoom(page); api.state.self.isHost = true; api.state.phase = "end"; api.state.nightRole = null; api.state.window = null; api.personal.action = null;
+  await page.goto("/r/ABCDEF12"); await page.getByRole("button", { name: "主持控制", exact: true }).click();
+  const controls = page.getByRole("dialog", { name: "主持控制" }); await controls.getByRole("button", { name: "语音", exact: true }).click();
+  await expect(controls.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪");
+  api.state.phase = "day"; api.state.windowId = "wake-day";
+  await expect.poll(() => page.evaluate(() => (window as unknown as { wakeRequests: number }).wakeRequests)).toBe(1);
+  await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" }); document.dispatchEvent(new Event("visibilitychange")); });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { wakeReleases: number }).wakeReleases)).toBe(1);
+  await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" }); document.dispatchEvent(new Event("visibilitychange")); });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { wakeRequests: number }).wakeRequests)).toBe(2);
+  api.state.phase = "end"; api.state.windowId = "wake-end";
+  await expect.poll(() => page.evaluate(() => (window as unknown as { wakeReleases: number }).wakeReleases)).toBe(2);
+  expect(api.errors).toEqual([]);
+});
+
+for (const manual of [false, true]) test(`real audio automatically recovers on foreground, manual pause=${manual}`, async ({ page }, info) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "sendBeacon", { configurable: true, value: () => false });
+    const Native = window.AudioContext;
+    window.AudioContext = class extends Native { constructor() { super(); (window as unknown as { hostAudio: AudioContext }).hostAudio = this; } };
+  });
+  const api = await mockRoom(page); api.state.self.isHost = true; api.state.phase = "end"; api.state.nightRole = null; api.state.window = null; api.personal.action = null;
+  let healthy = 0;
+  await page.route("**/api/v2/rooms/ABCDEF12/heartbeat", async route => {
+    const input = route.request().postDataJSON() as { foreground: boolean; audioReady: boolean };
+    if (!input.foreground || !input.audioReady) { if (api.state.phase !== "end") { api.state.paused = true; api.state.pauseReason = manual ? "manual" : "host_unavailable"; } }
+    else { healthy++; if (api.state.pauseReason === "host_unavailable") { api.state.paused = false; api.state.pauseReason = null; } }
+    await route.fulfill({ json: { ok: true, paused: api.state.paused } });
+  });
+  await page.goto("/r/ABCDEF12"); await page.getByRole("button", { name: "主持控制", exact: true }).click();
+  const controls = page.getByRole("dialog", { name: "主持控制" });
+  await controls.getByRole("button", { name: "语音", exact: true }).click();
+  await expect(controls.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+  api.state.phase = "day"; api.state.windowId = "day-window";
+  if (manual) { api.state.paused = true; api.state.pauseReason = "manual"; }
+  const before = healthy;
+  await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" }); document.dispatchEvent(new Event("visibilitychange")); });
+  await page.evaluate(() => (window as unknown as { hostAudio: AudioContext }).hostAudio.suspend());
+  await expect.poll(() => api.state.paused).toBe(true);
+  await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" }); document.dispatchEvent(new Event("visibilitychange")); });
+  await expect(controls.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+  await expect.poll(() => healthy).toBeGreaterThan(before);
+  expect(api.state.paused).toBe(manual); expect(api.commands.some(c => c.operation.type === "resume")).toBe(false);
+  await page.screenshot({ path: info.outputPath(`audio-recovery-${manual}.png`) }); expect(api.errors).toEqual([]);
+});
+
 test("wolves can confirm split votes, inspect history, and see the winning rather than their own target", async ({ page }) => {
   const api = await mockRoom(page); api.state.nightRole = "werewolf"; api.state.nightNo = 3;
   api.state.window = { openedAt: Date.now(), deadline: Date.now() + 30_000, remainingMs: null };
   api.personal.role = "werewolf"; api.personal.action = "werewolf";
-  api.personal.teammates = api.state.players.slice(0, 2);
+  api.personal.teammates = api.state.players.slice(0, 2).map(p => ({ ...p, alive: !("alive" in p) || p.alive }));
   api.personal.wolves = { proposals: { p1: "p8", p2: "p9" }, confirmations: [], locked: false, consensusId: "votes", discussionPaused: false };
   api.personal.wolfHistory = [{ nightNo: 1, targetId: "p7" }, { nightNo: 2, targetId: null }];
   await page.goto("/r/ABCDEF12"); const panel = page.getByRole("dialog", { name: "本人私密视角" });
@@ -233,7 +322,7 @@ test("all five action roles fit every target and control without scrolling", asy
     api.personal.wolves = undefined; api.personal.teammates = undefined; api.personal.reports = [];
     if (role === "werewolf") {
       const wolves = api.state.players.slice(0, count === 12 ? 4 : 2);
-      api.personal.teammates = wolves;
+      api.personal.teammates = wolves.map(p => ({ ...p, alive: !("alive" in p) || p.alive }));
       api.personal.wolves = { proposals: Object.fromEntries(wolves.map((p) => [p.id, "p8"])), confirmations: [], locked: false, consensusId: "consensus", discussionPaused: false };
     }
     if (role === "seer") api.personal.reports = Array.from({ length: 10 }, (_, i) => ({ nightNo: i + 1, targetId: "p2", alignment: "good" }));
@@ -289,7 +378,7 @@ test("seer, guard, hunter and wolf waiting keep usable pinned actions", async ({
   await expect(panel.getByRole("button", { name: "确认行动", exact: true })).toBeEnabled();
   await page.keyboard.press("Escape"); api.state.nightNo = 3; api.state.phase = "night_action"; api.state.nightRole = "werewolf";
   api.state.windowId = "wolf-waiting"; api.state.paused = false; api.state.window!.waiting = true; api.personal.role = "werewolf"; api.personal.alive = true; api.personal.hunterReaction = false;
-  api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
+  api.personal.teammates = [{ id: "p1", seat: 1, name: "玩家1", alive: true }];
   api.personal.wolves = { proposals: { p1: "p2" }, confirmations: [], locked: false, consensusId: "consensus", discussionPaused: false };
   await expect(panel).toBeVisible(); await expect(panel.getByText("等待操作", { exact: true })).toBeVisible();
   await expect(panel.getByRole("button", { name: "确认投票", exact: true })).toBeEnabled();
@@ -329,13 +418,11 @@ for (const { completion, unknown } of [{ completion: "cue_ack", unknown: false }
   const receiptRetry = unknown ? controls.getByRole("button", { name: "重试原请求", exact: true }) : retry;
   await expect(receiptRetry).toBeVisible({ timeout: 30_000 });
   const starts = await page.evaluate(() => (window as unknown as { audioStarts: number }).audioStarts);
-  if (completion === "cue_ack" && !unknown) { await page.keyboard.press("Escape"); await page.getByRole("button", { name: "重试播报确认", exact: true }).click(); }
-  else await receiptRetry.click();
+  // The original envelope now retries automatically, without a confirmation click.
   await expect(receiptRetry).not.toBeVisible();
   await expect.poll(() => api.commands.filter((c) => c.operation.type === completion).length).toBe(2);
   const receipts = api.commands.filter((c) => c.operation.type === completion); expect(receipts[1]).toEqual(receipts[0]);
   expect(await page.evaluate(() => (window as unknown as { audioStarts: number }).audioStarts)).toBe(starts);
-  if (completion === "cue_ack" && !unknown) await page.getByRole("button", { name: "主持控制", exact: true }).click();
   api.command = async (route, input) => input.operation.type === completion
     ? route.fulfill({ status: 409, json: { error: { code: "WRITE_CONFLICT" } } }) : original(route, input);
   api.state.window = null; api.state.windowId = "second-audio-window";

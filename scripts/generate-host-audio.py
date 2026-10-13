@@ -18,7 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="Comma-separated clip ids; omit for the complete bank")
     parser.add_argument("--force", action="store_true", help="Regenerate only the selected clips")
-    parser.add_argument("--reuse", choices=["host-zh-v2", "host-zh-v3"], help="Reuse unchanged verified clips from a published bank")
+    parser.add_argument("--reuse", choices=["host-zh-v2", "host-zh-v3", "host-zh-v4"], help="Reuse unchanged verified clips from a published bank")
     parser.add_argument("--offline", action="store_true", help="Use only the pinned model in the local cache")
     parser.add_argument("--seed-offset", type=int, default=0)
     parser.add_argument("--publish", action="store_true", help="Promote the fully verified staging bank; does not synthesize")
@@ -40,6 +40,14 @@ def main():
             reviewed = report["clips"].get(key, {})
             if entry["text"] != text or actual != entry["sha256"] or reviewed.get("sha256") != actual or reviewed.get("peakDb", 0) >= 0:
                 raise ValueError(f"Unverified clip: {key}")
+        for rate in ("1.5", "2"):
+            records = manifest.get("rates", {}).get(rate, {})
+            if set(records) != set(script["clips"]):
+                raise ValueError("Run prepare-audio-rates.py before publishing")
+            for key, entry in records.items():
+                asset = destination / "rates" / rate / f"{key}.mp3"
+                if entry["text"] != script["clips"][key] or entry["bytes"] != asset.stat().st_size or entry["sha256"] != hashlib.sha256(asset.read_bytes()).hexdigest():
+                    raise ValueError(f"Unverified rate variant: {rate}/{key}")
         published = ROOT / f"web/public/audio/{voice['version']}"
         if published.exists():
             raise ValueError("Published versions are immutable; increment the version instead")

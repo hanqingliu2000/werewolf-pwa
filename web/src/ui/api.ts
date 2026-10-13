@@ -34,6 +34,7 @@ const messages: Record<string, string> = {
   NETWORK_UNKNOWN: "网络未确认结果，请重试原请求", INTERNAL_ERROR: "服务暂时不可用，请稍后重试",
   SEAT_TAKEN: "座位已被占用", SEATS_EXCEED_CAPACITY: "当前座位超出了新人数", ACTOR_ELIMINATED: "本人已经出局",
   ANNOUNCEMENT_PENDING: "公开公告尚未完成", STALE_CUE: "播报阶段已更新，请重新确认",
+  ELECTION_PENDING: "请先完成警长竞选环节",
   AUDIO_TRIAL_REQUIRED: "请完成试音并确认听清", PAUSE_BEFORE_MODE_CHANGE: "请先暂停对局，再切换主持方式",
   STALE_AUDIO: "播报资源已更新，请刷新页面后启用声音",
   ORIGIN_REJECTED: "请求来源与当前网址不一致", ORIGIN_NOT_CONFIGURED: "当前网址尚未配置",

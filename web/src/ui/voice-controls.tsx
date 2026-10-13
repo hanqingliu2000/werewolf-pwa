@@ -10,7 +10,7 @@ const failures: Record<string, string> = {
 const statuses = { idle: "声音未启用", loading: "正在准备声音", testing: "正在试音", ready: "声音就绪", playing: "正在播报", failed: "声音不可用" };
 export function VoiceSpeedToggle({ voice }: { voice: VoiceController }) {
   return <button className="button secondary voice-speed-toggle" aria-label="二倍速" aria-pressed={voice.rate === 2}
-    title={voice.rate === 2 ? "恢复1.5倍语速" : "切换2倍语速"}
+    title={voice.rate === 2 ? "恢复1.5倍语速（下一片段生效，保持音调）" : "切换2倍语速（下一片段生效，保持音调）"}
     onClick={() => voice.changeRate(voice.rate === 2 ? 1.5 : 2)}>2×</button>;
 }
 export function VoiceControls({ voice, disabled, changeAllowed }: { voice: VoiceController; disabled: boolean; changeAllowed: boolean }) {

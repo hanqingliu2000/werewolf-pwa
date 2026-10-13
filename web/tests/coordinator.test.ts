@@ -136,7 +136,7 @@ describe("server clock and recovery", () => {
     expect(f.state().game!.phase).toBe("night_close");
   });
 
-  it("freezes remaining time after host disappearance and requires explicit resume", async () => {
+  it("automatically restores the frozen remainder after host disappearance", async () => {
     const f = await setup(); await f.begin(); await f.act({ type: "cue_ack" });
     f.time.now += 10_000;
     const expiry = f.state().expiresAt;
@@ -147,9 +147,9 @@ describe("server clock and recovery", () => {
     await expect(f.act({ type: "resume" })).rejects.toThrow("HOST_NOT_READY");
     const old = f.envelope({ type: "guard", targetId: null });
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true });
-    expect(f.state().game!.paused).toBe(true);
-    await f.act({ type: "resume" });
-    expect(f.state().game!.window!.deadline).toBe(f.time.now + 10_000);
+    expect(f.state().game!.paused).toBe(false);
+    expect(f.state().game!.window!.deadline).toBe(f.time.now);
+    expect(f.state().game!.window!.waiting).toBe(true);
     await expect(f.service.mutate(f.id, f.tokens[4]!, old)).rejects.toThrow("STALE_WINDOW");
   });
 
@@ -161,7 +161,7 @@ describe("server clock and recovery", () => {
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: false });
     await expect(f.act({ type: "resume" })).rejects.toThrow("HOST_NOT_READY");
     await expect(f.act({ type: "resume" }, 1)).rejects.toThrow("FORBIDDEN");
-    await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true }); await f.act({ type: "resume" });
+    await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true });
     await expect(f.act({ type: "resume" })).rejects.toThrow("GAME_NOT_PAUSED");
     await f.act({ type: "abort" }); f.time.now += 11_000;
     expect((await f.service.view(f.id, f.tokens[0]!)).phase).toBe("end");
@@ -174,7 +174,7 @@ describe("server clock and recovery", () => {
       room.game = command(room.game, { type: "close_window", actorId: room.hostId }, room.game.window!.deadline);
       room.game = command(room.game, { type: "finish_role", actorId: room.hostId }); });
     f.time.now = f.state().game!.updatedAt;
-    await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true }); await f.act({ type: "resume" }); await f.act({ type: "cue_ack" });
+    await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true }); await f.act({ type: "cue_ack" });
     const targetId = f.state().members[7]!.id;
     await f.act({ type: "wolf_propose", targetId }); await f.act({ type: "wolf_propose", targetId }, 1);
     const stale = f.envelope({ type: "wolf_confirm", consensusId: f.state().consensusId, targetId });

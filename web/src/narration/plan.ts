@@ -9,6 +9,7 @@ export const defaultNarration = (): NarrationState => ({ mode: "text", pending: 
 export interface NarrationView {
   epochId: string; windowId: string; phase: Phase; nightNo: number; nightRole: NightRole | null;
   paused: boolean; config: RuleConfig; events: PublicEvent[];
+  sheriffElection?: "hands_prompt" | "hands" | "speech_prompt" | "speech" | "complete" | null;
   players: { id: string; seat: number }[];
   narration: NarrationState & { version: string };
 }
@@ -52,7 +53,11 @@ export function narrationPlan(view: NarrationView): Plan | null {
     return { id: `${view.epochId}:${pending.id}`, clips, completion: "announcement_done", cueId: pending.id };
   }
   const clips: ClipId[] = [];
-  if (view.phase === "dawn") clips.push("dawn");
+  if (view.phase === "dawn") {
+    if (view.sheriffElection === "hands_prompt") clips.push("sheriff_hands");
+    else if (view.sheriffElection === "speech_prompt") clips.push("sheriff_speech");
+    else if (view.sheriffElection !== "hands" && view.sheriffElection !== "speech") clips.push(view.sheriffElection === "complete" ? "first_result" : "dawn");
+  }
   else if (view.nightRole && ["night_open", "night_close"].includes(view.phase)) {
     const first = (["guard", "werewolf", "witch", "seer"] as const).find((role) => view.config.roles[role] > 0);
     if (view.phase === "night_open" && first === view.nightRole) clips.push("night_start");

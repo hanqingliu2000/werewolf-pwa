@@ -53,7 +53,7 @@ test("foreground actions open once, conceal on hide and respect private eligibil
   await expect(panel).toBeVisible(); await expect(panel.getByText("今夜的药", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   turn(7, "werewolf"); personal.role = "werewolf"; state.nightRole = "werewolf"; state.paused = false; state.window!.waiting = true;
-  personal.teammates = [{ id: "p1", seat: 1, name: "玩家1" }];
+  personal.teammates = [{ id: "p1", seat: 1, name: "玩家1", alive: true }];
   personal.wolves = { proposals: {}, discussionPaused: false, confirmations: [], locked: false, consensusId: "consensus" };
   await expect(panel).toBeVisible(); await expect(panel.getByText("0 / 1 已投票", { exact: true })).toBeVisible();
   await expect(panel.getByRole("button", { name: "本夜空刀", exact: true })).toHaveCount(0);

@@ -140,12 +140,15 @@ export function executeCommand(source: Game, input: unknown, now: number, random
         game.pendingDeaths = structuredClone(night.deaths);
         game.nights.push(structuredClone(night));
         game.nightRole = null;
+        if (game.nightNo === 1) game.sheriffElection = "hands_prompt";
+        else delete game.sheriffElection;
       }
       break;
     }
     case "publish_dawn": {
       host(game, actorId);
       phase(game, "dawn");
+      requireRule(!game.sheriffElection || game.sheriffElection === "complete", "ELECTION_PENDING");
       const deaths = game.pendingDeaths;
       game.publicEvents.push({ type: "deaths", nightNo: game.nightNo, playerIds: deaths.map((d) => d.playerId),
         revealedHunters: deaths.filter((d) => player(game, d.playerId).role === "hunter").map((d) => d.playerId) });
@@ -155,6 +158,21 @@ export function executeCommand(source: Game, input: unknown, now: number, random
       else afterDeaths(game, "night");
       break;
     }
+    case "election_prompt_done":
+      host(game, actorId); phase(game, "dawn");
+      requireRule(game.sheriffElection === "hands_prompt" || game.sheriffElection === "speech_prompt", "PHASE_MISMATCH");
+      game.sheriffElection = game.sheriffElection === "hands_prompt" ? "hands" : "speech";
+      break;
+    case "sheriff_speech":
+      host(game, actorId); phase(game, "dawn");
+      requireRule(game.sheriffElection === "hands", "PHASE_MISMATCH");
+      game.sheriffElection = "speech_prompt";
+      break;
+    case "sheriff_complete":
+      host(game, actorId); phase(game, "dawn");
+      requireRule(game.sheriffElection === "speech", "PHASE_MISMATCH");
+      game.sheriffElection = "complete";
+      break;
     case "guard": {
       const night = activeRole(game, actorId, "guard", now);
       unusedAction(night, actorId);

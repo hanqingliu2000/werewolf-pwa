@@ -26,6 +26,8 @@ export function useRoom(roomId: string) {
   const foreground = useRef(true);
   const hostSequence = useRef(0);
   const audioReady = useRef(true); const leaderRef = useRef(false); const sending = useRef(false);
+  const retries = useRef({ id: "", count: 0 });
+  const pendingRef = useRef(pending); pendingRef.current = pending;
   leaderRef.current = leader;
   const base = `rooms/${roomId}`;
   const cancelHeartbeats = useCallback(() => {
@@ -85,6 +87,8 @@ export function useRoom(roomId: string) {
           } else conceal();
         }
         current.current = next; setView(next); setReceivedAt(Date.now());
+        if (!sending.current && !pendingRef.current) setError((previous: unknown) => previous instanceof ApiError
+          && ["NETWORK_UNKNOWN", "INTERNAL_ERROR"].includes(previous.code) ? null : previous);
         if (privateOpen.current) {
           const info = await request<PrivateRoom>(`${base}/private`, undefined, controller.signal);
           if (active.current && privateOpen.current && info.windowId === next.windowId && current.current?.windowId === next.windowId) {
@@ -138,9 +142,9 @@ export function useRoom(roomId: string) {
         : current.current?.phase === "night_open" || (current.current?.phase === "hunter" && current.current.narration.pending) ? 500 : 1000);
     }
     void poll();
-    function hide() { foreground.current = document.visibilityState === "visible"; if (!foreground.current) conceal(); }
+    function hide() { foreground.current = document.visibilityState === "visible"; if (!foreground.current) conceal(); else void sync().catch(setError); }
     function exit() { foreground.current = false; readAbort.current?.abort(); cancelHeartbeats(); conceal(); }
-    function enter() { foreground.current = document.visibilityState === "visible"; }
+    function enter() { foreground.current = document.visibilityState === "visible"; if (foreground.current) void sync().catch(setError); }
     function escape(event: KeyboardEvent) { if (event.key === "Escape") { conceal(); closeHost(); } }
     document.addEventListener("visibilitychange", hide); window.addEventListener("pagehide", exit);
     window.addEventListener("pageshow", enter);
@@ -229,6 +233,13 @@ export function useRoom(roomId: string) {
     if (pending || current.current?.epochId !== envelope.epochId || current.current.windowId !== envelope.windowId) return false;
     return dispatch(envelope);
   }
+  useEffect(() => {
+    if (!pending || busy || document.visibilityState !== "visible") return;
+    if (retries.current.id !== pending.requestId) retries.current = { id: pending.requestId, count: 0 };
+    if (retries.current.count >= 3) return;
+    const timer = setTimeout(() => { retries.current.count++; void dispatch(pending); }, 1000 * (retries.current.count + 1));
+    return () => clearTimeout(timer);
+  }, [pending, busy]);
   async function reportAudio(ready: boolean) {
     audioReady.current = ready;
     if (!current.current?.self.isHost || !leaderRef.current) return;

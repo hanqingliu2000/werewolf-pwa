@@ -23,12 +23,13 @@ export function HostControls({ controller: c, voice }: { controller: RoomControl
     <section className="host-cue"><span className="eyebrow">当前公开指令</span><h3>{v.narration.pending ? "公共公告" : v.nightRole ? `${roleNames[v.nightRole]}${v.phase === "night_close" ? "请闭眼" : "请睁眼"}` : phaseNames[v.phase]}</h3>
       {voice.text && <p className="cue-caption">{voice.text}</p>}
       {v.narration.pending ? voice.mode === "text" ? <NextButton disabled={blocked} onClick={() => void c.send({ type: "announcement_done", cueId: v.narration.pending!.id })}>公开公告已读完</NextButton> : <p role="status">{v.paused ? "公告尚未播完" : "等待公共播报完成"}</p> : null}
-      {v.paused ? <NextButton disabled={blocked || !voice.ready || (voice.mode === "text" && !!v.narration.pending)} onClick={() => void c.send({ type: "resume" })}><Play size={18} aria-hidden />恢复对局</NextButton>
+      {v.paused ? v.pauseReason === "host_unavailable" ? <p role="status">正在自动恢复主持</p> : <NextButton disabled={blocked || !voice.ready || (voice.mode === "text" && !!v.narration.pending)} onClick={() => void c.send({ type: "resume" })}><Play size={18} aria-hidden />恢复对局</NextButton>
         : v.phase === "lobby" ? <NextButton disabled={blocked || !host.canStart || !!v.narration.pending || !voice.ready} onClick={() => void c.send({ type: "start" })}>开始发牌</NextButton>
           : v.phase === "reveal" ? <NextButton disabled={blocked || !host.canBeginNight} onClick={() => void c.send({ type: "begin_night" })}>开始首夜</NextButton>
             : host.cueId && voice.mode === "text" ? <NextButton disabled={blocked || !!v.narration.pending} onClick={() => void c.send({ type: "cue_ack" })}>{v.phase === "dawn" ? "发布出局公告" : "当前指令完成"}</NextButton>
               : v.phase === "night_action" ? <p className="muted">{v.window?.waiting ? "等待操作完成" : "等待固定窗口结束"}</p> : null}
     </section>
+    {v.phase === "dawn" && !v.paused && (v.sheriffElection === "hands" || v.sheriffElection === "speech") && <NextButton disabled={blocked} onClick={() => void c.send({ type: v.sheriffElection === "hands" ? "sheriff_speech" : "sheriff_complete" })}>{v.sheriffElection === "hands" ? "举手结束，开始竞选" : "竞选完成，公布昨夜结果"}</NextButton>}
     {v.phase === "day" && <section className="vote-form"><div className="section-heading"><h3>白天投票结果</h3><span>{dirty ? "改选未保存" : host.dayDraft?.confirmed ? "待发布" : "草案"}</span></div>
       <SeatGrid players={v.players} mode="target" selected={target === undefined ? host.dayDraft?.targetId : target} disabled={() => blocked || v.paused} onSelect={(id) => { setTarget(id); setPublish(null); }} />
       <button className="pass-choice" aria-pressed={(target === undefined ? host.dayDraft?.targetId : target) === null} disabled={blocked || v.paused} onClick={() => { setTarget(null); setPublish(null); }}>本轮无人出局</button>

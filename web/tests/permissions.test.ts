@@ -119,7 +119,7 @@ describe("identity and role projections", () => {
       witch: { choice: "poison", targetId: room.members[3]!.id } }); });
     f.time.now = f.state().game!.updatedAt;
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true });
-    await f.act({ type: "resume" });
+    expect(f.state().game!.paused).toBe(false);
     const room = f.state();
     expect(publicView(room).players.every((p) => "alive" in p && p.alive)).toBe(true);
     expect(privateView(room, room.members[3]!)).toHaveProperty("witch");
@@ -141,7 +141,7 @@ describe("identity and role projections", () => {
       room.game = command(room.game, { type: "finish_role", actorId: room.hostId }); });
     f.time.now = f.state().game!.updatedAt;
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true });
-    await f.act({ type: "resume" });
+    expect(f.state().game!.paused).toBe(false);
     await f.act({ type: "cue_ack" });
     await f.act({ type: "wolf_propose", targetId: f.state().members[7]!.id });
     expect(await f.service.view(f.id, f.tokens[1]!, "private")).toHaveProperty("wolves.proposals");
@@ -149,7 +149,7 @@ describe("identity and role projections", () => {
     f.patch((room) => { const id = room.members[1]!.id; room.game!.players[1]!.alive = false;
       room.game!.publicEvents.push({ type: "deaths", nightNo: 0, playerIds: [id], revealedHunters: [] }); });
     const dead = await f.service.view(f.id, f.tokens[1]!, "private");
-    expect(dead).not.toHaveProperty("wolves"); expect(dead).not.toHaveProperty("teammates");
+    expect(dead).not.toHaveProperty("wolves"); expect(dead.teammates?.find(p => p.id === dead.playerId)?.alive).toBe(false);
     await expect(f.act({ type: "wolf_confirm", consensusId: f.state().consensusId }, 1)).rejects.toThrow("ACTOR_ELIMINATED");
   });
 
@@ -159,7 +159,7 @@ describe("identity and role projections", () => {
       room.game = command(room.game, { type: "publish_dawn", actorId: room.hostId }); });
     f.time.now = f.state().game!.updatedAt;
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true });
-    await f.act({ type: "resume" });
+    expect(f.state().game!.paused).toBe(false);
     const before = await f.service.view(f.id, f.tokens[1]!);
     await f.act({ type: "day_draft", targetId: f.state().members[7]!.id }); await f.act({ type: "day_confirm", draftId: f.state().draftId! });
     expect(await f.service.view(f.id, f.tokens[1]!)).toEqual(before);

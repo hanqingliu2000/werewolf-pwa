@@ -98,7 +98,7 @@ test("voice can be enabled without playing a trial and trial remains optional", 
   await expect(panel.getByRole("button", { name: "二倍速", exact: true })).toHaveAttribute("aria-pressed", "true");
   await panel.getByRole("button", { name: "试音（可选）", exact: true }).click();
   await expect(panel.locator(".voice-controls [role=status]")).toHaveText("声音就绪", { timeout: 30_000 });
-  expect(await page.evaluate(() => (window as unknown as { rates: number[] }).rates)).toEqual([1.5, 2]);
+  expect(await page.evaluate(() => (window as unknown as { rates: number[] }).rates)).toEqual([1, 1]);
   await panel.getByRole("button", { name: "二倍速", exact: true }).click();
   await expect(panel.getByText("语速 1.5×", { exact: true })).toBeVisible();
 });

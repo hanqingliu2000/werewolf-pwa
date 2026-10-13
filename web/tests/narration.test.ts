@@ -65,7 +65,7 @@ describe("public narration contract", () => {
     f.patch((room) => { room.game = nightToDawn(room.game!, { kill: hunter.id }); room.heartbeatAt = room.game.updatedAt; });
     f.time.now = f.state().game!.updatedAt;
     const before = await f.service.view(f.id, f.tokens[0]!);
-    expect(narrationPlan(before)?.clips).toEqual(["dawn"]);
+    expect(narrationPlan(before)?.clips).toEqual(["first_result"]);
     expect(before.players.every((p) => "alive" in p && p.alive)).toBe(true);
     await cue(f);
     const plan = narrationPlan(await f.service.view(f.id, f.tokens[0]!))!;
@@ -90,7 +90,7 @@ describe("public narration contract", () => {
     await expect(announce(f)).rejects.toThrow("HOST_NOT_READY");
     await f.act({ type: "narration_mode", mode: "text", version: NARRATION_VERSION, trialConfirmed: false });
     await announce(f); expect(f.state().game!.phase).toBe("day");
-    await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION }); await f.act({ type: "resume" });
+    await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
     await f.act({ type: "day_draft", targetId: null }); await f.act({ type: "day_confirm", draftId: f.state().draftId! });
     await f.act({ type: "day_publish", draftId: f.state().draftId! });
     expect(f.state().game!.nightNo).toBe(2); expect(f.state().narration!.pending).toBeNull();
@@ -119,8 +119,8 @@ describe("public narration contract", () => {
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: "old-bank" });
     await expect(f.act({ type: "resume" })).rejects.toThrow("HOST_NOT_READY");
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
-    expect(f.state().game!.paused).toBe(true); await f.act({ type: "resume" });
-    expect(f.state().game!.window!.deadline).toBe(f.time.now + 16_000);
+    expect(f.state().game!.paused).toBe(false);
+    expect(f.state().game!.window!.deadline).toBe(f.time.now + 6000);
   });
 
   it.each(["host-zh-v2", "before-upgrade"])("requires a new trial after upgrading from %s and rejects old callbacks", async (version) => {
@@ -131,7 +131,7 @@ describe("public narration contract", () => {
     const preserved = structuredClone(f.state().game!);
     await f.service.heartbeat(f.id, f.tokens[0]!, { foreground: true, audioReady: true, narrationVersion: NARRATION_VERSION });
     await expect(f.act({ type: "resume" })).rejects.toThrow("STALE_AUDIO");
-    await enable(f); expect(f.state().game).toEqual(preserved); await f.act({ type: "resume" });
+    await enable(f); expect(f.state().game).toEqual(preserved); await f.service.view(f.id, f.tokens[0]!); expect(f.state().game!.paused).toBe(false);
     await f.act({ type: "abort" });
     const cueId = f.state().narration!.pending!.id;
     await expect(f.act({ type: "announcement_done", cueId, version })).rejects.toThrow("STALE_AUDIO");

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>警长竞选与保音调试听</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; letter-spacing: 0; }
+    body { margin: 0; background: #161819; color: #eeeae2; font: 16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; }
+    main { max-width: 640px; margin: 40px auto; padding: 0 24px; }
+    header { display: flex; gap: 20px; align-items: center; padding-bottom: 28px; }
+    img { width: 60px; height: 80px; object-fit: cover; }
+    h1 { font-size: 28px; margin: 0; }
+    section { border-top: 1px solid #687470; padding: 24px 0; }
+    label { display: block; margin-bottom: 8px; color: #a8b1ad; }
+    select { width: 100%; min-height: 48px; padding: 8px 12px; border: 1px solid #687470; border-radius: 5px; color: inherit; background: #202526; font: inherit; }
+    audio { width: 100%; height: 54px; margin-top: 24px; }
+    p { min-height: 80px; margin: 24px 0 0; overflow-wrap: anywhere; color: #a8b1ad; }
+    a { display: inline-flex; align-items: center; min-height: 44px; color: #91c8ae; text-underline-offset: 5px; }
+    :focus-visible { outline: 2px solid #91c8ae; outline-offset: 4px; }
+  </style>
+</head>
+<body><main>
+  <header><img src="/art/cardback.webp" alt="" width="60" height="80"><h1>播报试听</h1></header>
+  <section><label for="clip">片段</label><select id="clip" disabled></select><label for="rate">语速</label><select id="rate"><option value="1">1×</option><option value="1.5" selected>1.5×</option><option value="2">2×</option></select><audio id="player" controls preload="none" aria-label="当前片段" src="rates/1.5/sheriff_hands.mp3"></audio><p id="caption" role="status">正在加载</p></section>
+  <a href="/">返回狼人杀</a>
+</main>
+<script>
+  const labels = { sample: "试音", roles_dealt: "私密发牌", night_start: "天黑", guard_open: "守卫睁眼", guard_close: "守卫闭眼", werewolf_open: "狼人睁眼", werewolf_close: "狼人闭眼", witch_open: "女巫睁眼", witch_close: "女巫闭眼", seer_open: "预言家睁眼", seer_close: "预言家闭眼", dawn: "天亮", no_death: "平安夜", death_list: "夜晚出局名单", hunter_identity: "猎人身份公告", hunter_open: "猎人选择", hunter_shot: "猎人开枪", hunter_pass: "猎人放弃", day: "白天讨论", vote_list: "投票出局名单", vote_none: "投票无人出局", good_win: "好人获胜", wolf_win: "狼人获胜", draw: "平局", abort: "中止", pause: "暂停", resume: "恢复", new_lobby: "新一局" };
+  Object.assign(labels, { sheriff_hands: "闭眼竞选举手", sheriff_speech: "睁眼竞选发言", first_result: "首夜结果", guard_action: "守卫行动", werewolf_action: "狼人行动", witch_action: "女巫行动", seer_action: "预言家行动", hunter_action: "猎人行动" });
+  const select = document.getElementById("clip"), player = document.getElementById("player"), caption = document.getElementById("caption"), rate = document.getElementById("rate");
+  player.preservesPitch = true; player.playbackRate = 1;
+  function update() { player.pause(); player.src = rate.value === "1" ? `${select.value}.mp3` : `rates/${rate.value}/${select.value}.mp3`; player.load(); }
+  rate.addEventListener("change", update);
+  player.addEventListener("loadedmetadata", () => { player.playbackRate = 1; });
+  fetch("manifest.json").then((response) => { if (!response.ok) throw new Error(); return response.json(); }).then((manifest) => {
+    for (const id of Object.keys(manifest.clips)) { const option = document.createElement("option"); option.value = id; option.textContent = labels[id] || `${id.slice(5)} 号玩家`; select.append(option); }
+    select.value = "sheriff_hands"; select.disabled = false; caption.textContent = manifest.clips.sheriff_hands.text;
+    select.addEventListener("change", () => { update(); caption.textContent = manifest.clips[select.value].text; });
+  }).catch(() => { caption.setAttribute("role", "alert"); caption.textContent = "声音资源未能加载"; });
+</script>
+</body>
+</html>

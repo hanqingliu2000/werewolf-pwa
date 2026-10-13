@@ -8,6 +8,7 @@ const targeted = <T extends string>(type: T) => z.strictObject({ type: z.literal
 const schema = z.discriminatedUnion("type", [
   simple("deal"), simple("acknowledge"), simple("begin_night"),
   simple("open_window"), simple("close_window"), simple("finish_role"), simple("publish_dawn"),
+  simple("election_prompt_done"), simple("sheriff_speech"), simple("sheriff_complete"),
   simple("pause"), simple("resume"), simple("abort"), simple("restart"),
   simple("open_hunter_window"), simple("close_hunter_window"),
   targeted("guard"), targeted("wolf_propose"), simple("wolf_confirm"), targeted("seer"),
