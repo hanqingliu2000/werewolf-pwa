@@ -22,12 +22,18 @@ def main():
     parser.add_argument("--offline", action="store_true", help="Use only the pinned model in the local cache")
     parser.add_argument("--seed-offset", type=int, default=0)
     parser.add_argument("--publish", action="store_true", help="Promote the fully verified staging bank; does not synthesize")
+    parser.add_argument("--audition-instruction", help="Additional pronunciation guidance for an isolated, unpublished audition")
     args = parser.parse_args()
+    if args.audition_instruction and (not args.only or args.publish or args.reuse):
+        parser.error("Audition pronunciation guidance requires --only and cannot publish or reuse a bank")
     if args.offline:
         os.environ["HF_HUB_OFFLINE"] = "1"
     script = json.loads((ROOT / "web/src/narration/script.json").read_text())
     voice = json.loads((ROOT / "web/src/narration/voice.json").read_text())
     destination = ROOT / f".local-generation/banks/{voice['version']}"
+    if args.audition_instruction:
+        audition_id = hashlib.sha256(args.audition_instruction.encode()).hexdigest()[:12]
+        destination = ROOT / f".local-generation/auditions/{voice['version']}/{audition_id}"
     manifest_path = destination / "manifest.json"
     if args.publish:
         manifest = json.loads(manifest_path.read_text())
@@ -72,6 +78,8 @@ def main():
         raise ValueError("Unknown public clip")
     destination.mkdir(parents=True, exist_ok=True)
     raw_dir = ROOT / f".local-generation/raw/{voice['version']}"
+    if args.audition_instruction:
+        raw_dir = destination / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
     records = json.loads(manifest_path.read_text())["clips"] if manifest_path.exists() else {}
     if args.reuse:
@@ -105,11 +113,14 @@ def main():
             continue
         start = time.monotonic()
         parameters = voice["generation"]
+        instruction = voice["style"]["instruction"]
+        if args.audition_instruction:
+            instruction += " " + args.audition_instruction
         for attempt in range(3):
             seed = voice["seedBase"] + list(script["clips"]).index(key) + args.seed_offset + attempt * 1000
             mx.random.seed(seed)
             parts = list(model.generate_custom_voice(text=script["clips"][key], speaker=script["speaker"], language=script["language"],
-                instruct=voice["style"]["instruction"], temperature=parameters["temperature"], max_tokens=parameters["maxTokens"],
+                instruct=instruction, temperature=parameters["temperature"], max_tokens=parameters["maxTokens"],
                 top_k=parameters["topK"], top_p=parameters["topP"], repetition_penalty=parameters["repetitionPenalty"]))
             samples = np.concatenate([np.asarray(part.audio, dtype=np.float32) for part in parts])
             sample_rate = int(parts[0].sample_rate)
@@ -129,6 +140,7 @@ def main():
                         "bytes": output.stat().st_size, "durationSeconds": samples.size / sample_rate,
                         "sourceSampleRate": sample_rate, "seed": seed,
                         "generation": parameters,
+                        "instruction": instruction,
                         "generationSeconds": round(time.monotonic() - start, 2)}
         manifest = {"version": voice["version"], "rulesVersion": script["rulesVersion"], "language": script["language"],
                     "speaker": script["speaker"], "sourceModel": voice["sourceModel"], "style": voice["style"],
