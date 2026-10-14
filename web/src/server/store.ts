@@ -82,12 +82,12 @@ export class SqliteRoomStore implements RoomStore {
     });
   }
 
-  rate(key: string, now: number, limit: number): boolean {
+  rate(key: string, now: number, limit: number, windowMs = 60_000): boolean {
     return this.transaction(() => {
       this.db.prepare(`INSERT INTO limits VALUES (?, ?, 1) ON CONFLICT(key) DO UPDATE SET
-        count = CASE WHEN reset_at <= ? THEN 1 ELSE count + 1 END,
+        count = CASE WHEN reset_at <= ? THEN 1 ELSE min(count + 1, ?) END,
         reset_at = CASE WHEN reset_at <= ? THEN excluded.reset_at ELSE reset_at END`)
-        .run(key, now + 60_000, now, now);
+        .run(key, now + windowMs, now, limit + 1, now);
       const row = this.db.prepare("SELECT count FROM limits WHERE key = ?").get(key)!;
       return Number(row.count) <= limit;
     });

@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { randomUUID, randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import { PostgresRoomStore, cloudSchema } from "../src/server/postgres-store";
+import { SqliteRoomStore } from "../src/server/store";
 import { RoomService, mintSession, RETENTION_MS } from "../src/server/service";
 import { fixture } from "./server-helpers";
 import { config, fixedRandom } from "./helpers";
@@ -14,6 +15,10 @@ import { createGame, executeCommand } from "../src/game/engine";
 let db: PGlite, server: PGLiteSocketServer, pool: Pool, secondPool: Pool;
 const live = !!process.env.LIVE_POSTGRES_CREDENTIALS;
 const createdRooms: string[] = [];
+beforeEach(async () => {
+  // Isolate local contract cases; never erase a deployed environment's usage budgets.
+  if (!live) await pool.query("DELETE FROM werewolf_preview.limits WHERE key LIKE 'enrollment:%'");
+});
 beforeAll(async () => {
   if (live) {
     const credentials = JSON.parse(readFileSync(process.env.LIVE_POSTGRES_CREDENTIALS!, "utf8"));
@@ -40,16 +45,28 @@ afterAll(async () => {
 async function backend(kind: "sqlite" | "postgres") {
   if (kind === "sqlite") {
     const f = await fixture(1);
-    return { store: f.store as RoomStore, service: f.service, token: f.tokens[0]!, id: f.id, time: f.time, close: f.close };
+    return { store: f.store as RoomStore, service: f.service, token: f.tokens[0]!, id: f.id, time: f.time, path: f.path, close: f.close };
   }
   const store = new PostgresRoomStore(pool, "werewolf_preview"); const time = { now: Date.now() };
   const service = new RoomService(store, () => time.now, fixedRandom); const token = mintSession();
   const created = await service.create(token, { requestId: randomUUID(), name: "Host", config });
   if (live) createdRooms.push(created.roomId);
-  return { store: store as RoomStore, service, token, id: created.roomId, time, close: () => undefined };
+  return { store: store as RoomStore, service, token, id: created.roomId, time, path: undefined, close: () => undefined };
 }
 
 describe.each(["sqlite", "postgres"] as const)("%s storage contract", (kind) => {
+  it("shares atomic long-window budgets across stores and rejects until exact expiry", async () => {
+    const f = await backend(kind);
+    const other = kind === "postgres" ? new PostgresRoomStore(secondPool, "werewolf_preview") : new SqliteRoomStore(f.path!);
+    try {
+      const key = `budget-test:${randomUUID()}`;
+      const stores = [f.store, other];
+      const results = await Promise.all(Array.from({ length: 20 }, (_, i) => stores[i % 2]!.rate(key, f.time.now, 6, RETENTION_MS)));
+      expect(results.filter(Boolean)).toHaveLength(6);
+      expect(await f.store.rate(key, f.time.now + RETENTION_MS - 1, 6, RETENTION_MS)).toBe(false);
+      expect(await f.store.rate(key, f.time.now + RETENTION_MS, 6, RETENTION_MS)).toBe(true);
+    } finally { if (kind === "sqlite") (other as import("../src/server/store").SqliteRoomStore).close(); f.close(); }
+  });
   it("stores SQL-looking nicknames literally and never interpolates lookup keys", async () => {
     const f = await backend(kind);
     try {

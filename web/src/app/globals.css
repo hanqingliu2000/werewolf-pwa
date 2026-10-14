@@ -346,11 +346,16 @@ button.seat[aria-pressed=true] { border-color:var(--green); box-shadow:inset 0 0
 .room-page .neutral-identity .back-art { width:min(80%,240px,max(64px,calc((100dvh - 536px)*.75))); }
 .room-page .lobby-actions { margin-top:12px; }
 .room-page .action-effect { color:var(--green); }
+.room-page.is-lobby { padding-bottom:0; }
+.room-page .lobby-actions { position:static; margin:0 0 16px; padding:0 0 12px; border:0; border-bottom:1px solid var(--soft-line); gap:8px; }
+.lobby-actions .ready-status { font-size:14px; white-space:nowrap; }
+.lobby-actions[data-ready=true] .ready-status { color:var(--green); }
+.lobby-actions[data-ready=true] .button.primary { background:transparent; border-color:var(--line); color:var(--text); }
 @media (max-width:639px) {
   .room-page .room-main>.seat-grid.lobby { grid-template-columns:repeat(3,minmax(0,1fr)); }
   .room-page .room-main>.seat-grid.lobby .seat { height:64px; min-height:64px; padding:10px 8px; }
   .room-page .room-top h1 { font-size:22px; }
-  .room-page .lobby-actions { margin:0; padding-top:12px; padding-bottom:max(12px,env(safe-area-inset-bottom)); }
+  .room-page .lobby-actions { margin:0 0 12px; padding:0 0 12px; }
 }
 @media (max-width:768px) and (max-height:700px) {
   .room-page .neutral-identity { flex-direction:row; }

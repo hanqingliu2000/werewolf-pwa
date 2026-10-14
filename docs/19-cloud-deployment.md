@@ -19,6 +19,7 @@ Vercel应用根目录 `web/`，Node.js24、Next.js Node runtime，函数区域 `
 | WEREWOLF_DATABASE_CA | 同上 | 官方根证书PEM，服务器TLS验证 |
 | WEREWOLF_ORIGIN | localhost通常不必设置 | 正式网址精确Origin，无尾部斜杠 |
 | WEREWOLF_MAINTENANCE | 可选1 | 1时关闭入席及API，健康返回503 maintenance |
+| WEREWOLF_ENROLLMENT_CLOSED | 可选1 | 1时仅关闭新建房间，不影响已有房间 |
 
 数据库URL必须是Supabase pooler、6543端口、与schema匹配的应用账号，无查询参数。密码经URL编码，不能使用管理员账号。连接池每实例最多一个连接，无命名预编译语句；事务借用同一连接。证书或配置缺失时失败，禁止关闭TLS验证或回退SQLite。
 
@@ -46,6 +47,16 @@ Vercel应用根目录 `web/`，Node.js24、Next.js Node runtime，函数区域 `
 失败时回退维护版本或上一兼容部署，不删除新数据库、不恢复旧站、不修改私人备份。语音版本不匹配时让原页面刷新并重新启用声音。
 
 ## 安全与参考
+
+### 用量保护（2026-10-13）
+
+新增房间预留预算：全站6次/小时、20次/24小时、100次/30天。使用现有私有 `limits` 表，SQLite和PostgreSQL都以原子计数保存；跨实例共享，窗口从首次尝试开始。拒绝后的计数饱和在上限加一，不持续增长。已成功请求的重试先返回回执，不重新扣预算；失败或并发重复尝试可能保守占用预留名额。无需数据库迁移。
+
+预算耗尽返回503 `ENROLLMENT_UNAVAILABLE`，仅影响建房；加入、准备、心跳、游戏指令和恢复仍走原有限流。不得在正式环境通过删计数或压测验证上限。发现异常增长时设置 `WEREWOLF_ENROLLMENT_CLOSED=1` 后重新部署；危及现有游戏时再使用维护开关。
+
+已通过控制台API核验 Vercel Hobby、Supabase Free。没有购买额外用量、升级或启用试用。免费超额可能限制或暂停服务，不自动付费增购。应用预算不替代平台费用控制：轮询、静态素材和恶意无效请求仍可能消耗配额。免费方案不保证可用性；任何付费迁移前重新核验费用上限、提醒和服务暂停策略。
+
+依据：[Vercel Hobby](https://vercel.com/docs/plans/hobby)、[Supabase成本控制](https://supabase.com/docs/guides/platform/cost-control)。
 
 [安全策略](../SECURITY.md)、[本次审查](security-prod1.0.md)和[接口契约](13-room-service-contract.md)。
 

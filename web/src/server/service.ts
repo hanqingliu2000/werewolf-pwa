@@ -68,8 +68,13 @@ export class RoomService {
     const previous = await this.existing(key, input);
     if (previous) return previous;
     const config = validateConfig(input.config);
+    requireRule(process.env.WEREWOLF_ENROLLMENT_CLOSED !== "1", "ENROLLMENT_UNAVAILABLE");
     await this.limit(`create:${hash}`, 5);
     await this.limit("create:global", 30);
+    // Shared persistent reservations bound growth across instances; ongoing rooms are never charged here.
+    for (const [period, limit, windowMs] of [["hour", 6, 3_600_000], ["day", 20, RETENTION_MS], ["month", 100, 30 * RETENTION_MS]] as const) {
+      requireRule(await this.store.rate(`enrollment:${period}`, now, limit, windowMs), "ENROLLMENT_UNAVAILABLE");
+    }
     for (let attempt = 0; attempt < 3; attempt++) {
       const hostId = randomUUID();
       const room: Room = {

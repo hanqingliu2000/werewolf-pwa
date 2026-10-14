@@ -69,6 +69,7 @@ function status(code: string) {
   if (["FORBIDDEN", "ORIGIN_REJECTED", "ORIGIN_NOT_CONFIGURED"].includes(code)) return 403;
   if (code === "ROOM_UNAVAILABLE" || code === "ENDPOINT_NOT_FOUND") return 404;
   if (code === "RATE_LIMITED") return 429;
+  if (code === "ENROLLMENT_UNAVAILABLE") return 503;
   if (code === "BODY_TOO_LARGE") return 413;
   if (code === "CONTENT_TYPE_INVALID") return 415;
   if (["INPUT_INVALID", "CONFIG_INVALID"].includes(code)) return 400;

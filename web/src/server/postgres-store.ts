@@ -66,12 +66,12 @@ export class PostgresRoomStore implements RoomStore {
     });
   }
 
-  async rate(key: string, now: number, limit: number): Promise<boolean> {
+  async rate(key: string, now: number, limit: number, windowMs = 60_000): Promise<boolean> {
     const { rows } = await this.pool.query(`INSERT INTO ${this.schema}.limits(key, reset_at, count) VALUES ($1, $2, 1)
       ON CONFLICT(key) DO UPDATE SET
-        count = CASE WHEN limits.reset_at <= $3 THEN 1 ELSE limits.count + 1 END,
+        count = CASE WHEN limits.reset_at <= $3 THEN 1 ELSE LEAST(limits.count + 1, $4) END,
         reset_at = CASE WHEN limits.reset_at <= $3 THEN EXCLUDED.reset_at ELSE limits.reset_at END
-      RETURNING count`, [key, now + 60_000, now]);
+      RETURNING count`, [key, now + windowMs, now, limit + 1]);
     return Number(rows[0].count) <= limit;
   }
 

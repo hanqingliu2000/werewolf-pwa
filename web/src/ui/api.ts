@@ -23,6 +23,7 @@ const messages: Record<string, string> = {
   INVALID_SESSION: "原浏览器身份已失效", ROOM_UNAVAILABLE: "房间已到期或不存在", ROOM_FULL: "房间已满员",
   ROOM_ALREADY_STARTED: "对局已经开始", PLAYER_NAME_DUPLICATE: "这个昵称已经有人使用", CONFIG_INVALID: "请检查人数和角色配比",
   INPUT_INVALID: "请检查输入内容", FORBIDDEN: "当前身份不能执行这项操作", RATE_LIMITED: "操作过于频繁，请稍后再试",
+  ENROLLMENT_UNAVAILABLE: "新房间名额暂时用尽，请稍后再试；已有房间仍可加入和继续对局",
   STALE_GAME: "对局已经更新，请重新确认", STALE_WINDOW: "当前阶段已更新，请重新确认",
   STALE_CONSENSUS: "狼队提议已更新，请重新确认", STALE_DRAFT: "录入结果已更新，请重新核对",
   STALE_PROPOSAL: "本人目标已更新，请核对当前选择",

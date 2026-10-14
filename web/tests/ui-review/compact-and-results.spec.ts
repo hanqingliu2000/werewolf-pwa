@@ -18,7 +18,7 @@ test("twelve compact seats and current progress fit on phone screens with full n
       await page.setViewportSize(viewport); await page.evaluate(() => scrollTo(0, 0));
       await page.evaluate(() => document.fonts.ready);
       const layout = await page.evaluate(() => {
-        const limit = document.querySelector(".lobby-actions")?.getBoundingClientRect().top ?? innerHeight;
+        const limit = innerHeight;
         const seats = [...document.querySelectorAll(".room-main>.seat-grid .seat")].map(e => e.getBoundingClientRect());
         return { fit: seats.every(r => r.top >= 0 && r.bottom <= limit && r.width >= 44 && r.height >= 44 && r.height <= 64),
           progress: document.querySelector(".room-top")!.getBoundingClientRect().bottom <= innerHeight,
@@ -27,7 +27,7 @@ test("twelve compact seats and current progress fit on phone screens with full n
       expect(layout, `${scene}/${viewport.width}x${viewport.height}`).toEqual({ fit: true, progress: true, overflow: false });
       if (viewport.width === 390) await page.screenshot({ path: info.outputPath(`${scene}-compact.png`) });
     }
-    await page.getByRole("button", { name: "完整名单", exact: true }).click();
+    await page.getByRole("button", { name: scene === "S03" ? "管理玩家" : "完整名单", exact: true }).click();
     const roster = page.getByRole("dialog", { name: "完整名单" });
     await expect(roster.locator("li")).toHaveCount(scene === "S03" ? 6 : 12);
     if (scene !== "S03") await expect(roster.locator("li").last()).toContainText("今晚名字稍微长一点的玩家");

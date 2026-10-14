@@ -36,6 +36,6 @@ export interface RoomStore {
   insert(room: Room, receipt: Receipt): Awaitable<boolean>;
   compareAndSwap(room: Room, version: number, receipt?: Receipt): Awaitable<boolean>;
   receipt(key: string): Awaitable<Receipt | null>;
-  rate(key: string, now: number, limit: number): Awaitable<boolean>;
+  rate(key: string, now: number, limit: number, windowMs?: number): Awaitable<boolean>;
   cleanup(now: number): Awaitable<void>;
 }
