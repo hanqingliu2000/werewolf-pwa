@@ -35,7 +35,7 @@ beforeAll(async () => {
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE ROLE authenticator;");
   await db.exec(readFileSync(new URL("../../supabase/migrations/20261008013215_cloud_room_store.sql", import.meta.url), "utf8"));
   await db.exec("CREATE SCHEMA cron; CREATE FUNCTION cron.schedule(text,text,text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint $$;");
-  await db.exec(readFileSync(new URL("../../supabase/migrations/20261014023609_usage_summaries.sql", import.meta.url), "utf8"));
+  await db.exec(readFileSync(new URL("../../supabase/migrations/20261014025022_usage_summaries.sql", import.meta.url), "utf8"));
   server = new PGLiteSocketServer({ db, host: "127.0.0.1", port: 0, maxConnections: 10 }); await server.start();
   const [host, port] = server.getServerConn().split(":");
   const settings = { host, port: Number(port), user: "postgres", database: "postgres", max: 1, connectionTimeoutMillis: 5000 };
