@@ -4,6 +4,7 @@ import { randomUUID, randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
+import { DatabaseSync } from "node:sqlite";
 import { PostgresRoomStore, cloudSchema } from "../src/server/postgres-store";
 import { SqliteRoomStore } from "../src/server/store";
 import { RoomService, mintSession, RETENTION_MS } from "../src/server/service";
@@ -11,6 +12,7 @@ import { fixture } from "./server-helpers";
 import { config, fixedRandom } from "./helpers";
 import type { Receipt, RoomStore } from "../src/server/types";
 import { createGame, executeCommand } from "../src/game/engine";
+import { changedUsage, USAGE_RETENTION_MS, usageSnapshot } from "../src/server/usage";
 
 let db: PGlite, server: PGLiteSocketServer, pool: Pool, secondPool: Pool;
 const live = !!process.env.LIVE_POSTGRES_CREDENTIALS;
@@ -32,13 +34,19 @@ beforeAll(async () => {
   db = await PGlite.create();
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role; CREATE ROLE authenticator;");
   await db.exec(readFileSync(new URL("../../supabase/migrations/20261008013215_cloud_room_store.sql", import.meta.url), "utf8"));
+  await db.exec("CREATE SCHEMA cron; CREATE FUNCTION cron.schedule(text,text,text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint $$;");
+  await db.exec(readFileSync(new URL("../../supabase/migrations/20261014023609_usage_summaries.sql", import.meta.url), "utf8"));
   server = new PGLiteSocketServer({ db, host: "127.0.0.1", port: 0, maxConnections: 10 }); await server.start();
   const [host, port] = server.getServerConn().split(":");
   const settings = { host, port: Number(port), user: "postgres", database: "postgres", max: 1, connectionTimeoutMillis: 5000 };
   pool = new Pool(settings); secondPool = new Pool(settings);
 }, 30_000);
 afterAll(async () => {
-  if (live && pool && createdRooms.length) await pool.query("DELETE FROM werewolf_preview.rooms WHERE id = ANY($1::text[])", [createdRooms]);
+  if (live && pool && createdRooms.length) {
+    await pool.query(`DELETE FROM werewolf_preview.room_usage WHERE id IN
+      (SELECT (state->'usage'->>'id')::uuid FROM werewolf_preview.rooms WHERE id = ANY($1::text[]))`, [createdRooms]);
+    await pool.query("DELETE FROM werewolf_preview.rooms WHERE id = ANY($1::text[])", [createdRooms]);
+  }
   await pool?.end(); await secondPool?.end(); await server?.stop(); await db?.close();
 });
 
@@ -55,6 +63,78 @@ async function backend(kind: "sqlite" | "postgres") {
 }
 
 describe.each(["sqlite", "postgres"] as const)("%s storage contract", (kind) => {
+  async function statistics(f: Awaited<ReturnType<typeof backend>>) {
+    const id = (await f.store.load(f.id))!.room.usage!.id;
+    if (kind === "postgres") return {
+      rooms: (await pool.query("SELECT * FROM werewolf_preview.room_usage WHERE id = $1", [id])).rows,
+      games: (await pool.query("SELECT * FROM werewolf_preview.game_usage WHERE room_usage_id = $1 ORDER BY first_seen_at, id", [id])).rows,
+    };
+    const local = new DatabaseSync(f.path!, { readOnly: true });
+    try { return { rooms: local.prepare("SELECT * FROM room_usage WHERE id = ?").all(id),
+      games: local.prepare("SELECT * FROM game_usage WHERE room_usage_id = ? ORDER BY first_seen_at, id").all(id) }; }
+    finally { local.close(); }
+  }
+
+  it.skipIf(live)("records actual games once, survives restarts and detail expiry, and retains no personal fields", async () => {
+    const f = await backend(kind);
+    try {
+      const tokens = [f.token, ...Array.from({ length: 7 }, mintSession)];
+      const before = (await f.store.load(f.id))!.room;
+      for (let i = 1; i < 8; i++) await f.service.join(f.id, tokens[i]!, { requestId: randomUUID(), epochId: before.lobbyId, name: `PrivateGuest${i}` });
+      const act = async (operation: unknown, token = f.token) => {
+        const view = await f.service.view(f.id, token);
+        return f.service.mutate(f.id, token, { requestId: randomUUID(), epochId: view.epochId, windowId: view.windowId, operation });
+      };
+      for (const token of tokens) await act({ type: "ready", ready: true }, token);
+      await act({ type: "start" });
+      const heartbeatBefore = (await f.store.load(f.id))!.room;
+      await f.service.heartbeat(f.id, f.token, { foreground: true, audioReady: true });
+      expect(changedUsage((await f.store.load(f.id))!.room, heartbeatBefore)).toBeUndefined();
+      f.time.now += 1000;
+      const view = await f.service.view(f.id, f.token);
+      const input = { requestId: randomUUID(), epochId: view.epochId, windowId: view.windowId, operation: { type: "abort" } };
+      const receipt = await f.service.mutate(f.id, f.token, input);
+      expect(await new RoomService(f.store, () => f.time.now).mutate(f.id, f.token, input)).toEqual(receipt);
+      await act({ type: "restart" });
+      for (const token of tokens) await act({ type: "ready", ready: true }, token);
+      await act({ type: "start" });
+      const snapshot = await statistics(f);
+      expect(snapshot.rooms).toHaveLength(1); expect(Number(snapshot.rooms[0]!.peak_players)).toBe(8);
+      expect(snapshot.rooms[0]!.room_name).toBe(`房间 ${f.id}`);
+      expect(snapshot.games).toHaveLength(2);
+      expect(snapshot.games.map(g => g.status).sort()).toEqual(["aborted", "active"]);
+      const serialized = JSON.stringify(snapshot);
+      for (const secret of [...tokens, "PrivateGuest", "sessionHash", "targetId", "werewolf", "witch", "hostId"]) expect(serialized).not.toContain(secret);
+      f.time.now = (await f.store.load(f.id))!.room.expiresAt;
+      await f.store.cleanup(f.time.now);
+      expect(await f.store.load(f.id)).toBeNull();
+      if (kind === "postgres") expect((await pool.query("SELECT status FROM werewolf_preview.game_usage WHERE room_usage_id = $1", [before.usage!.id])).rows.map(g => g.status).sort()).toEqual(["aborted", "expired"]);
+      else {
+        const local = new DatabaseSync(f.path!, { readOnly: true });
+        try { expect(local.prepare("SELECT status FROM game_usage").all().map(g => g.status).sort()).toEqual(["aborted", "expired"]); } finally { local.close(); }
+      }
+      f.time.now += USAGE_RETENTION_MS;
+      await f.store.cleanup(f.time.now);
+      if (kind === "postgres") expect((await pool.query("SELECT id FROM werewolf_preview.room_usage WHERE id = $1", [before.usage!.id])).rows).toHaveLength(0);
+      else {
+        const local = new DatabaseSync(f.path!, { readOnly: true });
+        try { expect(local.prepare("SELECT id FROM room_usage").all()).toHaveLength(0); expect(local.prepare("SELECT id FROM game_usage").all()).toHaveLength(0); } finally { local.close(); }
+      }
+    } finally { f.close(); }
+  });
+
+  it("rolls back snapshot, receipt and usage together on a failed summary write", async () => {
+    const f = await backend(kind);
+    try {
+      const before = (await f.store.load(f.id))!; const snapshot = usageSnapshot(before.room); snapshot.room.players = 99;
+      const receipt: Receipt = { key: randomUUID(), fingerprint: "f", result: { accepted: true, requestId: randomUUID(), roomId: f.id, epochId: before.room.lobbyId, flowId: before.room.flowId } };
+      const changed = structuredClone(before.room); changed.members[0]!.name = "Unsaved";
+      await expect(Promise.resolve().then(() => f.store.compareAndSwap(changed, before.version, receipt, snapshot))).rejects.toThrow();
+      expect(await f.store.load(f.id)).toEqual(before); expect(await f.store.receipt(receipt.key)).toBeNull();
+      expect(Number((await statistics(f)).rooms[0]!.player_count)).toBe(1);
+      expect(await f.store.compareAndSwap(changed, before.version - 1, receipt, snapshot)).toBe(false);
+    } finally { f.close(); }
+  });
   it("shares atomic long-window budgets across stores and rejects until exact expiry", async () => {
     const f = await backend(kind);
     const other = kind === "postgres" ? new PostgresRoomStore(secondPool, "werewolf_preview") : new SqliteRoomStore(f.path!);
@@ -182,11 +262,13 @@ it.skipIf(live)("isolates schemas, validates readiness, and rejects unavailable 
 
 it.skipIf(live)("enables RLS and denies anonymous, authenticated and opposite-environment access", async () => {
   const policies = await db.query<{ relrowsecurity: boolean }>("SELECT relrowsecurity FROM pg_class WHERE relnamespace IN ('werewolf_prod'::regnamespace, 'werewolf_preview'::regnamespace) AND relkind = 'r'");
-  expect(policies.rows).toHaveLength(6); expect(policies.rows.every(r => r.relrowsecurity)).toBe(true);
+  expect(policies.rows).toHaveLength(10); expect(policies.rows.every(r => r.relrowsecurity)).toBe(true);
   for (const role of ["anon", "authenticated", "service_role", "authenticator", "werewolf_preview_app"]) {
     await db.exec(`SET ROLE ${role}`);
     try {
       await expect(db.query("SELECT * FROM werewolf_prod.rooms")).rejects.toThrow("permission denied");
+      await expect(db.query("SELECT * FROM werewolf_prod.room_usage")).rejects.toThrow("permission denied");
+      await expect(db.query("SELECT * FROM werewolf_prod.game_usage")).rejects.toThrow("permission denied");
       if (role === "werewolf_preview_app") expect(await db.query("SELECT count(*) FROM werewolf_preview.rooms")).toBeDefined();
       else await expect(db.query("SELECT * FROM werewolf_preview.rooms")).rejects.toThrow("permission denied");
     } finally { await db.exec("RESET ROLE"); }

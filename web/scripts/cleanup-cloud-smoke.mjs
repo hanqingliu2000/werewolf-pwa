@@ -14,7 +14,14 @@ const url = new URL("postgresql://aws-0-us-east-1.pooler.supabase.com:6543/postg
 url.username = `${schema}_app.knkrwuquthqblnkoxdtn`; url.password = target === "production" ? credentials.production_password : credentials.preview_password;
 const pool = new Pool({ connectionString: url.toString(), max: 1, ssl: { ca: readFileSync(caPath, "utf8"), rejectUnauthorized: true }, connectionTimeoutMillis: 5000 });
 try {
+  await pool.query("BEGIN");
+  const summaries = await pool.query(`SELECT COALESCE(state->'usage'->>'id', state->>'lobbyId') AS id
+    FROM ${schema}.rooms WHERE id = ANY($1::text[]) AND state->'members'->0->>'name' LIKE 'Cloud QA %' FOR UPDATE`, [report.rooms]);
+  await pool.query(`DELETE FROM ${schema}.room_usage WHERE id = ANY($1::uuid[]) AND is_test`, [summaries.rows.map(row => row.id)]);
   const result = await pool.query(`DELETE FROM ${schema}.rooms WHERE id = ANY($1::text[])
     AND state->'members'->0->>'name' LIKE 'Cloud QA %' RETURNING id`, [report.rooms]);
+  await pool.query("COMMIT");
   console.log(JSON.stringify({ deletedTestRooms: result.rowCount, schema }));
+} catch (error) {
+  await pool.query("ROLLBACK"); throw error;
 } finally { await pool.end(); }

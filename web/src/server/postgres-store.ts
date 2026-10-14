@@ -1,5 +1,6 @@
 import type { Pool, PoolClient } from "pg";
 import type { Receipt, Room, RoomStore, StoredRoom } from "./types";
+import { usageSnapshot, USAGE_RETENTION_MS, type UsageSnapshot } from "./usage";
 
 export type CloudSchema = "werewolf_preview" | "werewolf_prod";
 export function cloudSchema(value: string | undefined): CloudSchema {
@@ -42,7 +43,26 @@ export class PostgresRoomStore implements RoomStore {
   }
 
   private async saveReceipt(client: PoolClient, room: Room, receipt: Receipt) {
-    await client.query(`INSERT INTO ${this.schema}.receipts(key, room_id, value) VALUES ($1, $2, $3::jsonb)`, [receipt.key, room.id, JSON.stringify(receipt)]);
+    const result = await client.query(`INSERT INTO ${this.schema}.receipts(key, room_id, value)
+      VALUES ($1, $2, $3::jsonb) ON CONFLICT(key) DO NOTHING`, [receipt.key, room.id, JSON.stringify(receipt)]);
+    return result.rowCount === 1;
+  }
+
+  private async saveUsage(client: PoolClient, snapshot: UsageSnapshot) {
+    const r = snapshot.room;
+    await client.query(`INSERT INTO ${this.schema}.room_usage
+      (id, room_id, room_name, created_at, first_seen_at, player_count, peak_players, capacity, last_activity_at, expires_at, is_test)
+      VALUES ($1,$2,$3,$4,COALESCE($4,(extract(epoch from now())*1000)::bigint),$5,$5,$6,$7,$8,$9)
+      ON CONFLICT(id) DO UPDATE SET player_count = EXCLUDED.player_count,
+        peak_players = GREATEST(room_usage.peak_players, EXCLUDED.player_count), capacity = EXCLUDED.capacity,
+        last_activity_at = EXCLUDED.last_activity_at, expires_at = EXCLUDED.expires_at`,
+    [r.id,r.roomId,r.roomName,r.createdAt,r.players,r.capacity,r.lastActivityAt,r.expiresAt,r.isTest]);
+    const g = snapshot.game;
+    if (g) await client.query(`INSERT INTO ${this.schema}.game_usage
+      (id, room_usage_id, started_at, ended_at, first_seen_at, player_count, status)
+      VALUES ($1,$2,$3,$4,COALESCE($3,(extract(epoch from now())*1000)::bigint),$5,$6)
+      ON CONFLICT(id) DO UPDATE SET ended_at = EXCLUDED.ended_at, status = EXCLUDED.status`,
+    [g.id,g.roomUsageId,g.startedAt,g.endedAt,g.players,g.status]);
   }
 
   async insert(room: Room, receipt: Receipt): Promise<boolean> {
@@ -50,18 +70,20 @@ export class PostgresRoomStore implements RoomStore {
       const result = await client.query(`INSERT INTO ${this.schema}.rooms(id, version, expires_at, state)
         VALUES ($1, 1, $2, $3::jsonb) ON CONFLICT DO NOTHING`, [room.id, room.expiresAt, JSON.stringify(room)]);
       if (!result.rowCount) return false;
-      await this.saveReceipt(client, room, receipt);
+      if (!await this.saveReceipt(client, room, receipt)) return false;
+      await this.saveUsage(client, usageSnapshot(room));
       return true;
     });
   }
 
-  async compareAndSwap(room: Room, version: number, receipt?: Receipt): Promise<boolean> {
+  async compareAndSwap(room: Room, version: number, receipt?: Receipt, usage?: UsageSnapshot): Promise<boolean> {
     return this.transaction(async (client) => {
       if (receipt && (await client.query(`SELECT 1 FROM ${this.schema}.receipts WHERE key = $1`, [receipt.key])).rowCount) return false;
       const result = await client.query(`UPDATE ${this.schema}.rooms SET version = version + 1, state = $1::jsonb, expires_at = $2
         WHERE id = $3 AND version = $4`, [JSON.stringify(room), room.expiresAt, room.id, version]);
       if (!result.rowCount) return false;
-      if (receipt) await this.saveReceipt(client, room, receipt);
+      if (receipt && !await this.saveReceipt(client, room, receipt)) return false;
+      if (usage) await this.saveUsage(client, usage);
       return true;
     });
   }
@@ -86,6 +108,10 @@ export class PostgresRoomStore implements RoomStore {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
+      await client.query(`UPDATE ${this.schema}.game_usage SET status = 'expired' WHERE status = 'active'
+        AND room_usage_id IN (SELECT id FROM ${this.schema}.room_usage WHERE expires_at <= $1)`, [now]);
+      await client.query(`DELETE FROM ${this.schema}.game_usage WHERE COALESCE(ended_at, started_at, first_seen_at) <= $1`, [now - USAGE_RETENTION_MS]);
+      await client.query(`DELETE FROM ${this.schema}.room_usage WHERE GREATEST(last_activity_at, first_seen_at) <= $1`, [now - USAGE_RETENTION_MS]);
       await client.query(`DELETE FROM ${this.schema}.rooms WHERE expires_at <= $1`, [now]);
       await client.query(`DELETE FROM ${this.schema}.limits WHERE reset_at <= $1`, [now]);
       await client.query(`UPDATE ${this.schema}.rooms r SET state = jsonb_set(state, '{archives}',
@@ -101,5 +127,7 @@ export class PostgresRoomStore implements RoomStore {
     await this.pool.query(`SELECT version FROM ${this.schema}.rooms LIMIT 1`);
     await this.pool.query(`SELECT key FROM ${this.schema}.receipts LIMIT 1`);
     await this.pool.query(`SELECT key FROM ${this.schema}.limits LIMIT 1`);
+    await this.pool.query(`SELECT id FROM ${this.schema}.room_usage LIMIT 1`);
+    await this.pool.query(`SELECT id FROM ${this.schema}.game_usage LIMIT 1`);
   }
 }

@@ -7,6 +7,7 @@ import { parseCreate, parseJoin, parseMutation, parseHeartbeat, type Mutation } 
 import type { Member, Receipt, Room, RoomStore, StoredRoom } from "./types";
 import { epochId, publicView, privateView, hostView, recapView } from "./views";
 import { defaultNarration, NARRATION_VERSION } from "../narration/plan";
+import { changedUsage } from "./usage";
 
 export const RETENTION_MS = 24 * 60 * 60 * 1000;
 export const hashSession = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -83,6 +84,7 @@ export class RoomService {
         members: [{ id: hostId, seat: 1, name: input.name, sessionHash: hash, ready: false }],
         game: null, archives: [], publicRevision: 1, consensusId: randomUUID(), draftId: null, heartbeatAt: now,
         hostAvailable: true, narration: defaultNarration(), pauseReason: null, expiresAt: now + RETENTION_MS,
+        usage: { id: randomUUID(), createdAt: now, gameStartedAt: null, isTest: input.name.startsWith("Cloud QA ") },
       };
       const receipt = this.receipt(room, key, input.requestId, input);
       if (await this.store.insert(room, receipt)) return receipt.result;
@@ -117,6 +119,10 @@ export class RoomService {
 
   // Public epochs follow visible phase changes, never secret submissions or internal CAS versions.
   private finishChange(room: Room, before: Room, now: number, meaningful: boolean) {
+    room.usage ??= { id: before.lobbyId, createdAt: null, gameStartedAt: null,
+      isTest: before.members[0]?.name.startsWith("Cloud QA ") ?? false };
+    if (room.game && room.game.id !== before.game?.id) room.usage.gameStartedAt = now;
+    if (!room.game) room.usage.gameStartedAt = null;
     if (room.narration?.mode === "voice") {
       const previousEvents = before.game?.id === room.game?.id ? before.game?.publicEvents.length ?? 0 : 0;
       const count = room.game?.publicEvents.length ?? 0;
@@ -187,7 +193,7 @@ export class RoomService {
       this.member(state.room, hash);
       const room = this.coordinate(state.room, this.now());
       if (JSON.stringify(room) === JSON.stringify(state.room)) return state;
-      if (await this.store.compareAndSwap(room, state.version)) return { room, version: state.version + 1 };
+      if (await this.store.compareAndSwap(room, state.version, undefined, changedUsage(room, state.room))) return { room, version: state.version + 1 };
     }
     throw new RuleError("WRITE_CONFLICT");
   }
@@ -237,7 +243,7 @@ export class RoomService {
       change(room, authenticated ? this.member(room, hash) : null, now);
       this.finishChange(room, state.room, now, true);
       const receipt = this.receipt(room, key, requestId, input);
-      if (await this.store.compareAndSwap(room, state.version, receipt)) return receipt.result;
+      if (await this.store.compareAndSwap(room, state.version, receipt, changedUsage(room, state.room))) return receipt.result;
     }
     throw new RuleError("WRITE_CONFLICT");
   }
@@ -377,7 +383,7 @@ export class RoomService {
       room.hostAvailable = input.foreground && input.audioReady
         && (room.narration?.mode !== "voice" || input.narrationVersion === NARRATION_VERSION);
       const coordinated = this.coordinate(room, this.now());
-      if (await this.store.compareAndSwap(coordinated, state.version)) return { ok: true, paused: coordinated.game?.paused ?? false };
+      if (await this.store.compareAndSwap(coordinated, state.version, undefined, changedUsage(coordinated, state.room))) return { ok: true, paused: coordinated.game?.paused ?? false };
     }
     throw new RuleError("WRITE_CONFLICT");
   }

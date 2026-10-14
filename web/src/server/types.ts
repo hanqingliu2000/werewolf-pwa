@@ -21,6 +21,7 @@ export interface Room {
   narration?: NarrationState;
   pauseReason: "host_unavailable" | "window_incomplete" | "manual" | null;
   expiresAt: number;
+  usage?: { id: string; createdAt: number | null; gameStartedAt: number | null; isTest: boolean };
 }
 export interface StoredRoom { version: number; room: Room }
 export interface Receipt {
@@ -34,7 +35,7 @@ export type Awaitable<T> = T | Promise<T>;
 export interface RoomStore {
   load(id: string): Awaitable<StoredRoom | null>;
   insert(room: Room, receipt: Receipt): Awaitable<boolean>;
-  compareAndSwap(room: Room, version: number, receipt?: Receipt): Awaitable<boolean>;
+  compareAndSwap(room: Room, version: number, receipt?: Receipt, usage?: import("./usage").UsageSnapshot): Awaitable<boolean>;
   receipt(key: string): Awaitable<Receipt | null>;
   rate(key: string, now: number, limit: number, windowMs?: number): Awaitable<boolean>;
   cleanup(now: number): Awaitable<void>;
