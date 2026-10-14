@@ -1,36 +1,38 @@
-# 临时本地 UI 评审
+# Temporary Local UI Review
 
-这套工具组织当前真实网页组件的代表性状态，供界面批注，不是新的游戏入口或另一套玩法。仅监听本机，默认网址为 `http://127.0.0.1:3010/`，复用运行在3000端口的本地网页。
+English | [简体中文](README.zh-CN.md)
 
-## 使用
+This tool assembles representative states of the real current components for interface annotation. It is not a new game entry point or another ruleset. It listens only locally, defaults to `http://127.0.0.1:3010/`, and reuses the local app on port 3000.
+
+## Usage
 
 ```sh
 node scripts/ui-review/start.mjs
 node scripts/ui-review/start.mjs --stop
 ```
 
-如果本地应用未运行，先在 `web/` 启动 `npm run dev -- --hostname 127.0.0.1 --port 3000`。评审服务不会停止或替换原应用。端口被占用时在3010之后寻找空闲端口，以启动输出的实际网址为准。可用 `UI_REVIEW_UPSTREAM` 指定另一个本机应用地址，但禁止外部网址和带凭据的地址。
+If the app is not running, first start `npm run dev -- --hostname 127.0.0.1 --port 3000` in `web/`. Review does not stop or replace that app. If its default port is busy, review searches upward from 3010; use the actual URL printed at startup. `UI_REVIEW_UPSTREAM` can select another local app address, but external URLs and embedded credentials are rejected.
 
-左右箭头或下拉菜单切换示例，手机/桌面按钮切换画布，重置图标恢复当前示例。每页有S01至S14的编号；网址中的 `scene` 与 `mode` 可直接定位批注，例如 `/?scene=S07&mode=phone`。采用现有批注方式即可，不新增评论账号或保存系统。
+Previous/next arrows or the dropdown switch scenes; phone/desktop buttons switch canvas size; reset restores the current fixture. S01 through S14 identify scenes. URL parameters `scene` and `mode` locate an annotation, for example `/?scene=S07&mode=phone`. Use the existing annotation workflow; this tool adds no comment account or storage system.
 
-| 编号 | 示例 |
+| Scenes | Examples |
 | --- | --- |
-| S01–S03 | 建房、加入、大厅准备 |
-| S04 | 女巫身份牌，包含最新的大比例立绘 |
-| S05–S09 | 守卫、狼人协商等待、女巫药剂、预言家记录、猎人开枪 |
-| S10–S12 | 主持投票草案、白天公开名单、暂停恢复 |
-| S13–S14 | 胜负与复盘 |
+| S01-S03 | Creation, joining, and lobby readiness |
+| S04 | Witch identity card with a large portrait |
+| S05-S09 | Guard, wolf discussion waiting, Witch potions, Seer records, and Hunter shooting |
+| S10-S12 | Host voting draft, public daytime roster, and pause/recovery |
+| S13-S14 | Victory and recap |
 
-## 隔离边界
+## Isolation Boundaries
 
-- 界面和资源来自本地真实网页，不复制产品组件。游戏接口全部由独立评审服务返回固定模拟数据，API请求不转发到应用服务；未知房间和其他路径拒绝访问。
-- 角色、座位、对局编号、复盘和部分按钮交互均为示例。倒计时仅在评审画布内冻结，便于停留批注；没有完整玩法推进或真实结算。
-- 不生成或改写 `ww_session` Cookie；转发页面和资源时删除Cookie与Authorization，并剥离上游Set-Cookie，避免不同本地端口的Cookie共享影响真实会话。
-- 默认文字模式，不自动发声。手动试音只加载本机公开声音，游戏请求仍是模拟请求。
-- 原应用代码和3000端口不变；无数据库连接、真实房间写入、云端配置或正式发布。工具位于产品目录外，不添加到Next.js页面路由。
-- 日志、停止凭据与进程记录在被忽略的 `.local-generation/ui-review/`，不提交。停止命令仅关闭这次评审服务。
+- UI and assets come from the real local app, without copying product components. The separate review service answers every game API call with fixed fixtures, never forwarding API requests to the app. Unknown rooms and other paths are rejected.
+- Roles, seats, game IDs, recaps, and some interactions are examples. Only the review canvas freezes timers for annotation; it does not implement full progression or resolution.
+- Never mint or rewrite `ww_session`. Strip Cookie and Authorization when forwarding pages/assets and strip upstream Set-Cookie, preventing localhost cross-port cookie sharing from affecting real sessions.
+- Text mode is the silent default. Manual sound tests load only local public audio; game calls remain mocked.
+- The original app and port 3000 are unchanged. There are no database connections, real room writes, cloud configuration, or production deployment. The tool stays outside the product directory and adds no Next.js routes.
+- Logs, stop credentials, and process records stay in ignored `.local-generation/ui-review/`. The stop command shuts down only this review service.
 
-## 验证
+## Validation
 
 ```sh
 node --test scripts/ui-review/review.test.mjs
@@ -40,8 +42,8 @@ npm run lint
 npx playwright test --config playwright.review.config.ts
 ```
 
-prod1.0包含8项本机服务测试，覆盖模拟数据、Cookie隔离、接口不转发、重置、未知房间、外部来源拒绝、狼刀最高票示例和必选目标。评审不提供狼人空刀或预言家放弃查验；平票示例采用稳定选择便于复核，真实随机规则由规则核心测试覆盖。浏览器测试可逐页核对14个实际界面与手机/桌面布局；截图仅在本机测试输出中保存，不能把以前的评审结果当成本次验收。
+prod1.0 includes eight local service tests for fixtures, cookie isolation, non-forwarded APIs, reset, unknown rooms, external-origin rejection, highest-count wolf examples, and required targets. Review offers neither skipped wolf kills nor skipped Seer inspections. Tie fixtures use a stable choice for inspection; core tests cover actual randomness. Browser tests can inspect all 14 interfaces at phone/desktop sizes. Screenshots remain local; prior review results are not new acceptance.
 
-评审画布隐藏本地 Next.js 开发浮标，避免遮住席位或准备按钮；不修改产品的开发设置、正式界面或房间数据。
+The review canvas hides the local Next.js development badge so it cannot obscure seats or readiness. Product development settings, production UI, and room data are unchanged.
 
-首次截图检查发现标题已切到下一示例但旧画面短暂保留，已加入画面就绪和切换编号校验；建房表单的属性就绪检测补齐后重新通过全部用例，没有放宽检查。这是临时评审工具验收，不是完整对局、真机音频或正式发布验收。
+Initial screenshots caught a new heading briefly appearing over the previous scene. Readiness and scene-key checks were added, then creation-form property readiness was corrected and all cases rerun without weaker assertions. This validates the temporary review tool, not a complete game, real-phone audio, or a production release.

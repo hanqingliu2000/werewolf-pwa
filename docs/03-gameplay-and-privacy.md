@@ -1,40 +1,42 @@
-# 流程与隐私
+# Gameplay and Privacy
 
-基线：prod1.0，2026-10-13。
+English | [简体中文](03-gameplay-and-privacy.zh-CN.md)
 
-## 完整一局
+Baseline: prod1.0, October 13, 2026.
 
-1. 房主选择人数、配比和胜负方式建房，分享链接/房间号；玩家入席、选择座位并准备。
-2. 满员且全员准备后随机发牌。身份默认遮蔽，查看可选，不等待身份确认；发牌播报结束后房主开始首夜。
-3. 夜晚依次执行守卫、狼人、女巫、预言家。语音睁眼段结束后自动打开合资格玩家的前台预选窗；提示结束后开启完整行动时间。
-4. 首夜内部结算后先进行警长竞选。闭眼举手、睁眼发言和线下投票；房主推进现场环节，不记录参选者或警长。
-5. 竞选完成后公布夜晚出局，公开猎人身份并完成合法反应，再检查胜负；后续夜晚直接走常规公告。
-6. 线下讨论、投票，房主录入、确认、发布淘汰结果；完成可能的猎人反应与判胜，继续下一夜。
-7. 结束后参与者查看复盘；房主可保留席位重新准备。中止局不伪造胜负。
+## A Complete Game
 
-## 四种视图
+1. The host creates a room with a player count, role composition, and victory mode, then shares its link/code. Players join, choose seats, and ready up.
+2. Once the room is full and everyone is ready, deal roles randomly. Roles are concealed by default and viewing is optional; no identity acknowledgment is required. After the dealing announcement, the host starts the first night.
+3. Night proceeds through Guard, Werewolves, Witch, and Seer. After the eyes-open clip, eligible foreground players automatically see the preselection window. The full action countdown starts after the prompt ends.
+4. After internal resolution of the first night, run the Sheriff election: eyes-closed nominations, eyes-open speeches, and offline voting. The host advances the in-person stages; candidates and the Sheriff are not recorded.
+5. Once the election ends, announce night eliminations, reveal any eliminated Hunter and complete their eligible reaction, then check victory. Later nights use the regular announcement directly.
+6. Discuss and vote offline. The host enters, confirms, and publishes the elimination, followed by any Hunter reaction and victory check, then the next night.
+7. Participants can view the recap after the game. The host may keep the seats and ready up again. Aborted games do not receive fabricated winners.
 
-| 视图 | 可见信息 |
+## Four Views
+
+| View | Visible Information |
 | --- | --- |
-| 公共 | 阶段、公开计时、昵称/座位、已公告出局、公开猎人、胜负 |
-| 本人 | 自己身份、合法行动、已接受结果、自己的查验/药剂、狼人的队友与刀口历史 |
-| 房主组织 | 配置、准备、暂停、首夜竞选阶段、白天草案和公开推进；不含别人身份或秘密目标 |
-| 复盘 | 本局结束后完整身份和逐夜记录；仅该局参与会话 |
+| Public | Phase, public timer, nicknames/seats, announced eliminations, revealed Hunter, and victory |
+| Personal | Own role, legal actions, accepted results, own inspections/potions, and wolves' teammates and target history |
+| Host organizational | Configuration, readiness, pause, first-night election stages, daytime draft, and public advancement; no other player's role or secret target |
+| Recap | Full roles and nightly records after the game, limited to participating sessions |
 
-内部已结算死亡不直接改变公共名单、本人状态或狼人队友存活标记；这些状态来自已公布事件，首夜竞选不能泄露昨夜结果。
+Internally resolved deaths do not directly change public lists, the player's own status, or wolf teammate alive indicators. Those views derive from announced events; the first-night election must not disclose the night's results.
 
-## 私密界面
+## Private Interface
 
-后台、主动收起和换阶段会遮蔽私密信息。行动窗按逻辑回合自动打开一次，主动关闭后不重复抢占界面。已接受行动显示目标和有权知道的效果，正常与超时提交均保留约3秒；不会声称未公告的最终死亡。
+Backgrounding, closing the private view, or changing phase conceals secrets. The action window opens automatically once per logical turn and does not steal focus again after the player closes it. Accepted actions show the target and only the effects that player may know, for about three seconds after normal or late submissions. They do not claim unannounced final deaths.
 
-公开声音只播放公开台词。查验结果、女巫刀口、狼人队友与秘密目标不通过声音或震动提示。
+Public audio contains only public narration. Inspections, the Witch's wolf target, wolf teammates, and secret choices are never announced through sound or vibration.
 
-## 暂停与恢复
+## Pause and Recovery
 
-操作超时未完成是静默等待，不是暂停。房主前台/音频不可用导致系统安全冻结，返回前台、当前音频就绪和心跳正常后自动恢复剩余时间；普通页面交互可帮助解除浏览器播放限制。自动恢复有上限，恢复声音/文字主持是兜底。
+An incomplete action after the deadline waits silently; it is not paused. If the host's foreground/audio availability fails, the system freezes safely. Returning to the foreground with current audio ready and a healthy heartbeat automatically resumes the remaining time. Ordinary page interaction can help unlock browser playback. Automatic attempts are bounded; restoring sound or switching to text hosting remains a fallback.
 
-人工暂停不会自动解除，需房主明确继续；人工恢复保留既有宽限，额外给本角色一个窗口时长（狼人最多30秒，其余10秒）。系统恢复只续上冻结的剩余时间，不额外加时。恢复不会清空已接受行动；未确认的有效播报可重播，已确认公告不重播推进。无主持接管或换设备恢复。
+Manual pauses require an explicit host resume. Manual resume preserves the existing grace period by adding one role window, up to 30 seconds for wolves or 10 for others. System recovery only resumes the frozen remainder and adds no extra time. Accepted actions remain intact. A valid unacknowledged cue may replay; an acknowledged announcement does not advance twice. There is no host takeover or cross-device recovery.
 
-## 保存期限
+## Retention
 
-房间有效期是最后一次有实际状态变化的业务操作后24小时；轮询和普通心跳不续期。重开时历史局档案按原局结束时间保留24小时，后来加入者没有旧局复盘权限。访问即时检查期限，后台清理只是回收数据，不能替代访问控制。
+Rooms expire 24 hours after the last business operation that actually changes state. Polling and ordinary heartbeats do not extend expiry. When restarting, archived games remain available for 24 hours from their original ending time; later joiners cannot view earlier recaps. Access checks enforce expiry immediately. Background cleanup reclaims storage and does not replace access control.

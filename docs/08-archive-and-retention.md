@@ -1,42 +1,44 @@
-# 清理与保留记录
+# Cleanup and Retention
 
-日期：2026-10-13，prod1.0。
+English | [简体中文](08-archive-and-retention.zh-CN.md)
 
-## 可恢复保存点
+Record date: October 13, 2026, prod1.0. The retention section also reflects subsequent usage-summary maintenance.
 
-- 重构前旧实现：`archive/pre-rewrite-2026-10-06`。
-- 本次清理前完整仓库：`archive/pre-prod1.0-2026-10-13`，目标提交 `6a9754b`。
+## Recoverable Checkpoints
 
-标签是历史资料，不是正式发布或现行规则认可。没有重写Git历史、删除私人备份或恢复旧网站。
+- Implementation before the rewrite: `archive/pre-rewrite-2026-10-06`.
+- Full repository before release cleanup: `archive/pre-prod1.0-2026-10-13`, targeting commit `6a9754b`.
 
-## 从当前版本移除
+These tags preserve history; they are neither formal releases nor endorsements of current rules. Git history was not rewritten, private backups were not deleted, and the former website was not restored.
 
-- `materials/` 中旧音频、品牌草图和参考文案。
-- `web/public/audio/` 下V1至V6与calm-pilot；运行时仅V7。
-- 初期语调试验脚本 `generate-calm-pilot.py`。
-- 23份过时阶段计划/验收日志，不再混入当前开发说明。
-- 必须存在旧声音库才能运行的素材比较测试、过期试音提示和无效评审动作。
+## Removed from the Current Tree
 
-V7不可变原速/倍速文件和指纹不改写。新的发布依赖旧资源时需明确方案，不能悄悄复用被删除的路径。
+- Old audio, branding sketches, and reference copy in `materials/`.
+- V1 through V6 and calm-pilot banks under `web/public/audio/`; only V7 is active.
+- Early voice experiment script `generate-calm-pilot.py`.
+- 23 obsolete stage plans/acceptance logs that no longer belong in maintained development guidance.
+- Asset comparison tests requiring deleted banks, outdated audition hints, and invalid review actions.
 
-## 保留
+Immutable V7 originals, speed variants, and fingerprints were not rewritten. Any future dependency on old resources requires an explicit plan, not silent reuse of deleted paths.
 
-单一TypeScript核心、当前UI/播放器、云端与本地适配、当前迁移、版本/权限/恢复测试、当前美术字体、离线语音工具、隔离UI评审和部署QA工具。
+## Retained
 
-## 数据期限
+The single TypeScript core, current UI/player, cloud and local adapters, current migrations, version/permission/recovery tests, current artwork/fonts, offline audio tools, isolated UI review, and deployment QA tooling.
 
-房间详情和历史档案仍按现有24小时期限访问和清理。私有 `room_usage`、`game_usage` 摘要独立保存365天，不依赖详情外键，不因详情删除而消失。房间摘要以最后业务活跃时间/首次统计时间中较晚者计期；对局摘要以结束时间、开局时间或首次统计时间计期。小时清理任务及请求清理删除到期摘要，不永久积累。
+## Data Retention
 
-只保留房间号作为名称、时间、人数、容量、完成/中止/过期状态及测试标记。没有玩家昵称、身份、行动、Cookie或会话哈希；不统计可跨房间追踪的独立个人。旧详情已删除的数据无法恢复，旧开局时间不明时留空。
+Room details and archived games keep their existing 24-hour access and cleanup limits. Private `room_usage` and `game_usage` summaries live independently for 365 days, without foreign keys to details, and survive detail deletion. Room summaries use the later of last business activity and first statistical observation; game summaries use ending time, starting time, or first observation. Hourly and request-triggered cleanup remove expired summaries rather than accumulating them indefinitely.
 
-存档兼容中的无操作身份确认、旧超时暂停升级和旧音频阻断仍保留，详见[架构](06-web-and-development.md)。保留它们不增加用户操作。
+Retain only room code as name, timestamps, counts, capacity, completion/abort/expiry status, and test markers. No player nicknames, roles, actions, cookies, or session hashes; no cross-room tracking of unique individuals. Deleted historical details cannot be recovered. Unknown historical starting times remain null.
 
-## 不得提交
+No-op identity acknowledgment, legacy timeout-pause conversion, and old-audio rejection remain for stored-state compatibility; see [architecture](06-web-and-development.md). They add no user steps.
 
-数据库、真实会话或完整快照、认证绕过、应用账号密码、私钥、环境配置、云端/审听报告、模型缓存及私人备份。这些文件只留在被忽略且受限的本地目录；忽略规则不能替代历史扫描。
+## Never Commit
 
-## 历史验收边界
+Databases, real sessions or full snapshots, authentication bypass values, application passwords, private keys, environment configuration, cloud/audition reports, model caches, and private backups belong only in restricted ignored local directories. Ignore rules do not replace history scanning.
 
-V6应用 `293283f` 曾在受保护候选完成12会话、3夜真实计时整局，包括首夜竞选、猎人、胜负、复盘与重开。V7应用 `9f4b915` 完成301项测试、候选8会话局部回归及正式144个音频资源复核，未重复整局。
+## Historical Acceptance Boundaries
 
-上述是此前版本的记录，不自动算作prod1.0本次验收，更不等于真实手机或独立agent对局。
+V6 application `293283f` completed a protected-candidate, normal-timing game with 12 sessions and three nights, including the first-night election, Hunter, victory, recap, and rematch. V7 application `9f4b915` passed 301 tests, a partial eight-session candidate regression, and verification of all 144 live audio resources; the complete game was not repeated.
+
+Those are earlier-version records, not automatic acceptance of the prod1.0 cleanup and not real-phone or independent-agent validation.

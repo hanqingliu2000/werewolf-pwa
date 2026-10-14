@@ -1,31 +1,33 @@
-# 网页原创美术素材
+# Original Web Artwork
 
-生成日期：2026-10-07。prod1.0使用内置 image_gen 生成的八张原创 WebP，不使用真人照片或历史参考素材；尺寸、大小与 SHA256 见 `manifest.json`。网页只依赖本目录文件，原始输出不随发布包分发。
+English | [简体中文](README.zh-CN.md)
 
-| 文件 | 用途 |
+Generated October 7, 2026. prod1.0 uses eight original WebP images generated with the built-in image_gen tool, not photographs of real people or historical references. See `manifest.json` for dimensions, sizes, and SHA256 fingerprints. The website depends only on files in this directory; raw generation outputs are not shipped.
+
+| File | Purpose |
 | --- | --- |
-| `forest.webp` | 全宽入口场景 |
-| `cardback.webp` | 全员统一牌背 |
-| `werewolf.webp` | 狼人身份 |
-| `seer.webp` | 预言家身份 |
-| `witch.webp` | 女巫身份 |
-| `guard.webp` | 守卫身份 |
-| `hunter.webp` | 猎人身份 |
-| `villager.webp` | 平民身份 |
+| `forest.webp` | Full-width entry scene |
+| `cardback.webp` | Shared card back for all players |
+| `werewolf.webp` | Werewolf identity |
+| `seer.webp` | Seer identity |
+| `witch.webp` | Witch identity |
+| `guard.webp` | Guard identity |
+| `hunter.webp` | Hunter identity |
+| `villager.webp` | Villager identity |
 
-## 生成描述
+## Generation Descriptions
 
-每张单独生成。统一描述为原创电影感暗黑奇幻、蚀刻式细致笔触、清晰中间调、炭黑与锡灰、低饱和冷绿及少量深红；无 UI、文字、数字、边框、商标、水印、血腥、装饰光团或卡通效果。全部使用不透明背景。
+Generate each image separately. Shared direction: original cinematic dark fantasy, fine etched detail, clear midtones, charcoal and pewter, muted cool greens, and small deep-red accents. No UI, text, numbers, borders, brands, watermarks, gore, decorative light orbs, or cartoon treatment. All backgrounds are opaque.
 
-- 场景：16:9 月夜森林与远处古村，右侧山岩上清晰黑狼，左侧炭黑天空供独立排字；月光、苔绿树叶与克制红灯笼，细节清楚，不模糊或纯黑。
-- 牌背：3:4 古银月纹、松枝环与红线结，炭黑石纹，均衡居中，没有可识别角色，作为全员同一张牌背。
-- 狼人：3:4 黑狼人胸像、银灰眼睛、月下松林、少量深红披布；平静而有威慑，不攻击、不血腥。
-- 预言家：3:4 银发老年东亚人物、深色叠袍、古铜手镜；月下树林，面部、手与镜纹清楚，表现洞察。
-- 女巫：3:4 成年东亚女性、炭黑兜帽，一绿一红两只细长药瓶；月下草药庭院，端庄而非性感，面部与双手可辨认。
-- 守卫：3:4 成年东亚守卫、暗铁甲与披风、刻有松枝的古银盾；夜间村门与森林，人物沉稳，面部和盾牌清楚。
-- 猎人：3:4 成熟东亚猎人、短灰黑头发、炭黑皮衣与深红围巾，旧长猎枪竖在身侧且枪口不朝观者；夜间松林，不射击、不受伤。
-- 平民：3:4 成年东亚普通村民、简朴炭黑工作衣，在村口提木灯笼；月下村落、少量暖灯光，没有盔甲或魔法。
+- Scene: 16:9 moonlit forest and distant old village, a clearly visible black wolf on rocks to the right, open charcoal sky on the left for separate typography. Moonlight, moss-green leaves, and restrained red lanterns; clear detail, not blurred or crushed to black.
+- Card back: 3:4 antique silver moon engraving, pine wreath, and red thread knots on charcoal stone texture; balanced and centered, with no identifiable role, shared by all players.
+- Werewolf: 3:4 black werewolf bust with silver-gray eyes, moonlit pines, and a little deep-red cloth. Calm and imposing, not attacking or bloody.
+- Seer: 3:4 elderly East Asian figure with silver hair, layered dark robes, and an antique bronze hand mirror. Moonlit woods; readable face, hands, and mirror engraving conveying insight.
+- Witch: 3:4 adult East Asian woman in a charcoal hood, holding one green and one red slender potion vial. Moonlit herb garden; dignified rather than sexualized, with readable face and both hands.
+- Guard: 3:4 adult East Asian guard in dark iron armor and a cloak, with an antique silver shield engraved with pine. Village gate and forest at night; composed figure with a clear face and shield.
+- Hunter: 3:4 mature East Asian hunter with short gray-black hair, charcoal leather clothing, and a deep-red scarf. An old long hunting gun stands vertically beside them, not aimed at the viewer. Night pines, no firing or injury.
+- Villager: 3:4 adult East Asian villager in plain charcoal work clothes, holding a wooden lantern at the village entrance. Moonlit village and a little warm light, without armor or magic.
 
-人物均单主体居中、半身，脸与材质细节可读。网页只做等比缩放和 WebP 压缩，不修改画面内容。工具未返回精确生成模型版本，不推测版本。
+Portraits use one centered, half-length subject with readable faces and materials. Web preparation only rescales proportionally and compresses to WebP, without editing image content. The tool returned no exact generation-model version; do not invent one.
 
-字体来自 Google Fonts 官方 Noto Serif SC 公开界面字形子集，文件与 OFL 许可位于 `../fonts/`。角色图只在本人私密查看或有资格的复盘中呈现，不改变公共待机外观。浏览器布局与资源验收通过；真实聚会和手机外放仍需现场验证，详见根目录发布说明。
+The local font is a public-UI glyph subset of official Google Fonts Noto Serif SC, with files and OFL in `../fonts/`. Role art appears only in personal private views or authorized recaps, never changing public idle appearance. Browser layout/assets were checked; live gathering experience and phone speakers still require field acceptance. See the root release notes for scope.

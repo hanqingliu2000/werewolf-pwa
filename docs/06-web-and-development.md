@@ -1,33 +1,37 @@
-# 架构与开发原则
+# Architecture and Development
 
-基线：prod1.0，2026-10-13。
+English | [简体中文](06-web-and-development.zh-CN.md)
 
-## 单一规则核心
+Baseline: prod1.0, October 13, 2026.
 
-浏览器通过 `/api/v2` 访问RoomService。服务端绑定会话与成员，校验权限和上下文，调用 `src/game/` 规则核心，再事务保存状态与请求回执。
+## One Rules Core
 
-`src/narration/` 组织公开台词与播放器；`src/ui/` 消费公共/本人/房主视图，不持有完整权威快照或数据库凭据。SQL只保存状态、限流及清理数据，不复制游戏结算。
+Browsers access RoomService through `/api/v2`. The server binds sessions to membership, validates permissions and context, invokes the `src/game/` rules core, and saves state and request receipts in one transaction.
 
-## 存储
+`src/narration/` handles public scripts and playback. `src/ui/` consumes public, personal, and host views, never full authoritative snapshots or database credentials. SQL handles persistence, rate limits, and cleanup, not a second implementation of game resolution.
 
-本地使用Node内置SQLite，云端使用异步PostgreSQL适配。RoomStore条件更新配合回执同事务提交，冲突最多重读重试四次；回执按会话、房间和请求ID隔离。
+## Storage
 
-线上仅通过Supabase transaction pooler、TLS服务器验证、每实例最多一个连接和最小权限账号访问对应私有schema。不能把SQLite部署到Vercel，配置缺失必须失败。
+Local development uses Node's built-in SQLite; cloud hosting uses an asynchronous PostgreSQL adapter. RoomStore conditionally updates state and commits receipts in the same transaction, rereading and retrying conflicts at most four times. Receipt keys are scoped by session, room, and request ID.
 
-## 版本与兼容
+Production accesses its private schema through the Supabase transaction pooler, with TLS server verification, at most one connection per instance, and a least-privileged account. Do not deploy SQLite on Vercel. Missing configuration must fail explicitly.
 
-- 产品包：`1.0.0`，正式标签：`prod1.0`。
-- 规则配置标识：`werewolf-web-v1`。
-- 音频：`host-zh-v7`。
-- 房间持久化结构：`schemaVersion: 1`。
-- API：`/api/v2`。
+## Versions and Compatibility
 
-这些版本各自描述不同边界。当前仍保留小型旧请求/存档兼容：身份acknowledge为无操作、可选trialConfirmed不决定启用权限、旧超时暂停转静默等待、旧音频回调被拒绝。它们不是可选旧玩法，保留是为了不破坏已存在的房间和刷新恢复。
+- Product package: `1.0.0`; release tag: `prod1.0`.
+- Rule configuration identifier: `werewolf-web-v1`.
+- Audio: `host-zh-v7`.
+- Persisted room format: `schemaVersion: 1`.
+- API: `/api/v2`.
 
-不能为“清理”删除上述契约或把权威状态迁回浏览器。重大不兼容变更应另定迁移与回退方案。
+These versions describe separate boundaries. Small compatibility paths remain: identity acknowledgment is a no-op, optional trialConfirmed does not gate enabling narration, legacy timeout pauses become silent waiting, and callbacks from old audio are rejected. These are not selectable legacy rules. They protect existing rooms and refresh recovery.
 
-## 开发约定
+Do not remove these contracts as cleanup or move authority back to the browser. Breaking changes require a separate migration and rollback plan.
 
-锁定依赖并提交锁文件；修改行为同时更新规则、需求与测试。维护文档描述当前基线，阶段日志保存在Git历史。
+## Development Conventions
 
-完成并验证后自动提交推送，遵循根目录AGENTS。推送触发候选部署但不自动替换正式域名。验收后再手动提升；回退不删除数据、不恢复旧站。
+Pin dependencies and commit the lockfile. Behavior changes must update rules, requirements, and tests together. Maintained documents describe the current baseline; stage logs live in Git history.
+
+Public documentation is bilingual: existing `.md` paths are English by default, with adjacent `.zh-CN.md` equivalents and language links. Keep both versions aligned. This policy does not translate source implementation, gameplay UI, rules identifiers, or Chinese narration into English.
+
+Automatically commit and push completed, verified work, following the root AGENTS file. Pushes trigger candidate deployments but do not replace the production domain automatically. Promote manually after acceptance. Rollback must not delete data or restore the former site.

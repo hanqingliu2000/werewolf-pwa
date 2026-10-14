@@ -1,31 +1,34 @@
-# 页面与交互
+# Screens and Interaction
 
-基线：prod1.0，2026-10-13。视觉细则见[设计系统](../design-system/werewolf-web/MASTER.md)。
+English | [简体中文](04-ux-and-screens.zh-CN.md)
 
-| 路径 | 页面 |
+Baseline: prod1.0, October 13, 2026. See the [design system](../design-system/werewolf-web/MASTER.md) for visual specifications.
+
+| Path | Screen |
 | --- | --- |
-| `/`、`/new` | 实际建房表单，不是营销落地页 |
-| `/join` | 房间号、昵称、加入及原浏览器恢复 |
-| `/r/[room]` | 大厅、统一公共名单、本人私密任务、房主控制 |
-| `/r/[room]/recap/[game]` | 本局参与者可见的身份与逐夜复盘 |
-| `/audio/host-zh-v7/index.html` | 当前公开素材的原速/1.5/2倍对照试听 |
+| `/`, `/new` | Actual room creation form, not a marketing landing page |
+| `/join` | Room code, nickname, joining, and original-browser recovery |
+| `/r/[room]` | Lobby, shared public roster, personal private tasks, and host controls |
+| `/r/[room]/recap/[game]` | Roles and nightly recap, visible to that game's participants |
+| `/audio/host-zh-v7/index.html` | Current public narration samples at original speed, 1.5x, and 2x |
 
-## 交互约束
+## Interaction Constraints
 
-- 创建/加入昵称默认留空，不要求注册或验证用户。
-- 手机玩家名单紧凑显示，完整昵称由名单弹层与可访问名称补充。
-- 身份查看采用大比例3:4立绘；行动页优先完整容纳目标、状态、计时及确认。
-- 已合资格的前台行动自动弹出一次；用户收起后不重新抢焦点，后台遮蔽私密信息。
-- 睁眼片段后先预选，提示完成后才可正式提交；每种行动只展示合法目标。
-- 完成反馈直接显示目标及有权知道的效果，包括查验阵营、药剂消耗、狼队最终目标；保留约3秒。
-- 狼人行动可看队友和历史刀口；改票不撤销其他人的确认。
-- 房主仅大厅可管理玩家；危险操作保留确认，不能移出自己。
-- 白天录入、确认、发布分离，不自动处理现场投票；首夜竞选用现场阶段按钮。
-- 音量用滑条，主持方式用分段控件，倍速按钮在下一片段生效。
-- 键盘焦点、触控区域、安全区、短屏适配和减少动态偏好保持可用。
+- Nicknames start empty when creating or joining; no registration or user verification is required.
+- The manual ready button sits above the lobby seats and is prominent in the first viewport for unready players. Keep ready/cancel controls without tutorials or extra popups.
+- Phone rosters use compact seats; the roster overlay and accessible names provide full nicknames.
+- Identity views use large 3:4 portraits. Action screens prioritize fitting targets, status, timer, and confirmation in one viewport.
+- Eligible foreground actions open automatically once. Closing the window prevents repeated focus stealing, and backgrounding conceals private information.
+- Preselect after the eyes-open clip; submit only after the prompt finishes. Each action exposes only legal targets.
+- Completion feedback directly shows the target and permitted effect, including inspected alignment, potion use, or the wolf team's final target, for about three seconds.
+- Wolves can see teammates and past targets. Changing a vote does not revoke other wolves' confirmations.
+- The host can manage players only in the lobby. Destructive actions require confirmation, and the host cannot remove themselves.
+- Daytime entry, confirmation, and publication are separate, without automating in-person ballots. First-night election buttons advance in-person stages.
+- Volume uses a slider, hosting mode uses a segmented control, and playback speed changes apply to the next clip.
+- Keyboard focus, touch targets, safe areas, short screens, and reduced-motion preferences must remain usable.
 
-## 评审工具
+## Review Tool
 
-根目录运行 `node scripts/ui-review/start.mjs`，默认本机3010端口；需要本地应用先在3000运行。工具提供S01至S14的固定状态示例，可左右切换批注。
+Run `node scripts/ui-review/start.mjs` from the repository root. It defaults to local port 3010 and expects the app on port 3000. S01 through S14 provide fixed examples with previous/next navigation for annotation.
 
-接口模拟数据不进入真实数据库，不是第二套规则引擎。真实规则的验证必须使用核心/服务测试，不能用冻结评审场景证明整局通过。
+Mock API data never enters the real database and is not a second rules engine. Verify real rules through core/service tests; frozen review scenes cannot demonstrate a complete game.

@@ -1,24 +1,26 @@
-# 产品愿景
+# Product Vision
 
-基线：prod1.0，2026-10-13。当前文档描述现行产品，历史决定从归档标签查看。
+English | [简体中文](00-product-vision.zh-CN.md)
 
-## 用户与价值
+Baseline: prod1.0, October 13, 2026. These documents describe the maintained product; consult the archive tags for historical decisions.
 
-面向8至12人的熟人线下聚会。让房主也能参与狼人杀，由网页处理秘密行动、公开语音、计时、结算和复盘，讨论、投票、遗言留在线下。
+## Audience and Value
 
-每位玩家使用自己的浏览器。房主手机同时承担公共主持，组织权限不等于知道其他人的身份；房主出局后仍可继续主持。
+For in-person gatherings of 8 to 12 friends. Let the organizer play too: the website handles secret actions, public narration, timers, resolution, and recaps, while discussion, voting, and last words stay at the table.
 
-## 范围
+Each player uses their own browser. The host's phone also provides public narration. Organizational permissions do not reveal other players' roles, and an eliminated host can continue moderating.
 
-- 响应式中文网页，手机优先，桌面也可使用。
-- 六角色：狼人、预言家、女巫、守卫、猎人、平民。
-- 文字与语音两种主持方式；中文平直播报，试音可选。
-- 原浏览器刷新与短时断线恢复，自动状态同步和系统中断恢复。
-- 首夜警长竞选只提供主持流程，不保存警长或选票。
-- 无账号注册、验证码、原生App、远程匹配、社交体系或付费功能。
+## Scope
 
-## 产品边界
+- A responsive, Chinese-language website, designed for phones and usable on desktop.
+- Six roles: Werewolf, Seer, Witch, Guard, Hunter, and Villager.
+- Text and voice hosting, with calm Chinese narration and optional sound testing.
+- Refresh and short-disconnection recovery in the original browser, automatic state synchronization, and automatic recovery from system interruptions.
+- A first-night Sheriff election hosting sequence, without recording the Sheriff or ballots.
+- No registration, CAPTCHA, native app, remote matchmaking, social system, or payment features.
 
-需要网络，不能保证浏览器锁屏或后台持续主持。无换设备恢复、房主转移或额外公共主持设备。候选角色配比经过合法性校验，但不宣称已经证明平衡。
+## Boundaries
 
-成功标准是线下玩家能顺利完成一局，私密信息不提前公开，故障不丢失已接受的行动，房主不必扮演知道所有身份的上帝。
+A network connection is required. Continuous hosting while the browser is backgrounded or the phone is locked is not guaranteed. There is no cross-device recovery, host transfer, or separate public narration device. Presets are validated for legality, not proven balance.
+
+Success means a group can finish a game without premature disclosure of secrets, accepted actions survive interruptions, and the host does not need an all-knowing moderator's view.

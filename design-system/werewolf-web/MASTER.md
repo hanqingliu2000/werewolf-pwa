@@ -1,54 +1,56 @@
-# 狼人杀网页视觉规范
+# Werewolf Web Design System
 
-更新：2026-10-13，prod1.0。适用于入口、大厅、私密任务、主持控制与复盘，样式由 `web/src/app/globals.css` 统一维护。
+English | [简体中文](MASTER.zh-CN.md)
 
-## 视觉方向
+Baseline updated October 13, 2026, prod1.0; the lobby readiness placement below reflects subsequent maintenance. Covers entry, lobby, private tasks, host controls, and recaps. Shared styling lives in `web/src/app/globals.css`.
 
-暗黑奇幻原创位图结合清晰编辑式排版与低亮度工具界面。场景负责气氛，文字、座位和操作负责可读性。首屏直接创建、加入或恢复对局，不采用营销落地页、赌场绿金或复杂 3D。
+## Visual Direction
 
-ui-ux-pro-max 首次设计系统检索为 social deduction game dark cinematic；其营销布局未采用。明确 style 检索 dark mode OLED 返回适合娱乐与低光环境的 Dark Mode OLED，结合此前确定的炭黑、暗红和冷绿调整。UX 检索建议用于触控间距、接受回执与危险操作确认。保持仓库已验收的 Next.js 接口，不为了模板建议改写鉴权。
+Original dark-fantasy bitmaps combine with clear editorial typography and a low-light tool interface. Scenes provide atmosphere; text, seats, and controls provide readability. The first screen creates, joins, or restores a game, without a marketing landing page, casino green/gold, or complex 3D.
 
-## 色彩与文字
+The initial ui-ux-pro-max search was social deduction game dark cinematic; its marketing layout was not adopted. An explicit dark mode OLED style search suggested Dark Mode OLED for entertainment and low-light use, adapted to the established charcoal, dark red, and cool green. UX guidance informed touch spacing, accepted-action feedback, and destructive confirmations. Keep the verified Next.js interfaces rather than rewriting authorization for a template recommendation.
 
-| 语义 | 基线 |
+## Color and Typography
+
+| Meaning | Baseline |
 | --- | --- |
-| 基底 | `#161819` |
-| 表面 | `#202526`，悬浮 `#292F30` |
-| 正文与次级文字 | `#EEEAE2`、`#A8B1AD` |
-| 控件边界与分隔线 | `#687470`、`#333C3B` |
-| 主要命令 | 暗红 `#9A3546`，悬浮 `#B14859`，白字 |
-| 确认与焦点 | 冷绿 `#91C8AE` |
-| 错误 | `#F1A5AA` |
-| 标题 | 本地 Noto Serif SC 子集，系统宋体回退 |
-| 正文 | 中文系统无衬线，16px，行高 1.6 |
-| 大标题 | 入口 72px、页面 40px，固定字号，无视口字号缩放 |
+| Background | `#161819` |
+| Surface | `#202526`, hover `#292F30` |
+| Body and secondary text | `#EEEAE2`, `#A8B1AD` |
+| Control borders and dividers | `#687470`, `#333C3B` |
+| Primary commands | Dark red `#9A3546`, hover `#B14859`, white text |
+| Confirmation and focus | Cool green `#91C8AE` |
+| Error | `#F1A5AA` |
+| Headings | Local Noto Serif SC subset, system serif fallback |
+| Body | Chinese system sans serif, 16px, line height 1.6 |
+| Large headings | Entry 72px, page 40px; fixed font sizes, no viewport-based scaling |
 
-正文与基底约 14.85:1、次级文字与表面约 7.06:1、主要按钮白字约 7.07:1、输入边界与表面约 3.19:1。选中用轮廓、勾选与语义标记，不能仅靠颜色。
+Approximate contrast ratios: body/background 14.85:1, secondary/surface 7.06:1, primary-button white text 7.07:1, and input border/surface 3.19:1. Selection uses outlines, check marks, and semantic labels, not color alone.
 
-## 布局与控件
+## Layout and Controls
 
-- 内容最大宽度 1104px；入口场景全宽，页面区段不包成浮动卡片。
-- 创建与加入表单直接从昵称开始；初始值为空且不放昵称占位文案。不显示表单区的英文序号、重复标题或人数徽标；人数限制仍由配置选择与校验表达。共用页头去掉英文 wordmark，入口不再显示装饰页脚；房间页脚保留本人座位与昵称。
-- 房间主屏采用紧凑席位：手机大厅三列、64px高，公共名单四列、56px高；宽屏四列，顺序不变。长昵称单行省略，完整文本保留在可访问名称、悬浮提示和完整名单面板中；准备、存活、出局状态仍可读。
-- 行动阶段固定字号的三/四列目标，每张48–64px高，短横屏左右布局；全部座位、角色状态、倒计时与确认可同时查看。私密行动面板常规高度最多580px，减少空白和过高目标；完整名单入口及可访问全名保留。
-- 身份查看采用立绘主导布局：常见竖屏216px宽的大图居中，角色和规则在下方；桌面立绘最多300px宽，与说明并列。短屏保留并列布局并按可用高度约束图片，保持完整3:4、不裁切。收起图标固定在私密面板底部；行动页36x48px小图及单屏目标布局不放大。
-- 身份牌不重复显示“本人私密视角”；私密对话框标题只保留可访问名称，关闭与收起入口不变。预言家行动不显示“本夜一次”，倒计时、规则、名单、查验记录及确认入口保留。
-- 公开统一牌背保持完整3:4、最多240px；高度受可用视口约束，与任务按钮相隔8px。700px及以下短屏使用64px牌背与任务入口并列，为12人名单和进度让出空间；夜间标题与计时并列。不裁切图片，不扩大私密行动小图。
-- 完成后在私密身份牌的确认区直接显示本人选择与可知结果：守护/不守、狼队最高票刀口、解药/毒药/不用药、查验阵营、猎人开枪/放弃。狼人不提供空刀，预言家不提供放弃查验。狼刀和药剂只表达已确认选择与消耗，不声称尚未公告的最终死亡；收起后结果不留在公共主屏。正常和超时提交都保留约3秒完成反馈。
-- 重复项目圆角 5px、模态框 7px，不嵌套卡片。
-- 工具使用 Lucide、44px 点击区域、可访问名称与悬浮提示。模式段选、数字输入、唯一目标明确选中。
-- 手机大厅操作吸底并预留安全区，主持入口保持次级位置。
-- 使用原生 dialog 管理焦点与 Escape；后台、关闭与阶段切换清理私密草案。
-- 背景短过渡，减少动态模式移除非必要动效；无私人声音、震动或角色专属待机色。
+- Content width is capped at 1104px. Entry scenes are full width; page sections are not floating cards.
+- Create/join forms begin with an empty nickname and no nickname placeholder. Omit decorative English numbering, repeated form headings, and player-count badges; configuration choices and validation still communicate limits. Remove the shared header's English wordmark and decorative entry footer; retain own seat/nickname in the room footer.
+- Use compact seats: phone lobby three columns at 64px high, public roster four columns at 56px; wide screens use four columns without reordering. Ellipsize long nicknames on one line, retaining full accessible names, tooltips, and roster-panel text. Readiness/alive/eliminated status stays readable.
+- Action targets use fixed-size text in three/four columns, 48-64px tall, with a two-pane layout on short landscape screens. Seats, role status, countdown, and confirmation fit together. Private action panels normally cap height at 580px. Preserve the full-roster control and accessible names.
+- Identity views prioritize portraits: centered 216px-wide art on typical portrait phones, with role/rules below; desktop art up to 300px beside copy. Short screens use side-by-side layout with available-height constraints, preserving the full uncropped 3:4 image. Keep conceal controls at the private-panel bottom. Do not enlarge the action screen's 36x48px thumbnail or displace its single-screen targets.
+- Do not repeat 本人私密视角 on identity cards. Private dialog titles retain accessible names without redundant visible headings; closing/concealing stays available. Remove 本夜一次 from the Seer screen while retaining timer, rules, roster, inspections, and confirmation.
+- The public shared card back remains uncropped 3:4, up to 240px wide, constrained by available height with an 8px task-button gap. At heights of 700px or less, a 64px card back sits beside the task entry, leaving room for 12 players and progress. Night heading and timer sit inline. Do not enlarge private action thumbnails.
+- After an action, the private identity confirmation area shows one's choice and permitted result: protect/pass, highest-count wolf target, antidote/poison/no potion, inspected alignment, or Hunter shot/pass. No skipped wolf kill or skipped Seer inspection. Wolf/potion feedback describes accepted choices and consumption, never unannounced final deaths. Concealing leaves no result on the public screen. Normal and late submissions both keep feedback for about three seconds.
+- Repeated items use 5px corners; modals use 7px. No nested cards.
+- Tools use Lucide icons, 44px touch targets, accessible names, and tooltips. Modes use segmented controls; numeric inputs and single-target selection have clear states.
+- Lobby readiness sits above the seat list, visible in the first viewport for unready players. Preserve manual ready/cancel and a secondary host entry, without tutorials or extra popups.
+- Native dialog manages focus and Escape. Backgrounding, closing, and phase changes clear private drafts.
+- Keep background transitions short; reduced motion removes nonessential effects. No private sounds, vibration, or role-specific idle colors.
 
-## 页面应用
+## Screen Application
 
-入口是实际表单，产品名是首屏主标题。大厅显示席位与准备。夜间主屏统一牌背与公开阶段，主动展开后才显示本人插画和合法任务。
+Entry is the actual form, with the product name as its first-screen heading. The lobby shows seats and readiness. At night, the main screen uses the same card back and public phase; own artwork and legal tasks appear only in the private view.
 
-主持抽屉只有公开指令与组织控制。白天草案、确认和发布分开；猎人在公告后才获得合法反应。复盘采用身份图册和逐夜记录，只向参与者开放。
+The host drawer contains public commands and organizational controls only. Daytime drafting, confirmation, and publication are separate. Hunter reactions become available only after announcement. Recaps use identity artwork and nightly records, restricted to participants.
 
-## 素材与维护
+## Assets and Maintenance
 
-八张原创位图位于 `web/public/art/`，来源与生成描述见该目录 README，校验值见 manifest。文字不写进图片，历史参考素材已从当前版本移除。
+Eight original bitmaps live in `web/public/art/`; its README documents provenance and generation descriptions, and manifest records fingerprints. Text is not baked into images. Historical reference assets are removed from the current tree.
 
-全站共同维护色彩、字号与控件，不复制出独立手机版产品。支持文字与中文语音主持，试音可选；公开播放仅来自房主设备。行动窗在睁眼片段真正结束后提前打开，系统恢复自动尝试，人工暂停保持手动恢复。
+Maintain shared colors, typography, and controls rather than a separate phone product. Text and Chinese voice hosting are supported; sound testing is optional, and only the host device plays public audio. Action windows open early after the actual eyes-open clip ends. System recovery is automatic where possible; manual pauses require explicit resume.

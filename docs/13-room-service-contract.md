@@ -1,45 +1,47 @@
-# 房间服务契约
+# Room Service Contract
 
-基线：prod1.0，2026-10-13。唯一HTTP实现是 `web/src/server/http.ts`，输入契约为 `input.ts`。
+English | [简体中文](13-room-service-contract.zh-CN.md)
 
-## 路由
+Baseline: prod1.0, October 13, 2026. The sole HTTP implementation is `web/src/server/http.ts`, with input contracts in `input.ts`.
 
-| 方法 | /api/v2下的路径 | 用途 |
+## Routes
+
+| Method | Path under /api/v2 | Purpose |
 | --- | --- | --- |
-| POST | `session` | 建立原浏览器会话，不注册用户 |
-| POST | `rooms` | 建房 |
-| GET | `rooms/[id]/invitation` | 加入信息：配置、大厅标识和占用席位，不含身份 |
-| POST | `rooms/[id]/join` | 加入或识别原有成员 |
-| GET | `rooms/[id]` | 公共视图与本人座位 |
-| GET | `rooms/[id]/private` | 本人私密视图 |
-| GET | `rooms/[id]/host` | 房主组织视图 |
-| POST | `rooms/[id]/commands` | 当前上下文的动作 |
-| POST | `rooms/[id]/heartbeat` | 房主前台及音频就绪心跳 |
-| GET | `rooms/[id]/recaps` | 本会话可访问的结束局列表 |
-| GET | `rooms/[id]/recaps/[gameId]` | 指定局复盘 |
+| POST | `session` | Establish an original-browser session without user registration |
+| POST | `rooms` | Create a room |
+| GET | `rooms/[id]/invitation` | Join information: configuration, lobby identity, and occupied seats, without roles |
+| POST | `rooms/[id]/join` | Join or recognize an existing member |
+| GET | `rooms/[id]` | Public view and own seat |
+| GET | `rooms/[id]/private` | Own private view |
+| GET | `rooms/[id]/host` | Host organizational view |
+| POST | `rooms/[id]/commands` | Action in the current context |
+| POST | `rooms/[id]/heartbeat` | Host foreground/audio readiness heartbeat |
+| GET | `rooms/[id]/recaps` | Ended games accessible to this session |
+| GET | `rooms/[id]/recaps/[gameId]` | Recap for a specific game |
 
-即使邀请读取不要求房间成员，也必须先建立合法浏览器会话。房间号是8位大写十六进制，不能代替身份或权限。
+Invitation reads do not require room membership, but still require a valid browser session. Room codes contain eight uppercase hexadecimal characters; they are not authentication or authorization.
 
-## 请求
+## Requests
 
-建房包含 `requestId`、`name`、`config`；加入包含 `requestId`、`epochId`、`name`。
+Creation includes `requestId`, `name`, and `config`; joining includes `requestId`, `epochId`, and `name`.
 
-动作信封包含UUID `requestId`、`epochId`、`windowId` 和 `operation`。操作不接受 `actorId`，服务端通过Cookie映射房间成员；未知字段与不支持的动作拒绝。
+Command envelopes include a UUID `requestId`, `epochId`, `windowId`, and `operation`. Operations do not accept `actorId`; the server maps the cookie to room membership. Unknown fields and unsupported operations are rejected.
 
-`wolf_confirm` 携带 `consensusId`，新页面还携带自己的 `targetId` 防止确认旧草案；其他人的改票不使本人确认失效。白天确认/发布使用 `draftId`，播报使用 `cueId` 和当前音频版本。
+`wolf_confirm` carries `consensusId`; new clients also send their own `targetId` to prevent confirming a stale draft. Another wolf's changed vote does not invalidate one's own confirmation. Daytime confirmation/publication use `draftId`; narration uses `cueId` and the current audio version.
 
-写请求只接受JSON与可信同源Origin，正文上限16KiB。创建会话返回HttpOnly、SameSite=Strict Cookie，HTTPS环境设置Secure。
+Writes accept only JSON with a trusted same-origin Origin, with a 16 KiB body limit. Session creation returns an HttpOnly, SameSite=Strict cookie, with Secure on HTTPS.
 
-## 并发与去重
+## Concurrency and Deduplication
 
-请求回执和房间CAS写入在同一事务提交。重复请求ID与相同输入返回原结果；同ID不同输入拒绝。未知网络结果只能用原请求重试，不新建请求来重复意图。
+Request receipts and room CAS writes commit in one transaction. The same request ID with the same input returns the original result; the same ID with different input is rejected. Retry an unknown network outcome with the original request, not a new request for the same intent.
 
-CAS冲突最多重读重试四次。公开revision只随公开信息变化，不公布私密动作次数或内部存储版本。随机平票结果随状态持久化。
+CAS conflicts reread and retry at most four times. Public revision changes only with public information, never exposing private-action counts or internal storage versions. Random tie outcomes are persisted with state.
 
-## 信息与错误
+## Information and Errors
 
-公共、本人、房主和复盘响应分离。所有会话/私密响应禁止缓存，并用 `Vary: Cookie` 防止共享；Cookie、密码与快照不输出日志。
+Public, personal, host, and recap responses are separate. All session/private responses disable caching and use `Vary: Cookie` to prevent sharing. Logs contain no cookies, passwords, or snapshots.
 
-常见HTTP状态：400输入、401会话、403权限/来源、404房间/路由、409过期上下文或规则冲突、413正文过大、415类型不支持、429限流、503不可用。响应使用错误代码而非SQL/堆栈。
+Typical HTTP statuses: 400 input, 401 session, 403 permission/origin, 404 room/route, 409 stale context or rule conflict, 413 oversized body, 415 unsupported type, 429 rate limit, and 503 unavailable. Responses contain error codes, not SQL or stack traces.
 
-历史 `acknowledge` 是无操作兼容，不要求身份确认；`trialConfirmed` 是可选兼容字段，不作为语音主持先决条件。旧音频版本不得推进新cue。
+Legacy `acknowledge` is a compatibility no-op, not a required identity confirmation. `trialConfirmed` is optional compatibility input, not a prerequisite for voice hosting. Older audio versions cannot advance new cues.

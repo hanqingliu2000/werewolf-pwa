@@ -1,10 +1,12 @@
-# 开发与语音工具
+# Development and Audio Tools
 
-prod1.0，2026-10-13。这里只生成公开、版本化主持台词，不处理昵称、身份或私密行动。
+English | [简体中文](README.zh-CN.md)
 
-## 日常检查
+prod1.0, October 13, 2026. These tools generate only public, versioned narration, never nicknames, private roles, or secret actions.
 
-根目录：
+## Daily Checks
+
+From the repository root:
 
 ```sh
 npm --prefix web run repo:check
@@ -14,22 +16,22 @@ npm --prefix web run smoke
 node --test scripts/ui-review/review.test.mjs
 ```
 
-临时UI评审见[工具说明](ui-review/README.md)，不会转发真实游戏写入。
+See the [temporary UI review guide](ui-review/README.md). Review requests never forward real game writes.
 
-## 离线语音生成
+## Offline Audio Generation
 
-现有部署直接使用已提交的MP3，开发网页不需要模型。重新生成需要macOS ARM64、Python3.12与MLX/Metal；模型缓存、WAV及审听报告只在被忽略的 `.local-generation/`。
+Existing deployments use committed MP3s directly; developing the website requires no model. Regeneration requires macOS ARM64, Python 3.12, and MLX/Metal. Model caches, WAVs, and listening reports belong only in ignored `.local-generation/` storage.
 
 ```sh
 python3.12 -m venv .local-generation/venv
 .local-generation/venv/bin/python -m pip install -r scripts/audio-lock.txt
 ```
 
-台词位于 `web/src/narration/script.json`，参数位于 `voice.json`。当前V7有48段原速、96段保音调倍速。Qwen3-TTS CustomVoice、Uncle_Fu，模型revision与参数都由voice.json固定。没有真人克隆或网页实时模型。
+Lines live in `web/src/narration/script.json`, with parameters in `voice.json`. V7 contains 48 original-speed clips and 96 pitch-preserving speed variants. Qwen3-TTS CustomVoice with Uncle_Fu is pinned by model revision and parameters in voice.json. There is no human voice cloning or live model inference in the website.
 
-已发布版本不可覆盖。调整声音时先提升script/voice版本；`--reuse` 只接受仍保留且同模型/参数、同文本、已有指纹核验的旧银行。历史银行已移除，不再硬编码它们。
+Published banks are immutable. Bump script/voice versions before changing the voice. `--reuse` accepts only retained, fingerprint-verified banks with matching model, parameters, and text. Removed historical banks are no longer hardcoded.
 
-缓存模型准备好后：
+Once the pinned model is cached:
 
 ```sh
 .local-generation/venv/bin/python scripts/generate-host-audio.py --offline
@@ -38,18 +40,18 @@ python3.12 -m venv .local-generation/venv
 .local-generation/venv/bin/python scripts/generate-host-audio.py --publish --offline
 ```
 
-没有缓存时先显式下载固定revision，不能把离线模式当成下载命令。生成只写暂存目录；publish校验全清单、信号/ASR报告和两种倍速指纹后复制到本地public，不代表正式站发布。
+Without a cache, explicitly download the pinned revision first; offline mode is not a download command. Generation writes staging files only. Publishing verifies the complete manifest, signal/ASR reports, and fingerprints for both speed variants before copying into local public assets. It does not deploy production.
 
-多音字试听：
+Pronunciation audition; retain the Chinese generation instruction verbatim:
 
 ```sh
 .local-generation/venv/bin/python scripts/generate-host-audio.py --offline --only sheriff_speech --audition-instruction '警长中的长读zhǎng，第三声，不读cháng。保持平直播报，不读出拼音解释。'
 ```
 
-试听写独立私有目录，不能与reuse或publish混用。ASR不能证明多音字正确，声学指标不能替代人耳和手机外放。当前正式文件保留警长读音指导。
+Auditions use a separate private directory and cannot combine with reuse or publish. ASR cannot prove correct polyphonic pronunciation, and acoustic metrics cannot replace listening or phone speakers. Current published clips retain the Sheriff pronunciation guidance.
 
-1.5/2倍使用FFmpeg atempo预生成，播放器节点保持原生速度1；行动时间不缩减。文件为24kHz、单声道、96kbps MP3，目标响度-18LUFS，峰值-1.5dB。
+FFmpeg atempo pre-generates 1.5x/2x clips, while player nodes keep a native rate of 1. Action time is unchanged. Files are 24 kHz, mono, 96 kbps MP3, targeting -18 LUFS and -1.5 dB peak.
 
-## 安全检查
+## Security Checks
 
-Gitleaks全历史扫描及发布文件检查见[安全说明](../SECURITY.md)。扫描器、结果、凭据、音频原始文件和模型缓存不提交，不作为GitHub Release附件。
+See the [security policy](../SECURITY.md) for full-history Gitleaks and release-file checks. Do not commit scanners, reports, credentials, source audio, or model caches, or attach them to GitHub Releases.

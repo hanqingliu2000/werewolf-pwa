@@ -1,86 +1,90 @@
-# 狼人杀自动主持 | 免费网页版面杀助手
+# Werewolf Auto Host | Free Web-Based Moderator
 
-**聚在一桌，没有人需要整晚当法官。**
+English | [简体中文](README.zh-CN.md)
 
-一个面向8至12人线下聚会的免费中文狼人杀自动主持工具，也可以把它当作面杀的电子法官。手机浏览器打开就能玩，无需下载App、无需注册；房主也能拿身份参与游戏。
+**Everyone gets a role. Nobody has to sit out as the moderator.**
 
-系统负责发牌、夜间秘密行动、中文语音播报、结算与复盘。面对面的推理、竞选、投票和遗言依然留在桌边，不是线上语音匹配平台。
+A free, Chinese-language Werewolf assistant for in-person gatherings of 8-12 friends. Open it in a phone browser: no app download, account, or registration. The room host can play too.
 
-**[直接开始一局 →](https://werewolf-web-v2.vercel.app/)** · [先听听主持声音](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html)
+The app handles role assignment, secret night actions, Chinese voice narration, resolution, and recaps. Discussion, elections, voting, and last words stay around your table. This is an in-person game assistant, not an online matchmaking or voice-chat platform.
 
-适合朋友聚会、校园社团和小型桌游活动。开发者已带朋友实测9人和10人局，玩家未反馈明显操作障碍；非开发者首次独立组织一局的体验仍待验证。欢迎通过 [Issues](https://github.com/hanqingliu2000/werewolf-pwa/issues) 分享真实对局反馈。
+**[Play Now](https://werewolf-web-v2.vercel.app/)** | [Listen to the Host](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html)
 
-**首次正式发布：prod1.0** · 应用包 `1.0.0` · 规则标识 `werewolf-web-v1` · 音频 `host-zh-v7`
+**Documentation is available in English and Simplified Chinese. The interface, game flow, and voice narration remain in Chinese.** English documentation does not add an English gameplay mode.
 
-[进入正式站](https://werewolf-web-v2.vercel.app/) · [当前语音试听](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) · [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0) · [发布说明](releases/prod1.0.md) · [文档目录](docs/README.md) · [安全策略](SECURITY.md)
+Built for friend groups, campus clubs, and small tabletop gatherings. The developer has hosted real 9- and 10-player games with friends, with no obvious player-side usability issues reported. First-time hosting by an independent organizer still needs validation. Share real-world feedback through [Issues](https://github.com/hanqingliu2000/werewolf-pwa/issues).
 
-## 目录
+**First formal release: prod1.0** | Package `1.0.0` | Rules `werewolf-web-v1` | Audio `host-zh-v7`
 
-- [产品能力](#产品能力)
-- [开始一局](#开始一局)
-- [规则摘要](#规则摘要)
-- [本地开发](#本地开发)
-- [检查与测试](#检查与测试)
-- [架构与目录](#架构与目录)
-- [部署与配置](#部署与配置)
-- [数据与安全](#数据与安全)
-- [素材与语音](#素材与语音)
-- [限制与常见问题](#限制与常见问题)
-- [维护与贡献](#维护与贡献)
-- [许可与来源](#许可与来源)
+[Live App](https://werewolf-web-v2.vercel.app/) | [Voice Samples](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) | [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0) | [Release Notes](releases/prod1.0.md) | [Documentation](docs/README.md) | [Security](SECURITY.md)
 
-## 产品能力
+## Contents
 
-- 手机优先的响应式网页，桌面可用，不安装App、不注册账号。
-- 创建、分享、加入、准备、改名与换座；房主仅开局前可移出其他玩家。
-- 六角色随机发牌，身份默认遮蔽，查看可选，没有身份确认环节。
-- 文字或中文平直播报主持；试音可选，默认1.5倍，可切2倍，保持原音调。
-- 前台自动打开合法行动窗口，紧凑目标网格与私密完成反馈。
-- 狼人最高票决定、平票随机、队友与历次刀口展示。
-- 首夜警长竞选先于夜晚结果，只主持、不记录警长或票权。
-- 服务端权威状态、并发与去重，原浏览器刷新恢复及系统中断自动恢复。
-- 结束后参与者专属复盘，保留席位准备下一局。
+- [Features](#features)
+- [Start a Game](#start-a-game)
+- [Rules at a Glance](#rules-at-a-glance)
+- [Local Development](#local-development)
+- [Checks and Tests](#checks-and-tests)
+- [Architecture](#architecture)
+- [Deployment and Configuration](#deployment-and-configuration)
+- [Data and Security](#data-and-security)
+- [Artwork and Audio](#artwork-and-audio)
+- [Limitations and FAQ](#limitations-and-faq)
+- [Maintenance and Contributions](#maintenance-and-contributions)
+- [Licensing and Sources](#licensing-and-sources)
 
-## 开始一局
+## Features
 
-1. 房主在正式站填写昵称、人数、配比和胜负模式，创建房间并分享链接、二维码或房间号。
-2. 每人使用自己的浏览器入席并准备。满员且全员准备后，房主发牌。
-3. 玩家可私密查看身份，无需逐人确认。房主选择文字或语音主持，试音不是启用语音的前提。
-4. 发牌公告结束后房主开始首夜。按播报和本人行动窗操作；确认后直接显示有权知道的结果。
-5. 首夜结束先闭眼举手、睁眼竞选发言与现场投票。房主推进竞选阶段，完成后才公布夜晚结果。
-6. 白天现场讨论投票，房主录入淘汰结果，确认后发布。系统完成猎人反应与胜负判断。
-7. 结束后查看复盘或保留席位再开一局。遗言由现场人工组织。
+- Mobile-first responsive website, also usable on desktop. No installation or account required.
+- Create, share, join, ready up, rename, and change seats. Hosts can remove other players only before a game starts.
+- Random assignment across six roles. Identities stay concealed by default; viewing is optional, with no identity-confirmation step.
+- Text hosting or calm Chinese voice narration. Sound checks are optional; default 1.5x and optional 2x audio preserve pitch.
+- Eligible action panels open automatically in the foreground, with compact targets and private completion feedback.
+- Wolf voting uses the highest vote count, with persisted random tie-breaking, teammate visibility, and previous kill targets.
+- First-night Sheriff election before night results. The app moderates the procedure without recording the Sheriff or vote weight.
+- Server-authoritative state, concurrency handling, request deduplication, original-browser refresh recovery, and automatic system-interruption recovery.
+- Participant-only post-game recaps and another game with the same seats.
 
-房主也参与对局，组织权限不展示他人身份；房主出局后仍可主持。公共播报只在房主设备播放，建议保持该页面前台亮屏。
+## Start a Game
 
-## 规则摘要
+1. The host enters a nickname, player count, role composition, and victory mode, then shares the room link, QR code, or room code.
+2. Everyone joins in their own browser and manually readies up. The host deals roles once the room is full and all players are ready.
+3. Players may privately view their roles; individual identity confirmation is not required. The host chooses text or voice hosting, with no mandatory sound check.
+4. After the dealing announcement, the host starts the first night. Follow the narration and private action panel; confirmed actions show only the results that player may know.
+5. After the first night, keep eyes closed for candidacy by raised hands, then open eyes for Sheriff speeches and an offline vote. The host advances the election; night results follow only after it finishes.
+6. Discuss and vote in person. The host enters, confirms, and publishes the elimination. The system handles any Hunter reaction and victory check.
+7. View the recap or ready up for another game with the same seats. Organize last words in person.
 
-完整定义见[游戏规则](docs/02-rules-and-decisions.md)。
+The host is also a player. Organizational controls do not reveal other players' roles, and an eliminated host can continue moderating. Public narration plays only on the host's device; keep that page visible and the screen awake.
 
-| 角色 | 规则 |
+## Rules at a Glance
+
+See the [complete rules](docs/02-rules-and-decisions.md) for exact definitions.
+
+| Role | Rule |
 | --- | --- |
-| 狼人 | 每名存活狼人选择目标并确认，允许自刀和刀队友，不提供空刀；全体投完后最高票生效，最高票平票随机并保存，改票不撤销他人的确认。 |
-| 预言家 | 必须查验其他存活玩家的阵营，可重复查验，不提供放弃查验。 |
-| 女巫 | 解药、毒药各一瓶，每夜最多一瓶，也可不用药；仅首夜可自救，解药只救本夜刀口，有解药才可获知新刀口。 |
-| 守卫 | 可自守、不守，不可连续守同一人；狼刀目标同守同救仍死亡，保护不挡毒。 |
-| 猎人 | 被刀或白天投票出局可开枪/放弃，只要本批死亡包含毒药就禁枪；出局公开身份。 |
-| 平民 | 参与现场讨论投票，无夜间动作；出局不自动公开身份。 |
+| Werewolf | Every living wolf selects and confirms a living target. Self-targeting and targeting teammates are allowed; skipping the kill is not. Once all have voted, the highest count wins; tied leaders are randomly selected and persisted. Changing a vote does not revoke other wolves' confirmations. |
+| Seer | Must inspect another living player's alignment; repeat inspections are allowed. No skip option. |
+| Witch | One antidote and one poison, at most one potion per night; using neither is allowed. Self-save is first-night only. The antidote only saves the wolf target, which is revealed only while antidote remains. |
+| Guard | May self-protect or skip, but cannot protect the same person on consecutive nights. A wolf target both guarded and saved still dies. Protection does not block poison. |
+| Hunter | May shoot or decline after a wolf kill or daytime vote. Any poison cause in the death batch prohibits shooting, even alongside a wolf kill. Identity is revealed on elimination. |
+| Villager | Participates in in-person discussion and voting, with no night action. Elimination does not automatically reveal identity. |
 
-默认狼人胜利方式为**屠边**：平民或神职全部出局。也可选**人数规则**：存活狼人不少于存活好人。完整结算及合法猎人反应后判胜，狼人全灭好人胜，全员出局平局。
+The default wolf victory mode is **category elimination** (`edge`): eliminate all Villagers or all special-role players. Optional **parity** mode wins when living wolves equal or outnumber living good players. Victory is checked after the full death batch and any eligible Hunter reaction. No wolves remaining means a good-team win; everyone eliminated means a draw.
 
-狼人操作30秒，守卫、女巫、预言家和猎人10秒。语音加速不缩短时间，超时未完成只静默等待，不代选、不自动放弃、不播放暂停语音。死亡神职仍保留完整播报与窗口，避免泄露身份。
+Wolves have 30 seconds; Guard, Witch, Seer, and Hunter have 10 seconds. Faster narration does not shorten action time. Incomplete actions wait silently after timeout: no automatic choice, pass, or pause announcement. Configured dead roles retain their complete narration and window to avoid leaking information through timing.
 
-## 本地开发
+## Local Development
 
-### 环境
+### Requirements
 
-- Git。
-- Node.js `>=24.14.1 <25`，仓库锁定版本见 `web/.node-version`。
-- npm，使用已提交的 `web/package-lock.json`。
+- Git.
+- Node.js `>=24.14.1 <25`; see `web/.node-version`.
+- npm, using the committed `web/package-lock.json`.
 
-普通开发不需要Supabase账号、Python、语音模型或付费服务。音频与美术已经包含在仓库中。
+Ordinary web development needs no Supabase account, Python, voice model, or paid service. Audio and artwork are included.
 
-### 快速启动
+### Quick Start
 
 ```sh
 git clone https://github.com/hanqingliu2000/werewolf-pwa.git
@@ -89,24 +93,24 @@ npm ci
 npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)。默认SQLite写入 `web/.data/rooms.sqlite`，数据不进入Git。端口占用时改用空闲端口。
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). Local SQLite defaults to `web/.data/rooms.sqlite`, which is not committed. Choose another port if needed.
 
-本地默认不需要环境文件。需要显式配置时参考[.env.example](web/.env.example)，将私人配置放到被忽略的 `web/.env.local`。非localhost联调必须指定准确的 `WEREWOLF_ORIGIN`。
+No environment file is required by default. For explicit settings, see [.env.example](web/.env.example) and keep private values in ignored `web/.env.local`. Non-localhost access requires an exact `WEREWOLF_ORIGIN`.
 
-### 本地生产模式
+### Local Production Mode
 
-在 `web/`：
+From `web/`:
 
 ```sh
 npm run build
 npm run start -- --hostname 127.0.0.1 --port 3000
 ```
 
-SQLite仅适用于本地单机运行，不用于公网Vercel部署。
+SQLite is for local single-machine use, not public Vercel deployment.
 
-## 检查与测试
+## Checks and Tests
 
-以下命令均在 `web/` 执行：
+Run from `web/`:
 
 ```sh
 npm run repo:check
@@ -117,122 +121,122 @@ npx playwright install chromium webkit
 npm run test:ui
 ```
 
-| 命令 | 范围 |
+| Command | Coverage |
 | --- | --- |
-| repo:check | 文档链接、版本、当前素材指纹、禁止提交的文件、客户端运行时依赖 |
-| typecheck / lint | TypeScript及代码检查 |
-| test / test:coverage | 规则、服务、保存、权限、播放器及覆盖率 |
-| check | 类型、lint、测试与覆盖率门槛 |
-| smoke | 隔离SQLite、并发末席、独立会话、真实服务重启恢复 |
-| test:ui | Chromium/WebKit的本地页面与音频回归，先构建 |
-| playwright.cloud.config.ts | 显式指定受信任部署的线上局部验收 |
-| playwright.production.config.ts | 显式启用的真实计时完整浏览器局，不默认触及线上 |
+| repo:check | Documentation links, versions, active asset fingerprints, forbidden files, and client runtime dependencies |
+| typecheck / lint | TypeScript and code checks |
+| test / test:coverage | Rules, services, storage, permissions, player, and coverage |
+| check | Types, lint, tests, and coverage thresholds |
+| smoke | Isolated SQLite, last-seat concurrency, separate sessions, and recovery across a real server restart |
+| test:ui | Local Chromium/WebKit UI and audio regression; build first |
+| playwright.cloud.config.ts | Explicitly targeted partial acceptance on a trusted deployment |
+| playwright.production.config.ts | Explicitly enabled, real-time complete browser game; never targets production by default |
 
-本地测试不要带入正式数据库配置。浏览器报告、数据库、会话及截图在忽略目录，不上传。多会话脚本验收不等于真人手机、现场体验或独立agent对局。最新结果与边界见[发布说明](releases/prod1.0.md)。
+Do not run local tests with production database settings. Browser reports, databases, sessions, and screenshots stay in ignored directories. Scripted multi-session acceptance is not real-phone, in-person, or independent-agent acceptance. The [release notes](releases/prod1.0.md) record the first release's results and limits; they are not a claim that later changes reran those checks.
 
-临时UI评审在仓库根目录运行 `node scripts/ui-review/start.mjs`，使用本地应用和14个隔离示例，不操作真实房间；见[工具说明](scripts/ui-review/README.md)。
+For temporary UI review, run `node scripts/ui-review/start.mjs` at the repository root. It uses the local app and 14 isolated examples, not real rooms. See the [review tool](scripts/ui-review/README.md).
 
-## 架构与目录
+## Architecture
 
-技术栈：Next.js16.4、React19.3、TypeScript6、Zod、XState、Node SQLite、pg、Vitest与Playwright。具体锁定版本以package.json/lock为准。
+Stack: Next.js 16.4, React 19.3, TypeScript 6, Zod, XState, Node SQLite, pg, Vitest, and Playwright. Package and lockfiles are the source of exact versions.
 
-请求路径：浏览器 → `/api/v2` → 会话/权限/上下文校验 → 唯一TypeScript规则核心 → 事务保存状态与回执 → 分权限视图。
+Request flow: browser -> `/api/v2` -> session, permission, and context checks -> the single TypeScript rules core -> transactional state and receipts -> permission-specific views.
 
 ```text
 .
-├── README.md                 项目入口
-├── SECURITY.md               安全策略与防泄密检查
-├── releases/                 正式发布说明
-├── docs/                     当前产品、规则、流程、接口与部署
-├── design-system/            视觉规范
-├── scripts/                  仓库检查、离线音频、临时UI评审
-├── supabase/migrations/      私有保存结构与清理任务
-└── web/
-    ├── src/game/             唯一规则与阶段核心
-    ├── src/server/           会话、权限、SQLite/PG与HTTP
-    ├── src/narration/        台词与公开播放器
-    ├── src/ui/               响应式界面与恢复
-    ├── src/app/              Next.js页面与API
-    ├── public/               当前音频、美术、字体
-    └── tests/                单元、契约与浏览器测试
+|-- README.md                 Project entry point
+|-- SECURITY.md               Security policy and secret checks
+|-- releases/                 Formal release notes
+|-- docs/                     Product, rules, flow, API, and deployment
+|-- design-system/            Visual guidelines
+|-- scripts/                  Repository checks, offline audio, local UI review
+|-- supabase/migrations/      Private storage and cleanup migrations
+`-- web/
+    |-- src/game/             Single rules and phase core
+    |-- src/server/           Sessions, permissions, SQLite/PG, and HTTP
+    |-- src/narration/        Script and public audio player
+    |-- src/ui/               Responsive UI and recovery
+    |-- src/app/              Next.js pages and API
+    |-- public/               Current audio, artwork, and fonts
+    `-- tests/                Unit, contract, and browser tests
 ```
 
-不在SQL、评审工具或浏览器中复制权威游戏结算。保留必要旧请求/存档兼容，不恢复旧玩法；见[架构原则](docs/06-web-and-development.md)。
+Do not duplicate authoritative game resolution in SQL, review fixtures, or the browser. Small legacy request/archive compatibility remains; old gameplay is not restored. See [architecture principles](docs/06-web-and-development.md).
 
-## 部署与配置
+## Deployment and Configuration
 
-正式站使用Vercel和Supabase PostgreSQL。Vercel根目录为 `web/`、Node24、Node runtime、`iad1`；数据库 `us-east-1`。Preview与Production使用独立私有schema及账号。
+Production uses Vercel and Supabase PostgreSQL. Vercel root: `web/`; Node 24; Node runtime; `iad1`. Database region: `us-east-1`. Preview and Production have separate private schemas and accounts.
 
-| 环境变量 | 用途 |
+| Variable | Purpose |
 | --- | --- |
-| WEREWOLF_STORAGE | 本地sqlite；线上必须postgres |
-| WEREWOLF_DB_PATH | 本地数据库文件路径 |
-| WEREWOLF_SCHEMA | werewolf_preview或werewolf_prod |
-| WEREWOLF_DATABASE_URL | 对应服务账号的transaction pooler URL，6543端口 |
-| WEREWOLF_DATABASE_CA | 官方TLS根证书PEM |
-| WEREWOLF_ORIGIN | 可信同源网址，无尾部斜杠 |
-| WEREWOLF_MAINTENANCE | 1时关闭游戏入口并使健康返回维护状态 |
-| WEREWOLF_ENROLLMENT_CLOSED | 1时仅关闭新建房间，已有房间仍可加入和继续 |
+| WEREWOLF_STORAGE | sqlite locally; postgres is mandatory online |
+| WEREWOLF_DB_PATH | Local database file |
+| WEREWOLF_SCHEMA | werewolf_preview or werewolf_prod |
+| WEREWOLF_DATABASE_URL | Matching application account's transaction pooler URL, port 6543 |
+| WEREWOLF_DATABASE_CA | Official TLS root certificate PEM |
+| WEREWOLF_ORIGIN | Trusted exact origin without trailing slash |
+| WEREWOLF_MAINTENANCE | 1 closes game entry and reports maintenance health |
+| WEREWOLF_ENROLLMENT_CLOSED | 1 closes only new-room creation; existing rooms remain joinable and playable |
 
-数据库配置只进入服务端秘密配置，禁止 `NEXT_PUBLIC_`；线上缺失配置必须失败，不回退SQLite。每函数实例最多一个连接，验证TLS服务器证书。
+Database secrets are server-only, never `NEXT_PUBLIC_`. Missing cloud configuration must fail, not fall back to SQLite. Each function instance has at most one connection and verifies the server's TLS certificate.
 
-推送只产生候选，不自动提升正式域名。候选验收通过后手动发布，再核验正式网址。Production候选即使未提升，也使用prod schema，不是数据库沙箱。失败回退维护或上一兼容部署，不删除数据库。详见[部署维护](docs/19-cloud-deployment.md)。
+Pushes create candidates, not automatic production-domain promotions. Accept a candidate, promote it manually, then verify the public URL. A Production candidate uses the prod schema even before promotion; it is not a database sandbox. Roll back to maintenance or a compatible deployment without deleting the database. See [deployment operations](docs/19-cloud-deployment.md).
 
-免费后端可能闲置暂停，聚会前检查 `/api/health` 和项目控制台。维护者已配置每5天的轻量读写检查，但不保证避免免费项目暂停；没有增加付费资源。重新创建资源须重新确认费用，不把历史免费结论当永久保证。
+Free backends may pause for inactivity. Check `/api/health` and the console before a gathering. The maintainer has a lightweight read/write check every five days, but it cannot guarantee prevention of free-project pausing and adds no paid resources. Reconfirm cost and quotas before creating resources; historical free-plan checks are not permanent guarantees.
 
-### 免费服务的用量保护
+### Usage Protection
 
-全站建房预算为每小时6次、24小时20次、30天100次。窗口从首次尝试起计算，计数由数据库原子更新，跨服务实例和重启生效；失败尝试也可能占用名额，同一已成功请求的重试不重复占用。超过预算仅暂缓新建房间，已有房间的加入、准备、主持和恢复不受此预算限制。临时关闭新建房间可使用 `WEREWOLF_ENROLLMENT_CLOSED=1`。
+Global new-room reservations are capped at 6 per hour, 20 per 24 hours, and 100 per 30 days. Windows begin with the first attempt. Atomic database counters survive instances and restarts. Failed attempts may consume reservations; retrying an already successful request does not. Exhaustion only delays new rooms; joining, readying, hosting, and recovering existing rooms remain outside this budget. Use `WEREWOLF_ENROLLMENT_CLOSED=1` to temporarily stop new rooms.
 
-另有请求、会话和操作限流，以及24小时到期清理。当前运行于 Vercel Hobby / Supabase Free，不启用付费升级或按量增购；免费额度耗尽可能限制或暂停服务。[Vercel免费计划](https://vercel.com/docs/plans/hobby)、[Supabase费用控制](https://supabase.com/docs/guides/platform/cost-control)。应用预算不是平台账单硬上限，也不能覆盖静态素材流量或分布式攻击；迁移到付费方案前必须重新设置平台费用上限并审查用量。
+Request, session, and action limits and 24-hour cleanup also apply. The service currently uses Vercel Hobby / Supabase Free, without paid upgrades or extra usage purchases; quota exhaustion may restrict or pause service. See [Vercel Hobby](https://vercel.com/docs/plans/hobby) and [Supabase cost control](https://supabase.com/docs/guides/platform/cost-control). App budgets are not platform billing hard limits and do not cover static-asset traffic or distributed attacks. Revisit provider spending limits and usage before any paid migration.
 
-## 数据与安全
+## Data and Security
 
-- 原浏览器随机会话Cookie，无注册模块；HTTPS下Secure、HttpOnly、SameSite=Strict。
-- 会话只能操作本房间合法角色；房主组织视图不包含别人的秘密状态。
-- 所有私密响应no-store，写请求校验Origin、JSON、大小及上下文。
-- 参数化SQL、严格schema白名单、最小权限、RLS、输入校验和限流。
-- 房间状态与回执同事务，CAS并发重试，重复请求不重复消耗药剂或重新随机。
-- 房间在实际业务状态变更后24小时到期，轮询/普通心跳不续期；历史档案按结束时间24小时。
-- 独立统计摘要保留12个月（365天）：房间号作为名称、创建/开局/结束时间、人数及完成状态。不含玩家昵称、身份、行动或会话；不向浏览器开放。详情24小时清理不变，双周简报排除测试记录。
-- 日志不记录Cookie、身份、目标、密码或完整快照。
-- 凭据、私人环境、会话、数据库、模型缓存、备份和QA报告不提交或附加到Release。
+- Random original-browser session cookie, with no registration. HTTPS uses Secure, HttpOnly, and SameSite=Strict.
+- Sessions can perform only legal actions in their own room; host controls do not reveal others' secrets.
+- Private responses use no-store; writes validate Origin, JSON, size, and context.
+- Parameterized SQL, fixed schema allowlists, least privilege, RLS, input validation, and rate limits.
+- State and receipts commit together with CAS retries. Duplicate requests do not reuse potions or reroll ties.
+- Room details expire 24 hours after actual business changes; ordinary polling/heartbeats do not extend them. Archives expire 24 hours after game end.
+- Separate summaries retain room-code labels, creation/start/end times, counts, and completion status for 12 months (365 days). No player nicknames, roles, actions, or sessions; no browser access. Detail cleanup remains 24 hours, and biweekly reports exclude test records.
+- Logs exclude cookies, identities, targets, passwords, and full snapshots.
+- Credentials, private configuration, sessions, databases, caches, backups, and QA reports are not committed or attached to releases.
 
-审查方法、结果和未覆盖范围见[prod1.0安全报告](docs/security-prod1.0.md)。必要防护不等于全面DDoS防御或绝对安全。
+See the historical [prod1.0 security report](docs/security-prod1.0.md) for scope and uncovered risks. Necessary safeguards are not comprehensive DDoS protection or an absolute security guarantee.
 
-## 素材与语音
+## Artwork and Audio
 
-当前V7有48段原速及96段保音调倍速音频，网页仅加载公开静态文件，不运行模型、不实时上传对局内容。八张WebP含入口场景、统一牌背和六角色立绘；字体本地加载。
+V7 contains 48 original-speed and 96 pitch-preserving speed variants. The app loads public static files: no runtime model and no live upload of game content. Eight WebP files cover the entry scene, shared cardback, and six roles; fonts load locally.
 
-音频与美术清单记录文本、来源及SHA-256。已发布声音不可覆盖；改动需新版本、试听、指纹和播放验收。[素材说明](docs/05-narration-and-assets.md)、[音频工具](scripts/README.md)、[美术来源](web/public/art/README.md)。
+Manifests record text, provenance, and SHA-256. Published audio is immutable; changes require a new version, audition, fingerprints, and playback acceptance. See [asset policy](docs/05-narration-and-assets.md), [audio tools](scripts/README.md), and [artwork provenance](web/public/art/README.md).
 
-旧声音库、试音和参考素材已从当前树移除，可通过 `archive/pre-prod1.0-2026-10-13` 找回；见[清理记录](docs/08-archive-and-retention.md)。
+Old banks, auditions, and references are removed from the current tree and recoverable via `archive/pre-prod1.0-2026-10-13`; see [cleanup records](docs/08-archive-and-retention.md).
 
-## 限制与常见问题
+## Limitations and FAQ
 
-**为什么房主要保持页面前台？**
-浏览器后台、锁屏、来电及系统省电可挂起音频和计时。应用申请Wake Lock并尝试自动恢复，但不能保证锁屏后台持续主持。
+**Why keep the host's page visible?**
+Browsers may suspend audio and timers in the background, on lock, during calls, or in power-saving mode. Wake Lock and automatic recovery help but do not guarantee continuous background hosting.
 
-**切回页面还需要手动恢复吗？**
-系统中断会自动同步、尝试恢复；浏览器有时仍需普通点击解锁，失败才用“恢复声音”或文字主持兜底。人工暂停必须明确继续，不能被自动恢复取消。
+**Do I need to recover manually after returning?**
+System interruptions trigger synchronization and recovery attempts. Some browsers still require a normal interaction to unlock playback. Use the Chinese "恢复声音" control (restore audio) or text hosting as fallback. Manual pauses always require an explicit resume.
 
-**刷新会丢身份吗？**
-有效房间和原浏览器会话可以恢复。清除Cookie、切换无痕会话或换设备不能找回原身份；不提供房主接管。
+**Will a refresh lose my role?**
+An unexpired room and the original browser session can recover. Clearing cookies, switching private sessions, or changing devices cannot recover that identity. Host takeover is not supported.
 
-**为什么只能看自己的结果？**
-当前对局不公开他人身份、目标或死因；猎人出局公开身份是例外。完整记录只在结束后提供给该局参与者。
+**Why can I only see my own results?**
+Other players' roles, targets, and death causes remain private during play, except the Hunter's public identity on elimination. Full records are available only to that game's participants after it ends.
 
-**能不能离线或远程匹配？**
-不能。prod1.0面向联网的线下熟人聚会，不提供离线联机、原生App、匹配或聊天体系。
+**Does it work offline or provide remote matchmaking?**
+No. prod1.0 is for online-assisted, in-person friend groups, not offline multiplayer, native apps, matchmaking, or chat.
 
-真实iOS/Android外放、前后台及聚会体验仍需验收；配比不宣称经过平衡实测。
+Additional real-device iOS/Android speaker and lifecycle checks and in-person acceptance remain important; presets are not claimed to be proven balanced.
 
-## 维护与贡献
+## Maintenance and Contributions
 
-问题反馈请包含设备、浏览器、版本、阶段、复现步骤与脱敏截图，不包含真实身份、Cookie或凭据。安全问题遵循[安全策略](SECURITY.md)，不要公开漏洞利用所需的秘密。
+Report device, browser, version, phase, reproduction steps, and sanitized screenshots. Do not include real identities, cookies, or credentials. Follow the [security policy](SECURITY.md) for sensitive reports.
 
-修改行为时同步规则/需求与测试；修改声音时保持版本不可变。遵循[AGENTS.md](AGENTS.md)，验证后提交推送；正式发布独立验收。仓库只保留当前文档，阶段性日志由Git历史保存。
+Update rules, requirements, and tests alongside behavioral changes. Keep published audio immutable. Follow [AGENTS.md](AGENTS.md); verified work is committed and pushed, with separate production acceptance. Current docs are bilingual: English at the original path and Simplified Chinese in `.zh-CN.md` companions. Update both together, keep game-facing content in Chinese, and preserve language-local links. Historical stage logs stay in Git history.
 
-## 许可与来源
+## Licensing and Sources
 
-仓库目前没有项目级LICENSE，不把公开仓库自动称为已经授权开源。字体采用随附[OFL](web/public/fonts/OFL.txt)；语音清单中的Apache-2.0描述模型来源，不等于整个项目的统一许可证。素材来源与生成过程见各目录清单，历史参考素材不随正式版本分发。
+There is no project-level LICENSE yet; a public repository is not automatically an open-source license grant. Fonts use the bundled [OFL](web/public/fonts/OFL.txt). Apache-2.0 in the voice manifest identifies model provenance, not a license for the whole project. Asset directories document sources and generation; historical references are not distributed.

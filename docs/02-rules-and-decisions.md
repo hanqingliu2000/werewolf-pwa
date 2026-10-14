@@ -1,14 +1,16 @@
-# 游戏规则
+# Game Rules
 
-基线：prod1.0，2026-10-13。配置标识仍为 `werewolf-web-v1`；产品版本和音频版本不是规则标识。
+English | [简体中文](02-rules-and-decisions.zh-CN.md)
 
-本项目选择一种明确的玩法，不宣称是唯一通用规则。修改规则时必须同时更新核心、页面文案、测试和本文件，不能在进行中的对局悄悄改规则。
+Baseline: prod1.0, October 13, 2026. The configuration identifier remains `werewolf-web-v1`; product and audio versions are not rule identifiers.
 
-## 人数与配置
+This project chooses one explicit variant, not a universally applicable ruleset. Rule changes must update the core, UI copy, tests, and this document together. Never silently change the rules of an ongoing game.
 
-8至12人。每种神职最多一人，狼人至少一人且不超过总人数三分之一的整数部分，平民与神职均至少一人。角色总数必须等于实际人数，全员准备后才能开局。
+## Players and Configuration
 
-| 人数 | 狼人 | 预言家 | 女巫 | 守卫 | 猎人 | 平民 |
+8 to 12 players. Each special role has at most one player. There must be at least one wolf and no more than the player count divided by three, rounded down. At least one Villager and one special role are required. Role totals must match the actual player count, and everybody must be ready before starting.
+
+| Players | Werewolves | Seer | Witch | Guard | Hunter | Villagers |
 | --- | --- | --- | --- | --- | --- | --- |
 | 8 | 2 | 1 | 1 | 0 | 0 | 4 |
 | 9 | 3 | 1 | 1 | 0 | 1 | 3 |
@@ -16,48 +18,48 @@
 | 11 | 3 | 1 | 1 | 1 | 1 | 4 |
 | 12 | 4 | 1 | 1 | 1 | 1 | 4 |
 
-这些是候选预设，不是已证明平衡的板子。
+These are candidate presets, not proven-balanced compositions.
 
-## 胜负
+## Victory
 
-完整结算一批死亡并完成合法猎人反应后，按以下顺序判断：
+After resolving the entire batch of deaths and any eligible Hunter reaction, check in this order:
 
-1. 全员出局：平局。
-2. 狼人全灭、仍有好人：好人胜。
-3. 仍有狼人且满足开局所选条件：狼人胜。
+1. Everyone is eliminated: draw.
+2. No wolves remain and at least one good player survives: good team wins.
+3. Wolves remain and the selected victory condition is met: wolves win.
 
-默认屠边 `edge`：平民全部出局或神职全部出局。可选人数规则 `parity`：存活狼人不少于存活好人。两者独立，不叠加；屠边局中人数相等本身不判胜。
+The default `edge` mode requires all Villagers or all special roles to be eliminated. Optional `parity` mode requires living wolves to equal or outnumber living good players. These modes are independent, not cumulative; parity alone does not end an `edge` game.
 
-神职为预言家、女巫、守卫、猎人。药剂耗尽不改变女巫类别。
+Special roles are Seer, Witch, Guard, and Hunter. Using up potions does not change the Witch's category.
 
-## 角色
+## Roles
 
-| 角色 | 当前规则 |
+| Role | Current Rules |
 | --- | --- |
-| 狼人 | 每名存活狼人必须选择存活目标并确认一票，可自刀、刀队友；不提供空刀。全体投完后最高票生效，不要求一致或绝对过半；最高票并列则随机选择并持久保存，不因重试重抽。改选只撤销本人的确认，不要求其他人重确认。 |
-| 预言家 | 每夜必须查验一名其他存活玩家，可重复查验；仅得到阵营，不得到具体角色。不提供放弃查验。 |
-| 女巫 | 解药、毒药各一瓶，每夜最多一瓶，也可不用药。解药只能救本夜狼刀目标，仅本局第一夜可自救。有解药时可知狼刀目标，用完后的夜晚不再获得新刀口。毒药可选任意存活玩家，包括自己；被刀未获救仍可用毒，统一夜末结算。 |
-| 守卫 | 可自守或不守，不得连续两夜守同一人。中间空守后可再次守原目标。 |
-| 猎人 | 被狼刀或白天投票淘汰可射击其他存活玩家，也可放弃；本批次只要有毒药死因就不能开枪，即使同时被刀。出局时公开身份，被毒或放弃也公开；公告后才获得合法反应，不能补枪。 |
-| 平民 | 参与线下讨论与投票，无夜间秘密行动。 |
+| Werewolf | Each living wolf must select a living target and confirm one vote. Self-targeting and targeting teammates are allowed; skipping the kill is not. After all wolves vote, the highest count wins, without unanimity or an absolute majority. Randomly select among tied leaders and persist the outcome so retries cannot reroll it. Changing a target revokes only that wolf's confirmation, not anyone else's. |
+| Seer | Each night, inspect another living player; repeat inspections are allowed. Learn alignment, not the specific role. Skipping the inspection is not allowed. |
+| Witch | One antidote and one poison, at most one potion per night; passing is allowed. The antidote only saves the current wolf target, and self-saving is allowed only on the first night of the game. The wolf target is visible while the antidote remains; after it is used, future targets are hidden. Poison may target any living player, including the Witch. A Witch targeted by wolves and not saved can still poison; resolve everything at the end of the night. |
+| Guard | May protect themselves or nobody, but not the same player on consecutive nights. A night without protection breaks the consecutive-target restriction. |
+| Hunter | When killed by wolves or eliminated by the daytime vote, may shoot another living player or pass. Any poison cause in the same death batch prevents shooting, even with a simultaneous wolf attack. Reveal the Hunter's identity on elimination, including poisoning or passing. The reaction becomes available only after the announcement; no later extra shot is allowed. |
+| Villager | Participates in offline discussion and voting; no secret night action. |
 
-## 守护、解药与毒药
+## Protection, Antidote, and Poison
 
-狼刀目标只被守护或只被解药救治时免除狼刀；同时被守护和救治时仍死亡，按狼刀死因处理。没有任何保护时也死亡。守护、解药均不能抵挡毒药。
+A wolf target survives the wolf attack when protected by the Guard alone or saved by the antidote alone. Receiving both protection and antidote still results in death, attributed to the wolf attack. Receiving neither also results in death. Neither protection nor antidote blocks poison.
 
-例如：守卫守A、女巫救A且狼人刀A，A死亡；猎人同夜被刀和毒，无论守救情况，都不能开枪。
+For example, if the Guard protects A, the Witch saves A, and wolves target A, A dies. A Hunter attacked and poisoned in the same night cannot shoot, regardless of protection or antidote.
 
-## 时序与公开
+## Timing and Disclosure
 
-- 夜间顺序：守卫、狼人、女巫、预言家；未配置的角色不建立阶段。
-- 已配置但死亡的角色，以及耗尽药剂的女巫，仍播放完整睁眼/行动/闭眼序列并保留同样时长。
-- 狼人操作30秒；守卫、女巫、预言家、猎人10秒。已完成的夜间行动仍等固定窗口结束；超时未完成只静默等待，完成后继续。
-- 语音睁眼段真正结束后可提前预选；行动提示播完才开完整计时并允许提交。加速语音不缩减操作时间。
-- 第一次夜晚结算后先闭眼举手、睁眼警长竞选发言及线下投票，房主确认竞选完成后才公布结果；系统不记录警长或票权。后续夜晚不重复竞选。
-- 白天投票在线下进行。房主录入淘汰目标或无人出局，确认草案后发布；发布前可改，发布后不可撤销。
-- 普通出局不翻牌、不公布死因；猎人为唯一身份公开例外。遗言由现场人工组织。
-- 复盘仅向本局参与者公开完整身份、逐夜行动及结算。
+- Night order: Guard, Werewolves, Witch, Seer. Roles absent from the configuration have no phase.
+- Configured but eliminated roles, and a Witch with no potions, still receive the complete eyes-open/action/eyes-closed sequence and the same window length.
+- Wolves have 30 seconds; Guard, Witch, Seer, and Hunter have 10. Early-completed night actions still wait for the fixed window to end. Incomplete actions wait silently after the deadline and proceed when completed.
+- Preselection opens after the actual end of the eyes-open clip. The full countdown and submission permission begin after the action prompt finishes. Faster narration does not shorten action time.
+- After the first night resolves, conduct eyes-closed nominations, eyes-open Sheriff speeches, and offline voting. Announce night results only after the host finishes the election. The system records neither the Sheriff nor vote weight. Later nights do not repeat the election.
+- Daytime voting is offline. The host enters an elimination target or no elimination, confirms the draft, and publishes it. The draft is editable before publication; published results cannot be undone.
+- Ordinary eliminations reveal neither role nor cause of death. The Hunter is the only role-reveal exception. Last words are organized in person.
+- Full roles, nightly actions, and resolutions appear in the recap only for that game's participants.
 
-## 实现定位
+## Implementation
 
-配置：[config.ts](../web/src/game/config.ts)；结算与时间：[rules.ts](../web/src/game/rules.ts)；命令：[engine.ts](../web/src/game/engine.ts)。规则只在TypeScript核心实现，不复制到SQL或评审工具。
+Configuration: [config.ts](../web/src/game/config.ts); resolution and timing: [rules.ts](../web/src/game/rules.ts); commands: [engine.ts](../web/src/game/engine.ts). Rules exist only in the TypeScript core, not in SQL or the review tool.

@@ -1,56 +1,58 @@
-# prod1.0安全检查
+# prod1.0 Security Review
 
-日期：2026-10-13。范围是当前仓库、可达Git历史、依赖、部署包和现有应用/数据库权限；不是专业渗透测试或绝对安全保证。
+English | [简体中文](security-prod1.0.zh-CN.md)
 
-## 已执行
+Historical review date: October 13, 2026. Scope: the repository, reachable Git history, dependencies, deployment package, and application/database permissions at that release. This is not a professional penetration test, a current re-audit, or an absolute security guarantee. Later summary tables are documented in the [operations guide](19-cloud-deployment.md).
 
-- 官方Gitleaks8.30.1 ARM64二进制通过官方SHA-256核验，扫描所有可达refs的55个提交，未检出凭据。默认规则未添加豁免或静默忽略。
-- npm审计当前锁定依赖，报告0个已知漏洞，包括生产和开发依赖；这仅说明查询时的公告状态。
-- GitHub现有secret scanning及push protection已启用，当前未处理的secret scanning告警为0；未为此启用收费服务。
-- Supabase安全advisor无告警。两个私有schema的6张表都开启RLS，anon/authenticated无SELECT；两个应用账号均非超级用户、不能建库/建角色、无BYPASSRLS。
-- 人工检查会话与房间绑定、角色/阶段权限、复盘参与者限制、Origin、16KiB JSON上限、参数化SQL、schema白名单、TLS和事务回执。
-- 公开视图通过已公告事件投影，不提前泄露夜晚死亡；私密响应禁止缓存；服务日志不包含目标、身份、Cookie、密码或快照。
+## Checks Performed
 
-## 发布前新增保护
+- Verified the official Gitleaks 8.30.1 ARM64 binary against its official SHA-256 checksum. Scanned 55 commits across reachable refs with no detected credentials. No exemptions or silent ignores were added to default rules.
+- npm audit reported zero known vulnerabilities in locked production and development dependencies, reflecting advisories available at query time only.
+- Existing GitHub secret scanning and push protection were enabled, with zero open secret-scanning alerts. No paid service was enabled for this review.
+- Supabase security advisor reported no warnings. At that point, all six tables across the two private schemas had RLS; anon/authenticated had no SELECT. Both application accounts were nonsuperusers without database/role creation or BYPASSRLS.
+- Manually checked session-room binding, role/phase permissions, participant-only recaps, Origin, the 16 KiB JSON limit, parameterized SQL, schema allowlisting, TLS, and transactional receipts.
+- Public views project announced events rather than exposing internally resolved night deaths. Private responses disable caching. Service logs contain no targets, roles, cookies, passwords, or snapshots.
 
-Git忽略规则覆盖常见数据库、私钥、日志与认证文件。web根目录新增.vercelignore，避免只有仓库根排除却遗漏应用根发布包。非敏感.env.example允许提交，真实环境必须排除。
+## Release Safeguards
 
-仓库检查扫描候选路径、文档链接、当前声音指纹与客户端运行时依赖，阻止服务器实现进入浏览器；它是额外检查，不替代凭据扫描。
+Git ignores common databases, private keys, logs, and authentication files. A `.vercelignore` in the web application root prevents relying solely on repository-root exclusions. Nonsensitive `.env.example` files are allowed; real environment files are excluded.
 
-297份当前发布候选文件已物化到私有目录扫描，Gitleaks未检出；客户端静态构建约860KiB扫描也未检出。额外使用3个现有应用密码/预览认证值做精确比对，315份候选及客户端文件没有命中，Git远端URL没有内嵌认证。
+Repository checks inspect candidate paths, documentation links, active audio fingerprints, and client runtime dependencies to prevent server code entering the browser. They supplement, not replace, credential scanning.
 
-只读云端查询另确认：anon、authenticated、service_role没有两份schema的USAGE，两个应用账号仅能访问各自环境。没有改变线上RLS、口令或数据库结构。
+Materialized 297 candidate files into a private directory and scanned them with Gitleaks, finding no secrets. A roughly 860 KiB client static build also scanned clean. Exact matching of three existing application-password/preview-authentication values found no hits in 315 candidate/client files. Git remote URLs contained no embedded credentials.
 
-最终297份候选文件另行扫描未检出，没有跟踪符号链接；V7的144段文件与清理前逐字节一致。247份服务端构建文件与9份tracing清单未包含已知凭据或私人目录。语音工具的版本目录限制阻止路径穿越，Python语法检查通过。
+Read-only cloud queries additionally confirmed that anon, authenticated, and service_role lacked USAGE on both schemas, while each application account could access only its environment. No production RLS, passwords, or schema structure changed.
 
-清理提交`f7fa4ed`的暂存差异扫描未检出；提交后所有可达refs共56个提交的Gitleaks复核也未检出。Git源包含297份文件，私人配置/数据库/缓存路径为0；没有不可达提交或Git对象完整性错误。最终标签仅补充已验收文档，发布前再次运行仓库检查、暂存/历史和标签源包扫描。
+A final scan of all 297 candidates found no secrets or tracked symlinks. All 144 V7 files were byte-identical to their pre-cleanup versions. No known credentials or private paths appeared in 247 server build files or nine tracing manifests. Audio-tool version-directory restrictions blocked path traversal, and Python syntax checks passed.
 
-原始扫描、QA、认证和数据库文件只保存在私有忽略目录，不附加到Release。GitHub自动生成的源码附件使用正式标签当前树，不含本地私人文件；旧归档标签与历史仍可达，已包含在历史扫描范围内。
+The staged cleanup for `f7fa4ed` scanned clean. After commit, Gitleaks rescanned 56 commits across all reachable refs without findings. The Git source tree contained 297 files and zero private configuration/database/cache paths, with no unreachable commits or object-integrity errors. The final tag added accepted documentation only; repository, staged/history, and tagged-source checks were repeated before release.
 
-## 线上发布复核
+Raw scan, QA, authentication, and database files stayed in private ignored directories, not Release attachments. GitHub's generated source archive uses the tagged tree, without local private files. Historical archive tags remained reachable and were included in history scanning.
 
-应用提交`f7fa4ed3f1ffadb07e10b36ea5a2d495c147715f`的部署`dpl_BdJEbpcAUmTnZ3Ny43KSuvoFLMyf`通过候选API三会话和八会话浏览器局部检查（1.2分钟）后，手动提升到正式网址。域名自动分配仍关闭。
+## Live Release Checks
 
-正式网址再次验证数据库健康、独立会话、建房加入、保存读取、非房主/陌生会话拒绝、错误Origin拒绝、SQL形状路径拒绝、回执去重、Secure/HttpOnly/SameSite Cookie、no-store与144段音频指纹。候选及正式网址的环境文件、Git配置和已移除声音库路径返回404。
+Deployment `dpl_BdJEbpcAUmTnZ3Ny43KSuvoFLMyf` for application commit `f7fa4ed3f1ffadb07e10b36ea5a2d495c147715f` passed a three-session candidate API check and an eight-session partial browser check lasting 1.2 minutes, then was manually promoted. Automatic domain assignment remained disabled. This is the historical prod1.0 promotion, not a claim about today's deployment.
 
-本次仅创建三个有明确Cloud QA名称的测试房间，按精确报告ID清理；只读复核剩余0个。没有删除真实房间、重跑迁移、修改在线口令或增加用户验证。
+The public URL was rechecked for database health, independent sessions, creation/joining, persistence, rejection of nonhost/foreign sessions, wrong-Origin rejection, SQL-shaped path rejection, receipt deduplication, Secure/HttpOnly/SameSite cookies, no-store, and fingerprints for all 144 audio files. Environment files, Git configuration, and removed banks returned 404 on candidate and production URLs.
 
-## 验收过程中发现的问题
+Only three explicitly named Cloud QA rooms were created and removed by exact report IDs; a read-only check found zero remaining. No real rooms were deleted, migrations rerun, online passwords changed, or user-verification steps added.
 
-首次默认本地浏览器入口包含云端用例，导致环境专属断言失败；已分离cloud/production配置。旧用例仍期待系统手动恢复、拦截原速素材、跳过首夜竞选或关闭狼队预选草案后再确认，已对齐现行行为；没有通过更改玩法来满足旧断言。
+## Issues Encountered During Acceptance
 
-一个重试用例把客户端观察新窗口前的合法重试也判失败；修订为原信封一致、有限重试，且观察新窗口后至少3.5秒不再发送过期回执。不是删除去重或过期检查。
+The first default local browser entry included cloud cases, causing environment-specific assertions to fail. Cloud/production configurations were separated. Older cases expected manual system recovery, original-speed audio interception, no first-night election, or wolf confirmation after closing the preselection draft. They were aligned with existing behavior, without changing gameplay to satisfy old assertions.
 
-WebKit的显式文档替换期间出现本机同源房间读取的取消诊断，与[上游已确认问题](https://github.com/microsoft/playwright/issues/43120)一致。仅符合浏览器、导航阶段、同源主机与本测试房间路径的诊断单独保存；游戏期间或其他地址的页面错误仍失败，没有关闭CORS或放宽Origin。人工生命周期测试使用已有keepalive回退，不冒充真实Safari原生Beacon或手机后台验收。
+One retry test incorrectly rejected valid retries before the client observed a new window. It was corrected to retain the original envelope, bound retries, and stop stale receipts for at least 3.5 seconds after observing the new window. Deduplication and stale-context checks remained intact.
 
-一次301项断言通过后出现PGlite协议异步错误，该次未计通过；独立13项保存契约和随后整套301项重复通过。没有声称已经定位该偶发错误的根因。
+WebKit emitted local same-origin room-read cancellation diagnostics during explicit document replacement, consistent with the [confirmed upstream issue](https://github.com/microsoft/playwright/issues/43120). Only diagnostics matching browser, navigation stage, same-origin host, and this test room's path were recorded separately. Errors during gameplay or at other addresses still failed; CORS and Origin protection were not relaxed. Artificial lifecycle tests used the existing keepalive fallback, not a claim of native Safari Beacon or real-phone background acceptance.
 
-完整浏览器尝试中有失败和中途停止，不计为整批通过；修订后受影响用例分批覆盖。最终WebKit六项（含4个完整UI局）7.3分钟通过，Chromium三个最终用例1.7分钟通过；此前针对性自动恢复、身份流程、文字整局和12人语音整局也已通过。所有报告只留在忽略目录。
+One run passed 301 assertions but then emitted an asynchronous PGlite protocol error; it was not counted as a pass. Thirteen isolated persistence contracts and a subsequent full 301-test rerun passed. The intermittent root cause was not claimed to be diagnosed.
 
-## 风险与边界
+Complete browser attempts included failures and interruptions and were not reported as fully passing batches. Affected cases were rerun in batches after correction. The final six WebKit cases, including four complete UI games, passed in 7.3 minutes; three final Chromium cases passed in 1.7 minutes. Earlier targeted automatic recovery, identity flow, text games, and a 12-player voice game also passed. Reports stayed in ignored storage.
 
-限流不是分布式DDoS防御；免费额度仍可能被恶意访问消耗。没有加入登录或验证码，保持正常游戏体验。凭据模式扫描可能漏掉特殊秘密，依赖审计不能证明无未公开漏洞。
+## Risks and Boundaries
 
-历史归档标签仍保留旧代码与素材；删除当前文件不会删除历史。没有发现需轮换的已泄露凭据，未盲目更换在线账号、强推或重写历史。
+Rate limiting is not distributed DDoS protection, and hostile traffic can still consume free quotas. No login or CAPTCHA was added, preserving ordinary play. Pattern scanners can miss unusual secrets; dependency audits cannot prove the absence of undisclosed vulnerabilities.
 
-真实手机、浏览器系统限制、大规模压力测试和独立安全渗透测试没有作为本次已验证结果。
+Historical tags retain old code and assets. Removing current files does not erase history. No leaked credentials requiring rotation were found; online accounts were not blindly replaced, and history was neither force-pushed nor rewritten.
+
+Real phones, browser/OS limits, large-scale load, and independent penetration testing were not validated by this review.

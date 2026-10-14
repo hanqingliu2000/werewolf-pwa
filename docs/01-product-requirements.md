@@ -1,34 +1,36 @@
-# 产品需求
+# Product Requirements
 
-基线：prod1.0，2026-10-13。具体玩法见[规则](02-rules-and-decisions.md)。
+English | [简体中文](01-product-requirements.zh-CN.md)
 
-## 已实现需求
+Baseline: prod1.0, October 13, 2026. See the [game rules](02-rules-and-decisions.md) for exact mechanics.
 
-| 模块 | 要求 |
+## Implemented Requirements
+
+| Module | Requirement |
 | --- | --- |
-| 房间 | 建房、分享房间号/链接/二维码、加入、换座、改名、准备 |
-| 配置 | 8至12人预设及受限自定义，开局前固定角色配比与胜负模式 |
-| 大厅管理 | 房主调整配置、仅开局前移出其他玩家，不能移出自己 |
-| 发牌 | 随机发牌，默认遮蔽，查看身份可选，不逐人确认身份 |
-| 夜晚 | 合法目标、提前预选、确认、私密结果、固定操作窗口 |
-| 狼队 | 本人投票确认、最高票决定、平票随机、队友与历史目标 |
-| 主持 | 文字或语音、可选试音、音量、1.5/2倍保音调播放 |
-| 首夜竞选 | 闭眼举手、睁眼发言与线下投票、竞选完成后公布夜晚结果 |
-| 白天 | 线下讨论与投票；房主录入、确认、发布淘汰结果 |
-| 猎人 | 出局公告后符合资格的本人开枪/放弃，不能代选 |
-| 结束 | 完整结算及反应后判胜，参与者复盘、保留席位再开一局 |
-| 恢复 | 原浏览器会话、刷新恢复、前台同步、系统自动恢复、人工暂停手动恢复 |
-| 隐私 | 公共、本人、房主组织、复盘四种信息边界 |
+| Rooms | Create, share a code/link/QR code, join, change seats, rename, and ready up |
+| Configuration | Presets for 8 to 12 players and constrained customization; role composition and victory mode are fixed before dealing |
+| Lobby management | The host can change configuration and remove other players before the game, but cannot remove themselves |
+| Dealing | Random, concealed roles; viewing a role is optional, with no individual identity acknowledgment |
+| Night | Legal targets, early preselection, confirmation, private results, and fixed action windows |
+| Wolves | Each wolf confirms their own vote; the highest count wins, ties are random; teammates and target history are visible privately |
+| Hosting | Text or voice, optional sound test, volume control, and pitch-preserving 1.5x/2x playback |
+| First-night election | Eyes-closed nominations, eyes-open speeches and offline voting; announce night results only after the election |
+| Day | Offline discussion and voting; the host enters, confirms, and publishes the elimination |
+| Hunter | After the elimination announcement, only the eligible Hunter may shoot or pass; nobody acts on their behalf |
+| Ending | Check victory after the full resolution and eligible reactions; participant-only recap and rematch with retained seats |
+| Recovery | Original-browser session, refresh recovery, foreground synchronization, automatic system recovery, and explicit resume after manual pause |
+| Privacy | Separate public, personal, host-organizational, and recap information boundaries |
 
-## 验收要求
+## Acceptance Criteria
 
-1. 同房间的多个会话和服务实例共享权威状态，重复请求不重复消耗资源。
-2. 普通玩家不能执行组织命令，房主不能读取其他人的身份或私密目标。
-3. 出局神职和耗尽药剂的女巫保留相应播报及窗口，避免节奏泄密。
-4. 正常提交与超时后提交都显示约3秒本人完成反馈；公共页不展示私密结果。
-5. 狼人30秒，其余行动角色10秒；超时未完成静默等待，不代选或播放暂停语音。
-6. 首夜竞选完成前，公开名单及私密队友状态不泄露内部死亡结算。
+1. Sessions and service instances share authoritative room state; duplicate requests do not repeat resource consumption.
+2. Ordinary players cannot issue organizational commands, and the host cannot read other players' roles or secret targets.
+3. Eliminated special roles and a Witch without potions retain their narration and action windows, preventing timing-based disclosure.
+4. Normal and late submissions both show personal completion feedback for about three seconds; public views contain no private results.
+5. Wolves have 30 seconds; other acting roles have 10. Incomplete actions wait silently after the deadline, without automatic choices or pause narration.
+6. Before the first-night election ends, public lists and private teammate status do not disclose internally resolved deaths.
 
-## 不包含
+## Excluded
 
-在线逐票白天投票、警长票权、警徽流、自动遗言、房主接管、换设备找回、锁屏后台保证、离线联机、原生安装包和线上独立agent试玩均不是prod1.0已交付能力。
+Individual online daytime ballots, Sheriff vote weight, badge succession, automated last words, host takeover, cross-device recovery, guaranteed locked-screen/background playback, offline multiplayer, native packages, and independent online agent playtests are not delivered prod1.0 capabilities.

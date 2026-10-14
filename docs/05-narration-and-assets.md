@@ -1,36 +1,38 @@
-# 播报与素材
+# Narration and Assets
 
-基线：prod1.0，2026-10-13。
+English | [简体中文](05-narration-and-assets.zh-CN.md)
 
-## 当前资源
+Baseline: prod1.0, October 13, 2026.
 
-- 台词：`web/src/narration/script.json`。
-- 生成参数：`web/src/narration/voice.json`。
-- 发布素材：`web/public/audio/host-zh-v7/`，48段原速MP3、96段1.5/2倍保音调MP3。
-- 八张原创WebP：`web/public/art/`，含场景、牌背、六角色立绘。
-- Noto Serif SC本地字体与OFL：`web/public/fonts/`。
-- 文件指纹及来源由各素材目录的 `manifest.json` 保存。
+## Current Resources
 
-历史试音、旧声音库和旧品牌参考不随prod1.0分发；从归档标签查看。
+- Script: `web/src/narration/script.json`.
+- Generation parameters: `web/src/narration/voice.json`.
+- Published bank: `web/public/audio/host-zh-v7/`, with 48 original-speed MP3s and 96 pitch-preserving 1.5x/2x MP3s.
+- Eight original WebP images in `web/public/art/`: scene, card back, and six role portraits.
+- Local Noto Serif SC font and OFL in `web/public/fonts/`.
+- Each asset directory's `manifest.json` records fingerprints and provenance.
 
-## 播报原则
+Historical auditions, older banks, and former branding references are not distributed with prod1.0; consult the archive tags.
 
-Uncle_Fu中文男声，简短、平直、无过度戏剧化。每种角色只说明当前动作，不朗读确认规则。公开声音不得包含昵称、私密身份、查验、女巫刀口或队友协作。
+## Narration Principles
 
-完整睁眼/行动/闭眼序列覆盖已配置的角色，即使角色已死亡或女巫药剂已耗尽。角色不存在于配比时不建立对应阶段。操作超时只等待，不播放暂停提示。
+Use the Uncle_Fu Chinese male voice: concise, even, and without excessive drama. Each role prompt describes the current action, without reciting confirmation rules. Public narration must not include nicknames, private roles, inspection results, the Witch's wolf target, or teammate coordination.
 
-首夜增加闭眼举手、睁眼竞选发言、结果衔接三段；“警长”读 `jǐng zhǎng`，生成指令保留多音字提示。
+Configured roles retain the full eyes-open/action/eyes-closed sequence even after elimination or when the Witch has no potions. Roles absent from the composition have no phase. Action deadlines lead to silent waiting, not pause narration.
 
-## 播放与计时
+The first night adds three clips: eyes-closed nominations, eyes-open election speeches, and transition to results. Pronounce 警长 as `jǐng zhǎng`; retain the pronunciation hint in generation instructions.
 
-默认1.5倍，可切2倍。变速素材用FFmpeg atempo预处理，Web Audio播放节点的原生速度仍为1，保持音调；下一片段才应用速度切换。
+## Playback and Timing
 
-睁眼段实际结束后通知服务端开放预选，完整行动提示结束后开启30/10秒操作窗。不能以估算语音长度或改变 playbackRate 来缩短行动时间。
+Default playback is 1.5x, with optional 2x. FFmpeg atempo pre-processes the faster files, while Web Audio nodes retain a native playback rate of 1, preserving pitch. Speed changes take effect on the next clip.
 
-系统中断自动尝试恢复并核对有效cue，已确认播报不重复推进；人工暂停仍手动继续。Wake Lock只协助前台亮屏，不承诺后台或锁屏播放。
+After the actual end of the eyes-open clip, notify the server to allow preselection. Start the full 30/10-second action window only after the action prompt finishes. Estimated audio length or a playbackRate change must not shorten action time.
 
-## 更新流程
+System interruptions trigger bounded automatic recovery with valid-cue checks; acknowledged narration cannot advance twice. Manual pauses still require manual resume. Wake Lock only helps keep a foreground screen awake and does not promise background or locked-screen playback.
 
-生成只处理公开台词，模型缓存、原始WAV与审听报告保存在忽略目录。变更已发布文件必须提升音频版本，暂存、试听、信号/ASR核验、生成倍速、验证全部指纹后发布本地资源。详细命令见[语音工具](../scripts/README.md)。
+## Updating Assets
 
-ASR与声学指标只辅助检查，不替代人耳确认、多音字试听或真实手机外放验收。
+Generate only public lines. Keep model caches, source WAVs, and audition reports in ignored directories. Changing published files requires a new audio version: stage, audition, check signal/ASR results, generate speed variants, verify all fingerprints, then publish local assets. See the [audio tools](../scripts/README.md) for commands.
+
+ASR and acoustic measurements assist review; they do not replace human listening, pronunciation checks, or real-phone speaker acceptance.

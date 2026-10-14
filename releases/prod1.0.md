@@ -1,72 +1,74 @@
-# prod1.0：首次正式发布
+# prod1.0: First Production Release
 
-日期：2026-10-13。应用包1.0.0，规则标识werewolf-web-v1，音频host-zh-v7。
+English | [简体中文](prod1.0.zh-CN.md)
 
-正式网址：[狼人杀自动主持](https://werewolf-web-v2.vercel.app/)。[GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0)。
+Historical release date: October 13, 2026. Application package 1.0.0; rule identifier werewolf-web-v1; audio host-zh-v7. Results below describe that release, not a fresh acceptance of later changes.
 
-## 产品
+Live website: [Werewolf Auto Host](https://werewolf-web-v2.vercel.app/). [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0).
 
-面向8至12人线下聚会的中文网页版自动主持。每位玩家使用自己的浏览器，房主也可参与。无需安装、注册或验证码。
+## Product
 
-## 首发能力
+A Chinese-language web moderator for in-person Werewolf gatherings of 8 to 12 players. Everyone uses their own browser, and the host can play too. No installation, registration, or CAPTCHA.
 
-- 建房、分享、加入、准备、换座、改名，以及大厅房主移出玩家。
-- 六角色随机身份、私密查看和自动行动窗，不要求身份确认。
-- 屠边/人数胜负、最高票狼刀、随机平票、狼人队友与刀口历史。
-- 首夜警长竞选先于结果公告，仅主持，不记录警长或选票。
-- 文字和中文平直播报主持，可选试音、音量及1.5/2倍保音调播放。
-- 守卫、预言家、女巫、猎人10秒，狼人30秒；超时未完成静默等待。
-- 同守同救死亡、首夜女巫自救、毒药优先禁枪等固定规则。
-- 原浏览器恢复、系统中断自动恢复、前台亮屏协助，人工暂停手动继续。
-- 结束后参与者复盘及保留席位重开。
+## Launch Features
 
-## 仓库整理
+- Create, share, join, ready up, change seats/nicknames, and remove players as host in the lobby.
+- Six randomly assigned roles, private identity viewing, and automatic action windows, without mandatory identity acknowledgment.
+- Edge/parity victory modes, highest-count wolf targets, random ties, wolf teammates, and target history.
+- First-night Sheriff election before result announcement, with narration only and no Sheriff/ballot records.
+- Text hosting or calm Chinese narration, optional sound testing, volume, and pitch-preserving 1.5x/2x playback.
+- Guard, Seer, Witch, and Hunter: 10 seconds; wolves: 30 seconds. Unfinished actions wait silently after deadlines.
+- Fixed rules including death from simultaneous protection/antidote, first-night-only Witch self-save, and poison overriding Hunter shooting eligibility.
+- Original-browser recovery, automatic system-interruption recovery, foreground wake assistance, and explicit resume after manual pause.
+- Participant-only recaps and rematches with retained seats.
 
-移除历史参考素材、V1至V6声音与初期试音、23份过时阶段日志；当前仅保留不可变V7的48段原速和96段保音调文件。
+## Repository Cleanup
 
-重新对齐产品、规则、交互、保存有效期、API和部署文档；修正临时评审示例与现行玩法不一致的问题。必要旧请求/存档兼容继续保留，不更换规则核心、不迁移或删除真实房间。
+Removed historical reference material, V1-V6 banks and early auditions, and 23 obsolete stage logs. Kept immutable V7 files only: 48 original-speed clips and 96 pitch-preserving variants.
 
-新增完整README、安全策略、仓库一致性检查和应用目录的部署排除；应用包版本正式设为1.0.0。清理前保存点为archive/pre-prod1.0-2026-10-13，旧资料可恢复，不重写Git历史。
+Aligned product, rules, interaction, retention, API, and deployment documentation. Corrected review fixtures that diverged from current gameplay. Retained necessary old-request/stored-state compatibility without replacing the rules core, migrating, or deleting real rooms.
 
-## 安全与验收
+Added a complete README, security policy, repository consistency checks, and application-root deployment exclusions. Set the application package to 1.0.0. Checkpoint `archive/pre-prod1.0-2026-10-13` preserves recoverable earlier material without rewriting Git history.
 
-结果以最终发布前的实际记录为准，详细范围见[安全报告](https://github.com/hanqingliu2000/werewolf-pwa/blob/prod1.0/docs/security-prod1.0.md)。没有新增付费资源、登录模块或影响操作体验的验证。
+## Security and Acceptance
 
-| 检查 | 结果 |
+These are the actual pre-release records; see the detailed [historical security report](../docs/security-prod1.0.md). No paid resources, login module, or intrusive verification were added.
+
+| Check | Result |
 | --- | --- |
-| 当前仓库 | 297份候选文件，链接/版本/客户端依赖检查通过 |
-| 类型、lint、单元与契约 | 21个文件、301项通过；语句97.46%、分支94.91% |
-| 生产构建与本地HTTP | 通过；并发末席、独立会话、真实服务重启恢复 |
-| UI评审工具 | 8项本机隔离与规则示例测试通过 |
-| 浏览器 | 90个本地Chromium/WebKit用例分批复核，包含8/12人文字与语音整局、复盘和重开 |
-| 素材 | V7全部144段文件与清理前完全一致；八张美术指纹通过 |
-| 凭据与依赖 | Git历史、候选及客户端扫描未检出；依赖0个已知漏洞 |
-| 云端权限 | 私有表RLS、最小权限、环境隔离与安全advisor通过 |
-| 线上候选 | API三会话、144段音频指纹及八会话浏览器局部回归通过；浏览器用例1.2分钟 |
-| 正式网址 | 提升后健康、独立会话、加入、保存读取、回执、Cookie、来源和音频复核通过 |
-| 测试清理 | 本次三个QA房间按具体ID清理，只读复核剩余0个 |
+| Repository | 297 candidate files; links, versions, and client dependency checks passed |
+| Types, lint, unit/contracts | 21 files and 301 tests passed; 97.46% statement and 94.91% branch coverage |
+| Production build and local HTTP | Passed, including last-seat concurrency, independent sessions, and real service-restart recovery |
+| UI review tool | Eight local isolation/rule-fixture tests passed |
+| Browsers | 90 local Chromium/WebKit cases checked in batches, including 8/12-player text/voice games, recaps, and rematches |
+| Assets | All 144 V7 files unchanged from before cleanup; eight artwork fingerprints verified |
+| Credentials and dependencies | History, candidate, and client scans found no secrets; zero known dependency vulnerabilities |
+| Cloud permissions | Private-table RLS, least privilege, environment isolation, and security advisor passed |
+| Live candidate | Three-session API checks, 144 audio fingerprints, and partial eight-session browser regression passed; browser case lasted 1.2 minutes |
+| Public URL | Post-promotion health, independent sessions, joining, persistence, receipts, cookies, origins, and audio rechecked |
+| Cleanup | Three QA rooms removed by exact ID; read-only verification found zero remaining |
 
-浏览器采用完整尝试加修订后的定向复验，不宣称一次90项全绿；初期失败记录、WebKit导航取消诊断和PG测试异步错误复核见安全报告。本地整局压缩部分行动窗口，不等于正常计时云端整局。真实手机与独立agent验证仍未完成。
+Browser verification combined complete attempts with corrected targeted reruns, not a single all-green 90-case run. Initial failures, WebKit navigation diagnostics, and the asynchronous PostgreSQL-test error are documented in the security report. Some local games shortened action windows; they were not normal-timing cloud games. Real-phone and independent-agent validation remained incomplete.
 
-## 发布记录
+## Release Record
 
-- 线上应用提交：`f7fa4ed3f1ffadb07e10b36ea5a2d495c147715f`。
-- 已验收并提升的部署：`dpl_BdJEbpcAUmTnZ3Ny43KSuvoFLMyf`。
-- 候选地址：`https://werewolf-web-v2-obk3vo9tu-barrylius-projects-d58e2788.vercel.app`；正式网址已指向该部署。
-- 正式域名自动分配仍关闭，不因后续推送直接发布。
-- `prod1.0`标签包含清理成果及最终验收文档；与上述应用提交的后续差异仅为文档，不改变已验收的运行时代码或资源。
+- Application commit at release: `f7fa4ed3f1ffadb07e10b36ea5a2d495c147715f`.
+- Accepted and promoted deployment: `dpl_BdJEbpcAUmTnZ3Ny43KSuvoFLMyf`.
+- Candidate: `https://werewolf-web-v2-obk3vo9tu-barrylius-projects-d58e2788.vercel.app`; the production URL pointed to this deployment at the release date, not necessarily today.
+- Automatic production-domain assignment remained disabled; subsequent pushes did not automatically publish.
+- The `prod1.0` tag includes cleanup and final acceptance documentation. Later differences from the application commit above were documentation-only, not changes to accepted runtime code or assets.
 
-线上浏览器检查包含准备/恢复、大厅移出、音频播放、自动打开行动窗、10/30秒实际窗口、超时静默等待、延迟完成反馈及平票狼刀保存，随后主动结束测试局。它不是线上完整语音对局。旧音频与私人环境/Git配置路径在候选及正式网址均不可读取；没有重跑迁移或改变真实房间。
+The live browser check covered readiness/recovery, lobby removal, playback, automatic action opening, actual 10/30-second windows, silent deadline waiting, delayed completion feedback, and persisted tied wolf selection, then deliberately aborted the test game. It was not a complete live voice game. Removed banks and private environment/Git paths were inaccessible on candidate and production URLs. Migrations and real rooms were unchanged.
 
-## 已知限制
+## Known Limitations
 
-- 需要网络，不保证锁屏/后台持续主持；Wake Lock和自动恢复不能越过浏览器限制。
-- 原会话恢复，不支持换设备找回、房主接管或额外播报设备。
-- 真实iOS/Android外放、来电、蓝牙、低电量和聚会体验仍待现场验收。
-- 配比未声明经过平衡实测；线上独立agent试玩与脚本多会话模拟不同，尚未完成。
-- 房间与复盘有24小时有效期，免费后端可能闲置暂停。
-- 没有项目级开源LICENSE；字体与模型来源许可不代表整体仓库授权。
+- Network required; no guaranteed background/locked-screen hosting. Wake Lock and automatic recovery cannot bypass browser limits.
+- Recovery requires the original session; no cross-device recovery, host takeover, or extra narration device.
+- Real iOS/Android speakers, calls, Bluetooth, low battery, and gathering experience still required field acceptance.
+- Role compositions were not claimed to be balance-tested. Independent online agent play differs from scripted multi-session simulation and remained incomplete.
+- Rooms and recaps expire after 24 hours; the free backend can pause when idle.
+- No repository-wide open-source LICENSE. Font/model licenses do not license the entire repository.
 
-## 升级与回退
+## Upgrade and Rollback
 
-原网页刷新后使用当前版本，语音不可用时重新启用声音；旧音频回调不能推进新阶段。保留已有数据库结构和最小权限，失败回退上一兼容部署或维护版本，不删数据库、不恢复旧站。
+Refresh the original page for the current version and re-enable sound if unavailable. Old audio callbacks cannot advance new phases. Preserve database structure and least privilege. On failure, return to a compatible deployment or maintenance build without deleting the database or restoring the former site.

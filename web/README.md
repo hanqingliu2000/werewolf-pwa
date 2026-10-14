@@ -1,17 +1,21 @@
-# Web应用
+# Web Application
 
-prod1.0，包版本1.0.0。完整介绍与安装见[仓库README](../README.md)，规则见[游戏规则](../docs/02-rules-and-decisions.md)，环境与正式发布见[部署说明](../docs/19-cloud-deployment.md)。
+English | [简体中文](README.zh-CN.md)
 
-## 本目录运行
+prod1.0, package 1.0.0. See the [repository README](../README.md) for setup and product details, [rules](../docs/02-rules-and-decisions.md) for gameplay, and [deployment guide](../docs/19-cloud-deployment.md) for environments and production release.
 
-Node.js24.14.1或更新的24.x版本：
+Repository documentation is bilingual with English as the default. The app UI, game flow, and narration remain Chinese.
+
+## Run From This Directory
+
+Use Node.js 24.14.1 or a newer 24.x release:
 
 ```sh
 npm ci
 npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-默认本地SQLite，无需云端账号或语音模型。数据在 `.data/rooms.sqlite`，不提交。非localhost访问需准确配置WEREWOLF_ORIGIN。
+The default local backend is SQLite; no cloud account or voice model is needed. Data lives in ignored `.data/rooms.sqlite`. Non-localhost access requires an exact `WEREWOLF_ORIGIN`.
 
 ```sh
 npm run repo:check
@@ -22,14 +26,14 @@ npx playwright install chromium webkit
 npm run test:ui
 ```
 
-smoke与默认浏览器配置启动隔离本地服务；不要带着正式PostgreSQL配置运行。本地测试不等于真实手机或线上验收。
+Smoke tests and default browser configurations launch isolated local services. Do not supply production PostgreSQL settings. Local tests are not real-phone or cloud acceptance.
 
-## 模块
+## Modules
 
-- `src/game/`：唯一规则、阶段、随机发牌与命令核心。
-- `src/server/`：会话、权限、去重、公共/本人/房主视图、SQLite/PG保存。
-- `src/narration/`：当前V7脚本、素材指纹与公开Web Audio播放器。
-- `src/ui/`：真实响应式页面、私密面板、前台同步与恢复。
-- `tests/`：规则、契约、权限、音频与浏览器验证。
+- `src/game/`: the single rules, phases, random dealing, and command core.
+- `src/server/`: sessions, permissions, deduplication, public/private/host views, SQLite/PG storage, and private usage summaries.
+- `src/narration/`: V7 scripts, asset fingerprints, and the public Web Audio player.
+- `src/ui/`: responsive pages, private panels, foreground synchronization, and recovery.
+- `tests/`: rules, contracts, permissions, audio, and browser checks.
 
-线上必须用私有PostgreSQL配置，禁止客户端数据库凭据或SQLite回退。健康入口是 `/api/health`，业务接口是 `/api/v2`。推送候选不自动提升正式域名。
+Online deployments must use private PostgreSQL configuration, never client database credentials or SQLite fallback. Health: `/api/health`; business API: `/api/v2`. Pushing a candidate does not promote the production domain.
