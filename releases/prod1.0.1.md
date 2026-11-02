@@ -2,7 +2,7 @@
 
 English | [简体中文](prod1.0.1.zh-CN.md)
 
-Release date: November 1, 2026 (America/New_York). Package `1.0.1`, rules `werewolf-web-v1`, audio `host-zh-v8`. Candidate acceptance and production promotion are in progress; final results will be recorded below.
+Release date: November 1, 2026 (America/New_York). Package `1.0.1`, rules `werewolf-web-v1`, audio `host-zh-v8`. Accepted and live at [the production website](https://werewolf-web-v2.vercel.app/).
 
 ## Changes
 
@@ -23,9 +23,17 @@ Refresh the original browser tab to get the new audio bank. No accounts, login s
 - Earlier seven-player acceptance completed seven- and ten-session local voice games, plus a visible-browser seven-player game followed by a rematch expanded to ten. Those games used V7; they are not full-game V8 or production acceptance. See [validation details](../docs/07-validation-and-roadmap.md).
 - Current types, lint, and 322 unit/contract tests passed, covering SQLite/PostgreSQL compatibility, seven-player persistence, permissions, and narration assets. A restricted-environment attempt could not open the local database test listener; the authorized local rerun passed.
 - Production build, isolated local HTTP/restart recovery, eight UI-review isolation tests, and three Chromium voice regressions passed. Browser checks covered complete bank decoding/fingerprints, optional sound checks, and the full action clock after real audio completion.
-- Candidate acceptance, public-site verification, and QA cleanup: pending.
+- Candidate and public-site API checks passed: database readiness, independent sessions, joining, persistence, duplicate receipts, host/cross-room permissions, wrong-Origin rejection, Secure/HttpOnly/SameSite cookies, private no-store responses, and all 144 Qwen V8 asset fingerprints.
+- A seven-session Chromium short workflow passed on both candidate (29.7 seconds) and public site (25.8 seconds): UI creation/joining/readiness, refresh recovery, actual Qwen trial playback, dealing, automatic first-night private panel, and the full 30-second wolf window. Each game was deliberately aborted; persisted seven-player summaries were verified.
+- Four exact QA rooms and their test summaries were removed; a final read-only check found zero remaining. Real rooms, enrollment counters, and retention rules were not reset. The recent deployment error-log query returned no entries; this is a brief observation, not continuous monitoring.
 - No new complete production game, real-phone speaker acceptance, or independent-agent playtest is claimed.
 
 ## Deployment Record
 
-Application commit, deployment ID, public acceptance, and exact test-room cleanup will be added after the candidate passes and is promoted. No model weights, audition audio, credentials, sessions, or private reports are included in this release.
+- Accepted application commit: `784788ae1f0811e2bd542985fba882d863066152`.
+- Promoted deployment: `dpl_FtASwVnp6xKJb9UMXuJUrEeE4WBC` (Production, `iad1`, READY).
+- Candidate: `https://werewolf-web-v2-pmd5gbfwn-barrylius-projects-d58e2788.vercel.app`.
+- Public URL: `https://werewolf-web-v2.vercel.app/`; verified to resolve to the accepted deployment after promotion.
+- The release tag also includes final documentation-only acceptance updates. Runtime code and assets match the accepted application commit.
+
+No model weights, audition audio, credentials, sessions, or private reports are included in this release. No new paid resources, plans, or inference services were added.

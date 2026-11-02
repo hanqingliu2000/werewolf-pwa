@@ -25,7 +25,7 @@ The first night adds three clips: eyes-closed nominations, eyes-open election sp
 
 ## Playback and Timing
 
-V8 preserves all V7 text and the approved voice. Only the five action-prompt originals are pace-corrected with pitch-preserving time stretching, matching the median spoken-span pace of 13 existing narration clips (about 2.83 Chinese characters/second before global speed). The other 43 originals are byte-identical. Both 1.5x and 2x variants derive from the corrected originals; do not use per-clip player-speed exceptions or padding to disguise fast speech. The manifest records the source hashes, factors, and measured spans. User audition and phone listening remain pending; isolated Seer/Witch ASR homophone ambiguities match the V7 baseline and are not proof of pronunciation correctness.
+V8 preserves all V7 text and the approved voice. Only the five action-prompt originals are pace-corrected with pitch-preserving time stretching, matching the median spoken-span pace of 13 existing narration clips (about 2.83 Chinese characters/second before global speed). The other 43 originals are byte-identical. Both 1.5x and 2x variants derive from the corrected originals; do not use per-clip player-speed exceptions or padding to disguise fast speech. The manifest records the source hashes, factors, and measured spans. Real-phone listening remains pending; isolated Seer/Witch ASR homophone ambiguities match the V7 baseline and are not proof of pronunciation correctness.
 
 Default playback is 1.5x, with optional 2x. FFmpeg atempo pre-processes the faster files, while Web Audio nodes retain a native playback rate of 1, preserving pitch. Speed changes take effect on the next clip.
 

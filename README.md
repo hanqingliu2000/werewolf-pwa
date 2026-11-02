@@ -10,7 +10,7 @@ The app handles role assignment, secret night actions, Chinese voice narration, 
 
 **[Play Now](https://werewolf-web-v2.vercel.app/)** | [Listen to the Host](https://werewolf-web-v2.vercel.app/audio/host-zh-v8/index.html)
 
-**Release status:** prod1.0.1 packages seven-player support and corrected Qwen V8 prompt pacing. Cloud migration is complete; candidate acceptance and production promotion are in progress. VoxCPM2 remains an unselected local experiment and is not used by the game.
+**Release status:** prod1.0.1 is live with seven-player support and corrected Qwen V8 prompt pacing. Cloud migration, candidate acceptance, and public-site checks passed. VoxCPM2 remains an unselected local experiment and is not used by the game.
 
 **Documentation is available in English and Simplified Chinese. The interface, game flow, and voice narration remain in Chinese.** English documentation does not add an English gameplay mode.
 
