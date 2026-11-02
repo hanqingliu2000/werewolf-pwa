@@ -4,6 +4,25 @@ import { dirname } from "node:path";
 import type { Receipt, Room, RoomStore, StoredRoom } from "./types";
 import { usageSnapshot, USAGE_RETENTION_MS, type UsageSnapshot } from "./usage";
 
+const usageSchema = `
+  CREATE TABLE IF NOT EXISTS room_usage (
+    id TEXT PRIMARY KEY, room_id TEXT NOT NULL, room_name TEXT NOT NULL, created_at INTEGER,
+    first_seen_at INTEGER NOT NULL, player_count INTEGER NOT NULL CHECK(player_count BETWEEN 1 AND 12),
+    peak_players INTEGER NOT NULL CHECK(peak_players BETWEEN 1 AND 12),
+    capacity INTEGER NOT NULL CHECK(capacity BETWEEN 7 AND 12), last_activity_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+    is_test INTEGER NOT NULL CHECK(is_test IN (0, 1))
+  ) STRICT;
+  CREATE INDEX IF NOT EXISTS room_usage_created ON room_usage(created_at);
+  CREATE INDEX IF NOT EXISTS room_usage_activity ON room_usage(last_activity_at);
+  CREATE TABLE IF NOT EXISTS game_usage (
+    id TEXT PRIMARY KEY, room_usage_id TEXT NOT NULL REFERENCES room_usage(id) ON DELETE CASCADE,
+    started_at INTEGER, ended_at INTEGER, first_seen_at INTEGER NOT NULL,
+    player_count INTEGER NOT NULL CHECK(player_count BETWEEN 7 AND 12), status TEXT NOT NULL CHECK(status IN ('active','completed','aborted','expired'))
+  ) STRICT;
+  CREATE INDEX IF NOT EXISTS game_usage_room ON game_usage(room_usage_id);
+  CREATE INDEX IF NOT EXISTS game_usage_started ON game_usage(started_at);
+`;
+
 export class SqliteRoomStore implements RoomStore {
   private readonly db: DatabaseSync;
 
@@ -27,23 +46,23 @@ export class SqliteRoomStore implements RoomStore {
       CREATE TABLE IF NOT EXISTS limits (
         key TEXT PRIMARY KEY, reset_at INTEGER NOT NULL, count INTEGER NOT NULL
       ) STRICT;
-      CREATE TABLE IF NOT EXISTS room_usage (
-        id TEXT PRIMARY KEY, room_id TEXT NOT NULL, room_name TEXT NOT NULL, created_at INTEGER,
-        first_seen_at INTEGER NOT NULL, player_count INTEGER NOT NULL CHECK(player_count BETWEEN 1 AND 12),
-        peak_players INTEGER NOT NULL CHECK(peak_players BETWEEN 1 AND 12),
-        capacity INTEGER NOT NULL CHECK(capacity BETWEEN 8 AND 12), last_activity_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
-        is_test INTEGER NOT NULL CHECK(is_test IN (0, 1))
-      ) STRICT;
-      CREATE INDEX IF NOT EXISTS room_usage_created ON room_usage(created_at);
-      CREATE INDEX IF NOT EXISTS room_usage_activity ON room_usage(last_activity_at);
-      CREATE TABLE IF NOT EXISTS game_usage (
-        id TEXT PRIMARY KEY, room_usage_id TEXT NOT NULL REFERENCES room_usage(id) ON DELETE CASCADE,
-        started_at INTEGER, ended_at INTEGER, first_seen_at INTEGER NOT NULL,
-        player_count INTEGER NOT NULL CHECK(player_count BETWEEN 8 AND 12), status TEXT NOT NULL CHECK(status IN ('active','completed','aborted','expired'))
-      ) STRICT;
-      CREATE INDEX IF NOT EXISTS game_usage_room ON game_usage(room_usage_id);
-      CREATE INDEX IF NOT EXISTS game_usage_started ON game_usage(started_at);
     `);
+    try {
+      this.transaction(() => {
+        const version = Number(this.db.prepare("PRAGMA user_version").get()!.user_version);
+        const legacy = version === 0 && this.db.prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'room_usage'").get();
+        if (legacy) this.db.exec("ALTER TABLE game_usage RENAME TO game_usage_v0; ALTER TABLE room_usage RENAME TO room_usage_v0;");
+        this.db.exec(usageSchema);
+        if (legacy) {
+          // Copy parent and child together before dropping the old tables; retain every summary and its foreign key.
+          this.db.exec(`INSERT INTO room_usage SELECT * FROM room_usage_v0;
+            INSERT INTO game_usage SELECT * FROM game_usage_v0;
+            DROP TABLE game_usage_v0; DROP TABLE room_usage_v0;`);
+          this.db.exec(usageSchema);
+        }
+        if (version === 0) this.db.exec("PRAGMA user_version = 1");
+      });
+    } catch (error) { this.db.close(); throw error; }
     for (const suffix of ["-wal", "-shm"]) if (existsSync(path + suffix)) chmodSync(path + suffix, 0o600);
   }
 

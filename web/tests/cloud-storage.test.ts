@@ -13,10 +13,13 @@ import { config, fixedRandom } from "./helpers";
 import type { Receipt, RoomStore } from "../src/server/types";
 import { createGame, executeCommand } from "../src/game/engine";
 import { changedUsage, USAGE_RETENTION_MS, usageSnapshot } from "../src/server/usage";
+import { preset } from "../src/game/config";
+import type { RuleConfig } from "../src/game/types";
 
 let db: PGlite, server: PGLiteSocketServer, pool: Pool, secondPool: Pool;
 const live = !!process.env.LIVE_POSTGRES_CREDENTIALS;
 const createdRooms: string[] = [];
+let migratedSummaries: { before: unknown; after: unknown }[] = [];
 beforeEach(async () => {
   // Isolate local contract cases; never erase a deployed environment's usage budgets.
   if (!live) await pool.query("DELETE FROM werewolf_preview.limits WHERE key LIKE 'enrollment:%'");
@@ -36,6 +39,20 @@ beforeAll(async () => {
   await db.exec(readFileSync(new URL("../../supabase/migrations/20261008013215_cloud_room_store.sql", import.meta.url), "utf8"));
   await db.exec("CREATE SCHEMA cron; CREATE FUNCTION cron.schedule(text,text,text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint $$;");
   await db.exec(readFileSync(new URL("../../supabase/migrations/20261014025022_usage_summaries.sql", import.meta.url), "utf8"));
+  const legacyIds = [randomUUID(), randomUUID()];
+  const previous: unknown[] = [];
+  for (const [i, schema] of ["werewolf_preview", "werewolf_prod"].entries()) {
+    await db.query(`INSERT INTO ${schema}.room_usage VALUES ($1,'ABCDEF12','Legacy',NULL,10000,10,10,10,10000,999999,false)`, [legacyIds[i]]);
+    await db.query(`INSERT INTO ${schema}.game_usage VALUES ('legacy-game',$1,NULL,10000,10000,10,'completed')`, [legacyIds[i]]);
+    previous.push((await db.query(`SELECT row_to_json(r) AS room, row_to_json(g) AS game FROM ${schema}.room_usage r JOIN ${schema}.game_usage g ON g.room_usage_id = r.id`)).rows);
+  }
+  await db.exec(readFileSync(new URL("../../supabase/migrations/20261102015235_seven_player_rooms.sql", import.meta.url), "utf8"));
+  migratedSummaries = [];
+  for (const [i, schema] of ["werewolf_preview", "werewolf_prod"].entries()) {
+    const after = (await db.query(`SELECT row_to_json(r) AS room, row_to_json(g) AS game FROM ${schema}.room_usage r JOIN ${schema}.game_usage g ON g.room_usage_id = r.id`)).rows;
+    migratedSummaries.push({ before: previous[i], after });
+    await db.query(`DELETE FROM ${schema}.room_usage WHERE id = $1`, [legacyIds[i]]);
+  }
   server = new PGLiteSocketServer({ db, host: "127.0.0.1", port: 0, maxConnections: 10 }); await server.start();
   const [host, port] = server.getServerConn().split(":");
   const settings = { host, port: Number(port), user: "postgres", database: "postgres", max: 1, connectionTimeoutMillis: 5000 };
@@ -50,17 +67,22 @@ afterAll(async () => {
   await pool?.end(); await secondPool?.end(); await server?.stop(); await db?.close();
 });
 
-async function backend(kind: "sqlite" | "postgres") {
+async function backend(kind: "sqlite" | "postgres", rules: RuleConfig = config) {
   if (kind === "sqlite") {
-    const f = await fixture(1);
+    const f = await fixture(1, rules);
     return { store: f.store as RoomStore, service: f.service, token: f.tokens[0]!, id: f.id, time: f.time, path: f.path, close: f.close };
   }
   const store = new PostgresRoomStore(pool, "werewolf_preview"); const time = { now: Date.now() };
   const service = new RoomService(store, () => time.now, fixedRandom); const token = mintSession();
-  const created = await service.create(token, { requestId: randomUUID(), name: "Host", config });
+  const created = await service.create(token, { requestId: randomUUID(), name: "Host", config: rules });
   if (live) createdRooms.push(created.roomId);
   return { store: store as RoomStore, service, token, id: created.roomId, time, path: undefined, close: () => undefined };
 }
+
+it.skipIf(live)("preserves existing PostgreSQL summaries in both schemas when widening constraints", () => {
+  expect(migratedSummaries).toHaveLength(2);
+  for (const { before, after } of migratedSummaries) { expect(before).toHaveLength(1); expect(after).toEqual(before); }
+});
 
 describe.each(["sqlite", "postgres"] as const)("%s storage contract", (kind) => {
   async function statistics(f: Awaited<ReturnType<typeof backend>>) {
@@ -74,6 +96,36 @@ describe.each(["sqlite", "postgres"] as const)("%s storage contract", (kind) => 
       games: local.prepare("SELECT * FROM game_usage WHERE room_usage_id = ? ORDER BY first_seen_at, id").all(id) }; }
     finally { local.close(); }
   }
+
+  it.skipIf(live).each(["edge", "parity"] as const)("persists a seven-player %s game, enforces readiness and recovers its receipt", async (mode) => {
+    const f = await backend(kind, preset(7, mode));
+    try {
+      const tokens = [f.token, ...Array.from({ length: 6 }, mintSession)];
+      const lobby = await f.service.view(f.id, f.token);
+      for (let i = 1; i < 7; i++) await f.service.join(f.id, tokens[i]!, { requestId: randomUUID(), epochId: lobby.epochId, name: `Seven${i}` });
+      await expect(f.service.join(f.id, mintSession(), { requestId: randomUUID(), epochId: lobby.epochId, name: "Eighth" })).rejects.toThrow("ROOM_FULL");
+      const act = async (operation: unknown, token = f.token) => {
+        const view = await f.service.view(f.id, token);
+        return f.service.mutate(f.id, token, { requestId: randomUUID(), epochId: view.epochId, windowId: view.windowId, operation });
+      };
+      for (const token of tokens.slice(0, 6)) await act({ type: "ready", ready: true }, token);
+      await expect(act({ type: "start" })).rejects.toThrow("PLAYERS_NOT_READY");
+      await act({ type: "ready", ready: true }, tokens[6]!);
+      const view = await f.service.view(f.id, f.token);
+      const input = { requestId: randomUUID(), epochId: view.epochId, windowId: view.windowId, operation: { type: "start" } };
+      const accepted = await f.service.mutate(f.id, f.token, input);
+      const secondStore = kind === "sqlite" ? new SqliteRoomStore(f.path!) : new PostgresRoomStore(secondPool, "werewolf_preview");
+      try {
+        expect(await new RoomService(secondStore, () => f.time.now).mutate(f.id, f.token, input)).toEqual(accepted);
+        expect((await secondStore.load(f.id))!.room.game!.players).toHaveLength(7);
+      } finally { if (kind === "sqlite") (secondStore as SqliteRoomStore).close(); }
+      const summary = await statistics(f);
+      expect(Number(summary.rooms[0]!.capacity)).toBe(7); expect(Number(summary.rooms[0]!.peak_players)).toBe(7);
+      expect(summary.games).toHaveLength(1); expect(Number(summary.games[0]!.player_count)).toBe(7);
+      await act({ type: "abort" }); await act({ type: "restart" });
+      expect((await f.service.view(f.id, f.token)).players).toHaveLength(7);
+    } finally { f.close(); }
+  });
 
   it.skipIf(live)("records actual games once, survives restarts and detail expiry, and retains no personal fields", async () => {
     const f = await backend(kind);

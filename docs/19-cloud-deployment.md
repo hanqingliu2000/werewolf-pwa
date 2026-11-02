@@ -29,6 +29,8 @@ Keep secrets only in restricted platform environment settings, never `NEXT_PUBLI
 
 ## Deployment and Promotion
 
+Before deploying seven-player support, apply `20261102015235_seven_player_rooms.sql` to widen both environments' summary constraints without deleting rows or changing RLS/grants. Local SQLite upgrades its summaries atomically on first open and preserves snapshots, receipts, budgets, and indexes. Do not roll back to an application that rejects seven-player games while such rooms remain active; use a compatible fix and close new enrollment if necessary. Retention and quotas are unchanged.
+
 1. Install locked dependencies; run repository checks, check, build, local HTTP tests, and relevant browser acceptance.
 2. Push verified work and wait for the candidate. Keep automatic production-domain assignment disabled.
 3. Preview connects only to the preview schema. A Git main candidate in the Production environment connects to the production schema even before domain promotion; it is not a database sandbox.

@@ -8,14 +8,20 @@ import { ROLES } from "../src/game/types";
 import { config, seats } from "./helpers";
 
 describe("configuration and dealing", () => {
-  it.each([8, 9, 10, 11, 12])("validates the %i-player candidate", (n) => {
+  it.each([7, 8, 9, 10, 11, 12])("validates the %i-player candidate", (n) => {
     const rules = preset(n);
     expect(validateConfig(rules, n)).toEqual(rules);
     expect(Object.values(rules.roles).reduce((a, b) => a + b, 0)).toBe(n);
     expect(rules.winMode).toBe("edge");
     expect(preset(n, "parity").winMode).toBe("parity");
   });
-  it.each([7, 13, 8.5, NaN])("rejects unsupported preset %s", (n) => expect(() => preset(n)).toThrow("CONFIG_INVALID"));
+  it.each([6, 13, 8.5, NaN])("rejects unsupported preset %s", (n) => expect(() => preset(n)).toThrow("CONFIG_INVALID"));
+  it("adds seven players without changing the existing presets", () => {
+    expect(preset(7).roles).toEqual({ werewolf: 2, seer: 1, witch: 1, guard: 0, hunter: 0, villager: 3 });
+    expect([8, 9, 10, 11, 12].map(n => Object.values(preset(n).roles))).toEqual([
+      [2, 1, 1, 0, 0, 4], [3, 1, 1, 0, 1, 3], [3, 1, 1, 0, 1, 4], [3, 1, 1, 1, 1, 4], [4, 1, 1, 1, 1, 4],
+    ]);
+  });
   it.each([
     { ...config, version: "old" }, { ...config, winMode: "unknown" }, { ...config, extra: true },
     { ...config, roles: { ...config.roles, guard: 2 } },
@@ -29,7 +35,7 @@ describe("configuration and dealing", () => {
   ])("rejects invalid rule composition %#", (input) => expect(() => validateConfig(input)).toThrow("CONFIG_INVALID"));
   it("rejects a player-count mismatch", () => expect(() => validateConfig(config, 9)).toThrow("PLAYER_COUNT_MISMATCH"));
   it("preserves roles and seats under randomized shuffling", () => {
-    fc.assert(fc.property(fc.integer({ min: 8, max: 12 }), fc.array(fc.nat(), { minLength: 12, maxLength: 12 }), (n, draws) => {
+    fc.assert(fc.property(fc.integer({ min: 7, max: 12 }), fc.array(fc.nat(), { minLength: 12, maxLength: 12 }), (n, draws) => {
       const participants = Array.from({ length: n }, (_, i) => ({ id: `p${i}`, seat: i + 1, name: `P${i}` }));
       const before = structuredClone(participants);
       let index = 0;
@@ -54,7 +60,7 @@ describe("configuration and dealing", () => {
 
 describe("initial game validation", () => {
   it.each([
-    seats.slice(1), seats.map((p, i) => ({ ...p, id: i === 0 ? "constructor" : p.id })),
+    seats.slice(2), seats.map((p, i) => ({ ...p, id: i === 0 ? "constructor" : p.id })),
     seats.map((p, i) => ({ ...p, name: i === 0 ? " " : p.name })),
     seats.map((p, i) => ({ ...p, seat: i === 0 ? 0 : p.seat })),
   ])("rejects invalid participants %#", (input) => expect(() => createGame(config, input, "p1")).toThrow("SEATS_INVALID"));

@@ -2,14 +2,14 @@
 
 English | [简体中文](01-product-requirements.zh-CN.md)
 
-Baseline: prod1.0, October 13, 2026. See the [game rules](02-rules-and-decisions.md) for exact mechanics.
+Baseline: prod1.0, October 13, 2026, with seven-player support added November 1, 2026. See the [game rules](02-rules-and-decisions.md) for exact mechanics.
 
 ## Implemented Requirements
 
 | Module | Requirement |
 | --- | --- |
 | Rooms | Create, share a code/link/QR code, join, change seats, rename, and ready up |
-| Configuration | Presets for 8 to 12 players and constrained customization; role composition and victory mode are fixed before dealing |
+| Configuration | Presets for 7 to 12 players and constrained customization; role composition and victory mode are fixed before dealing; default eight-player selection is unchanged |
 | Lobby management | The host can change configuration and remove other players before the game, but cannot remove themselves |
 | Dealing | Random, concealed roles; viewing a role is optional, with no individual identity acknowledgment |
 | Night | Legal targets, early preselection, confirmation, private results, and fixed action windows |

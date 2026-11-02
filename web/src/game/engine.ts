@@ -1,7 +1,7 @@
 import { randomUUID, randomInt } from "node:crypto";
 import { z } from "zod";
 import { parseCommand } from "./commands";
-import { validateConfig } from "./config";
+import { MIN_PLAYERS, MAX_PLAYERS, validateConfig } from "./config";
 import { requireRule, RuleError } from "./errors";
 import { movePhase, type PhaseEvent } from "./lifecycle";
 import { dealRoles, type RandomIndex } from "./random";
@@ -10,9 +10,9 @@ import type { Game, Night, NightRole, Role, SeerReport } from "./types";
 
 const seatsSchema = z.array(z.strictObject({
   id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/).refine((id) => !["constructor", "prototype"].includes(id)),
-  seat: z.number().int().min(1).max(12),
+  seat: z.number().int().min(1).max(MAX_PLAYERS),
   name: z.string().trim().transform((name) => name.normalize("NFC")).pipe(z.string().min(1).max(48)),
-})).min(8).max(12);
+})).min(MIN_PLAYERS).max(MAX_PLAYERS);
 export interface RandomSources { randomIndex?: RandomIndex; newGameId?: () => string }
 
 export function createGame(configInput: unknown, seatsInput: unknown, hostId: string, id: string = randomUUID(), now = 0): Game {

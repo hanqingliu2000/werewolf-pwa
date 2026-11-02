@@ -4,11 +4,13 @@ English | [简体中文](README.zh-CN.md)
 
 **Everyone gets a role. Nobody has to sit out as the moderator.**
 
-A free, Chinese-language Werewolf assistant for in-person gatherings of 8-12 friends. Open it in a phone browser: no app download, account, or registration. The room host can play too.
+A free, Chinese-language Werewolf assistant for in-person gatherings of 7-12 friends. Open it in a phone browser: no app download, account, or registration. The room host can play too.
 
 The app handles role assignment, secret night actions, Chinese voice narration, resolution, and recaps. Discussion, elections, voting, and last words stay around your table. This is an in-person game assistant, not an online matchmaking or voice-chat platform.
 
 **[Play Now](https://werewolf-web-v2.vercel.app/)** | [Listen to the Host](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html)
+
+**Release status:** seven-player support is verified in the current source and local preview. The live site still uses the previously deployed 8-12-player build; cloud migration and explicit production promotion are pending.
 
 **Documentation is available in English and Simplified Chinese. The interface, game flow, and voice narration remain in Chinese.** English documentation does not add an English gameplay mode.
 
@@ -60,6 +62,8 @@ The host is also a player. Organizational controls do not reveal other players' 
 ## Rules at a Glance
 
 See the [complete rules](docs/02-rules-and-decisions.md) for exact definitions.
+
+The seven-player preset is two Werewolves, one Seer, one Witch, and three Villagers. Room creation still defaults to eight players; existing 8-12 player presets are unchanged. Presets are candidates, not proven-balanced compositions.
 
 | Role | Rule |
 | --- | --- |

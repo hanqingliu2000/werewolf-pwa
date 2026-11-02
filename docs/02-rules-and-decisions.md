@@ -2,16 +2,17 @@
 
 English | [简体中文](02-rules-and-decisions.zh-CN.md)
 
-Baseline: prod1.0, October 13, 2026. The configuration identifier remains `werewolf-web-v1`; product and audio versions are not rule identifiers.
+Baseline: prod1.0, October 13, 2026, with seven-player support added November 1, 2026. The configuration identifier remains `werewolf-web-v1`; product and audio versions are not rule identifiers.
 
 This project chooses one explicit variant, not a universally applicable ruleset. Rule changes must update the core, UI copy, tests, and this document together. Never silently change the rules of an ongoing game.
 
 ## Players and Configuration
 
-8 to 12 players. Each special role has at most one player. There must be at least one wolf and no more than the player count divided by three, rounded down. At least one Villager and one special role are required. Role totals must match the actual player count, and everybody must be ready before starting.
+7 to 12 players. Each special role has at most one player. There must be at least one wolf and no more than the player count divided by three, rounded down. At least one Villager and one special role are required. Role totals must match the actual player count, and everybody must be ready before starting. Six-player games remain unsupported; room creation still defaults to eight players.
 
 | Players | Werewolves | Seer | Witch | Guard | Hunter | Villagers |
 | --- | --- | --- | --- | --- | --- | --- |
+| 7 | 2 | 1 | 1 | 0 | 0 | 3 |
 | 8 | 2 | 1 | 1 | 0 | 0 | 4 |
 | 9 | 3 | 1 | 1 | 0 | 1 | 3 |
 | 10 | 3 | 1 | 1 | 0 | 1 | 4 |

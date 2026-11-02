@@ -21,6 +21,14 @@ Local PostgreSQL contracts use the real PGlite SQL engine and pg driver, not a S
 
 Some local complete-game tests use isolated SQLite with shortened action windows. They are not normal-timing cloud games. Artificial WebKit lifecycle tests use the supported keepalive fallback. Known WebKit cancellation diagnostics are recorded separately only during explicit document replacement and only for this test room's local same-origin reads. Errors during play or at other addresses still fail the test. CORS and server Origin checks stay enabled. See [Playwright #43120](https://github.com/microsoft/playwright/issues/43120).
 
+## Seven-Player Extension Acceptance
+
+November 1, 2026: types, lint, all 321 tests across 24 files, production build, local HTTP smoke, and eight review-tool isolation tests passed. SQLite upgrade tests preserve old snapshots, receipts, budgets, summaries, indexes, and foreign keys, including rollback on failure. Local PostgreSQL tests apply the new migration, retain prior summaries in both schemas, and verify seven-player storage under both victory modes; no cloud migration was applied.
+
+The final Chromium regression rerun passed two complete voice games, with seven and ten independent sessions, in 6.3 minutes. Both use normal 30/10-second windows, not compressed deadlines, and cover recap, rematch, summary persistence, and short-screen action bounds. Initial harness attempts exposed observation/synchronization and expected pre-join 401 misclassification; these were corrected without relaxing game rules, limits, or post-membership error checks.
+
+A separate interactive, visible Chromium walkthrough completed a fresh seven-player game, retained its seats, changed that lobby to ten players, and completed the ten-player game. Both lasted two nights and ended normally, with recaps and rematches. All game operations used page controls, not direct API commands or database clock changes. Checks included first-night election privacy, eliminated-host moderation, silent late submissions, dead-Seer timing, a 2-to-1 wolf ballot, Hunter shooting, and retention of the earlier seven-player recap. These are local desktop-browser results, not real-phone, production, or independent-agent acceptance. Production remains unchanged.
+
 ## Security Gate
 
 Scan Git history and release candidates for credentials, audit locked dependencies, and check private-table RLS/permissions, client bundles, and deployment packages. Record residual risks and unverified scope in the security report. No warnings is not proof of absolute security.

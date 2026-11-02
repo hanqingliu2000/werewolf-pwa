@@ -3,6 +3,9 @@ import { RuleError } from "./errors";
 import { ROLES, type RuleConfig } from "./types";
 
 export const RULES_VERSION = "werewolf-web-v1" as const;
+export const SUPPORTED_PLAYER_COUNTS = [7, 8, 9, 10, 11, 12] as const;
+export const MIN_PLAYERS = SUPPORTED_PLAYER_COUNTS[0];
+export const MAX_PLAYERS = SUPPORTED_PLAYER_COUNTS[SUPPORTED_PLAYER_COUNTS.length - 1]!;
 const count = z.number().int().min(0).max(12);
 const configSchema = z.strictObject({
   version: z.literal(RULES_VERSION),
@@ -14,7 +17,7 @@ const configSchema = z.strictObject({
 }).superRefine(({ roles }, ctx) => {
   const total = ROLES.reduce((sum, role) => sum + roles[role], 0);
   const gods = roles.seer + roles.witch + roles.guard + roles.hunter;
-  if (total < 8 || total > 12 || roles.werewolf < 1 || roles.werewolf > Math.floor(total / 3) || roles.villager < 1 || gods < 1) {
+  if (total < MIN_PLAYERS || total > MAX_PLAYERS || roles.werewolf < 1 || roles.werewolf > Math.floor(total / 3) || roles.villager < 1 || gods < 1) {
     ctx.addIssue({ code: "custom", message: "Unsupported role composition" });
   }
 });
@@ -28,8 +31,8 @@ export function validateConfig(input: unknown, playerCount?: number): RuleConfig
 }
 
 export function preset(playerCount: number, winMode: RuleConfig["winMode"] = "edge"): RuleConfig {
-  if (![8, 9, 10, 11, 12].includes(playerCount)) throw new RuleError("CONFIG_INVALID");
-  const wolves = playerCount === 8 ? 2 : playerCount === 12 ? 4 : 3;
+  if (!SUPPORTED_PLAYER_COUNTS.some((count) => count === playerCount)) throw new RuleError("CONFIG_INVALID");
+  const wolves = playerCount <= 8 ? 2 : playerCount === 12 ? 4 : 3;
   const hunter = playerCount >= 9 ? 1 : 0;
   const guard = playerCount >= 11 ? 1 : 0;
   return validateConfig({ version: RULES_VERSION, winMode, roles: {

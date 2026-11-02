@@ -15,6 +15,7 @@ Baseline: prod1.0, October 13, 2026. See the [design system](../design-system/we
 ## Interaction Constraints
 
 - Nicknames start empty when creating or joining; no registration or user verification is required.
+- Player-count choices cover 7-12 in a two-row, three-column layout, retaining the default selection of eight. Seven-player actions use three target rows, or two on short screens, with confirmation kept visible.
 - The manual ready button sits above the lobby seats and is prominent in the first viewport for unready players. Keep ready/cancel controls without tutorials or extra popups.
 - Phone rosters use compact seats; the roster overlay and accessible names provide full nicknames.
 - Identity views use large 3:4 portraits. Action screens prioritize fitting targets, status, timer, and confirmation in one viewport.

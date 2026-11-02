@@ -6,12 +6,15 @@ import type { PrivateRoom, PublicRoom } from "../../src/ui/contracts";
 
 type Actor = { page: Page; context: BrowserContext; seat: number; id: string; role: Role | null };
 const replacingDocument = new WeakSet<Page>();
+const observedPublic = new WeakMap<Page, { room: string; view: PublicRoom; at: number }>();
 async function replaceDocument(page: Page, navigate: () => Promise<unknown>) {
   replacingDocument.add(page);
   try { await navigate(); } finally { replacingDocument.delete(page); }
 }
 async function status(actor: Actor, room: string) {
-  const response = await actor.context.request.get(`/api/v2/rooms/${room}`); expect(response.ok()).toBe(true);
+  const observed = observedPublic.get(actor.page);
+  if (observed?.room === room && Date.now() - observed.at < 5000) return observed.view;
+  const response = await actor.context.request.get(`/api/v2/rooms/${room}`); expect(response.ok(), `Public view HTTP ${response.status()}`).toBe(true);
   return await response.json() as PublicRoom;
 }
 async function personal(actor: Actor, room: string) {
@@ -51,12 +54,26 @@ async function roomSetup(browser: Browser, baseURL: string, count: number) {
         consoleErrors.push(error.message);
       });
       actors.push({ page, context, seat: i + 1, id: "", role: null });
+      const participant = actors.at(-1)!;
+      if ([7, 10].includes(count)) page.on("response", async (response) => {
+        const match = new URL(response.url()).pathname.match(/^\/api\/v2\/rooms\/([A-F0-9]{8})$/);
+        if (!match || response.request().method() !== "GET") return;
+        if (!response.ok()) {
+          // Join probes original membership before showing the invitation; only this pre-membership 401 is expected.
+          if (response.status() === 401 && !participant.id) return;
+          consoleErrors.push(`Public poll HTTP ${response.status()}`); return;
+        }
+        try {
+          const view = await response.json() as PublicRoom;
+          if (view.serverTime >= (observedPublic.get(page)?.view.serverTime ?? 0)) observedPublic.set(page, { room: match[1]!, view, at: Date.now() });
+        } catch { /* A replaced document can cancel its response body. */ }
+      });
     }
     const first = actors[0]!; await first.page.goto("/"); await first.page.getByLabel("你的昵称").fill("组织者");
     if (count === 8) {
       await first.page.getByText("自定义配比", { exact: true }).click();
       await first.page.getByLabel("守卫数量").fill("1"); await first.page.getByLabel("猎人数量").fill("1"); await first.page.getByLabel("平民数量").fill("2");
-    } else await first.page.getByRole("button", { name: "12 人", exact: true }).click();
+    } else await first.page.getByRole("button", { name: `${count} 人`, exact: true }).click();
     await first.page.getByRole("button", { name: "创建房间", exact: true }).last().click();
     await first.page.waitForURL(/\/r\/[A-F0-9]{8}$/); const room = first.page.url().split("/").at(-1)!;
     ownedRoom = room;
@@ -73,7 +90,7 @@ async function roomSetup(browser: Browser, baseURL: string, count: number) {
 }
 // Compressed windows also advance isolated rate buckets; production limits and browser clocks remain unchanged.
 function finishWindow(room: string) {
-  const db = new DatabaseSync(resolve("test-results/browser.sqlite"), { timeout: 5000 });
+  const db = new DatabaseSync(resolve(process.env.E2E_DB_PATH ?? "test-results/browser.sqlite"), { timeout: 5000 });
   try {
     db.exec("BEGIN IMMEDIATE");
     const window = db.prepare("SELECT json_extract(state,?) - json_extract(state,?) AS duration FROM rooms WHERE id = ?").get("$.game.window.deadline", "$.game.window.openedAt", room);
@@ -152,7 +169,7 @@ for (const count of [8, 12]) test(`${count} players can begin without viewing or
   } finally { for (const actor of actors) await actor.context.close(); }
 });
 
-for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} isolated players complete a real ${voice ? "voice" : "text"} UI game and a new lobby`, async ({ browser, baseURL }, info) => {
+for (const voice of [false, true]) for (const count of [7, 8, 10, 12]) test(`${count} isolated players complete a real ${voice ? "voice" : "text"} UI game and a new lobby`, async ({ browser, baseURL }, info) => {
   test.setTimeout(900_000);
   const { actors, room, consoleErrors, navigationDiagnostics } = await roomSetup(browser, baseURL!, count); const organizer = actors[0]!;
   try {
@@ -183,17 +200,20 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
     let control = await host(organizer.page); await control.getByRole("button", { name: "暂停对局" }).click();
     await expect(control.getByRole("button", { name: "恢复对局" })).toBeVisible(); await control.getByRole("button", { name: "恢复对局" }).click();
     await expect(control.getByRole("button", { name: "开始首夜" })).toBeEnabled(); await control.getByRole("button", { name: "开始首夜" }).click(); await close(organizer.page);
+    await expect.poll(async () => (await status(organizer, room)).phase).toBe("night_open");
     let round = 1;
     while ((await status(organizer, room)).phase !== "end") {
       let publicState = await status(organizer, room);
       const hunter = actors.find((a) => a.role === "hunter")!;
       const survivingVillagers = actors.filter(a => a.role === "villager" && publicState.players.some(p => p.id === a.id && "alive" in p && p.alive));
-      const nightTarget = round === 1 ? count === 8 ? hunter : voice ? actors.find((a) => a.role === "seer")! : organizer
+      const nightTarget = round === 1 ? count === 8 || count === 10 ? hunter : voice ? actors.find((a) => a.role === "seer")! : organizer
         : survivingVillagers[(round - 2) % survivingVillagers.length]!;
       while (publicState.phase === "night_open") {
         if (!voice) { control = await host(organizer.page); await control.getByRole("button", { name: "当前指令完成" }).click(); await close(organizer.page); }
         await expect.poll(async () => (await status(organizer, room)).phase, { timeout: 45_000 }).toBe("night_action");
         const role = (await status(organizer, room)).nightRole;
+        const window = (await status(organizer, room)).window!;
+        expect(window.deadline - window.openedAt).toBe(role === "werewolf" ? 30_000 : 10_000);
         const active = actors.filter((a) => a.role === role && publicState.players.some((p) => p.id === a.id && "alive" in p && p.alive));
         if (voice && count === 12 && round === 1 && role === "werewolf") {
           await expect.poll(async () => (await status(organizer, room)).window?.waiting, { timeout: 35_000 }).toBe(true);
@@ -210,6 +230,16 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
         }
         for (const actor of active) {
           const panel = await reveal(actor.page);
+          if ([7, 10].includes(count) && round === 1 && actor === active[0]) {
+            if (role === "witch") await panel.getByRole("button", { name: "使用毒药", exact: true }).click();
+            await actor.page.setViewportSize({ width: 360, height: 640 });
+            await screenshot(actor.page, info, `action-${role}-${count}-short`);
+            const bounds = await panel.locator(".action-targets").evaluate(node => ({ top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom, height: innerHeight }));
+            expect(bounds.top).toBeGreaterThanOrEqual(0); expect(bounds.bottom).toBeLessThanOrEqual(bounds.height);
+            const confirm = panel.getByRole("button", { name: role === "werewolf" ? "确认投票" : "确认行动" });
+            const button = await confirm.boundingBox(); expect(button!.y + button!.height).toBeLessThanOrEqual(640);
+            await actor.page.setViewportSize({ width: 390, height: 844 });
+          }
           if (round === 1 && (role === "guard" || role === "seer") && actor.id !== organizer.id) {
             const draft = actors.find((a) => a.id !== actor.id)!;
             await panel.getByRole("button", { name: new RegExp(`^${draft.seat}号 `) }).click();
@@ -259,8 +289,8 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
           if (player) { await replaceDocument(player.page, () => player.page.reload()); await expect(player.page.locator(".private-modal[open]")).toHaveCount(0); const panel = await reveal(player.page); await expect(panel.getByRole("heading", { name: "行动已确认" })).toBeVisible(); await close(player.page); }
         }
         if ((await status(organizer, room)).phase === "night_action") {
-          if (!(voice && role === "seer" && active.length === 0)) finishWindow(room);
-          await expect.poll(async () => (await status(organizer, room)).phase).toBe("night_close");
+          if (![7, 10].includes(count) && !(voice && role === "seer" && active.length === 0)) finishWindow(room);
+          await expect.poll(async () => (await status(organizer, room)).phase, { timeout: 35_000 }).toBe("night_close");
         }
         if (!voice) { control = await host(organizer.page); await control.getByRole("button", { name: "当前指令完成" }).click(); await close(organizer.page); }
         else await expect.poll(async () => (await status(organizer, room)).phase, { timeout: 30_000 }).not.toBe("night_close");
@@ -269,7 +299,7 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
       expect(publicState.phase).toBe("dawn");
       if (round === 1) {
         expect(publicState.players.every((p) => "alive" in p && p.alive)).toBe(true);
-        const panel = await reveal(hunter.page); await expect(panel.getByRole("heading", { name: "最后一枪" })).toHaveCount(0); await close(hunter.page);
+        if (hunter) { const panel = await reveal(hunter.page); await expect(panel.getByRole("heading", { name: "最后一枪" })).toHaveCount(0); await close(hunter.page); }
         if (!voice) { control = await host(organizer.page); await control.getByRole("button", { name: "发布出局公告" }).click(); await close(organizer.page); }
         await expect.poll(async () => (await status(organizer, room)).sheriffElection).toBe("hands");
         control = await host(organizer.page); await control.getByRole("button", { name: "举手结束，开始竞选", exact: true }).click(); await close(organizer.page);
@@ -286,7 +316,7 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
       publicState = await status(organizer, room);
       if (publicState.phase === "hunter") {
         const panel = await reveal(hunter.page); await expect(panel.getByRole("heading", { name: "最后一枪" })).toBeVisible();
-        if (count === 8) { const wolf = actors.find((a) => a.role === "werewolf")!; await panel.getByRole("button", { name: new RegExp(`^${wolf.seat}号 `) }).click(); }
+        if (count === 8 || count === 10) { const wolf = actors.find((a) => a.role === "werewolf")!; await panel.getByRole("button", { name: new RegExp(`^${wolf.seat}号 `) }).click(); }
         else await panel.getByRole("button", { name: "放弃开枪" }).click();
         await panel.getByRole("button", { name: "确认行动" }).click();
         await expect.poll(async () => (await status(organizer, room)).phase).toBe("day");
@@ -311,6 +341,15 @@ for (const voice of [false, true]) for (const count of [8, 12]) test(`${count} i
       }
     }
     await expect(organizer.page.getByRole("heading", { name: "好人阵营获胜", exact: true })).toBeVisible();
+    if ([7, 10].includes(count)) {
+      const db = new DatabaseSync(resolve(process.env.E2E_DB_PATH ?? "test-results/browser.sqlite"), { readOnly: true });
+      try {
+        const summary = db.prepare("SELECT player_count, status FROM game_usage WHERE id = ?").get(firstGame);
+        expect(summary).toMatchObject({ player_count: count, status: "completed" });
+      } finally { db.close(); }
+      await info.attach("full-game-summary", { body: JSON.stringify({ players: count, mode: voice ? "voice" : "text", nights: round - 1,
+        winner: "good", timing: "normal 30/10 seconds", sessions: actors.length }), contentType: "application/json" });
+    }
     await organizer.page.getByRole("link", { name: "查看本局复盘" }).click(); await expect(organizer.page.getByRole("heading", { name: "揭开身份" })).toBeVisible();
     await screenshot(organizer.page, info, `recap-${count}`);
     await organizer.page.getByRole("link", { name: "返回这一桌" }).click();

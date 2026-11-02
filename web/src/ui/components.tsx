@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, CircleX, Moon, X, type LucideIcon } from "lucide-react";
 import type { RuleConfig, Role } from "../game/types";
 import { ROLES } from "../game/types";
-import { preset } from "../game/config";
+import { preset, SUPPORTED_PLAYER_COUNTS } from "../game/config";
 import { roleNames, roleRules } from "./content";
 import type { PublicRoom } from "./contracts";
 
@@ -30,7 +30,7 @@ export function RuleList({ config }: { config: RuleConfig }) {
 }
 export function ConfigEditor({ value, onChange }: { value: RuleConfig; onChange: (config: RuleConfig) => void }) {
   const count = Object.values(value.roles).reduce((a, b) => a + b, 0);
-  return <div className="config-editor"><fieldset><legend>对局人数</legend><div className="segments count-segments">{[8, 9, 10, 11, 12].map((n) => <button type="button" key={n} aria-pressed={n === count} onClick={() => onChange(preset(n, value.winMode))}>{n} 人</button>)}</div></fieldset>
+  return <div className="config-editor"><fieldset><legend>对局人数</legend><div className="segments count-segments">{SUPPORTED_PLAYER_COUNTS.map((n) => <button type="button" key={n} aria-pressed={n === count} onClick={() => onChange(preset(n, value.winMode))}>{n} 人</button>)}</div></fieldset>
     <fieldset><legend>胜负规则</legend><div className="segments"><button type="button" aria-pressed={value.winMode === "edge"} onClick={() => onChange({ ...value, winMode: "edge" })}>屠边</button><button type="button" aria-pressed={value.winMode === "parity"} onClick={() => onChange({ ...value, winMode: "parity" })}>人数胜负</button></div></fieldset>
     <div className="composition">{ROLES.map((role) => <div className="composition-row" key={role}><span>{roleNames[role]}</span><span className="count-number">{value.roles[role]}</span></div>)}</div>
     <details className="advanced"><summary>自定义配比</summary><div className="custom-counts">{ROLES.map((role) => <label key={role}>{roleNames[role]}<input aria-label={`${roleNames[role]}数量`} type="number" min="0" max={["seer", "witch", "guard", "hunter"].includes(role) ? 1 : 12} value={value.roles[role]} onChange={(e) => onChange({ ...value, roles: { ...value.roles, [role]: Number(e.target.value) } })} /></label>)}</div></details>

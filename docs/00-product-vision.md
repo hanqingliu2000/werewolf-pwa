@@ -2,11 +2,11 @@
 
 English | [简体中文](00-product-vision.zh-CN.md)
 
-Baseline: prod1.0, October 13, 2026. These documents describe the maintained product; consult the archive tags for historical decisions.
+Baseline: prod1.0, October 13, 2026, with seven-player support added November 1, 2026. These documents describe the maintained product; consult the archive tags for historical decisions.
 
 ## Audience and Value
 
-For in-person gatherings of 8 to 12 friends. Let the organizer play too: the website handles secret actions, public narration, timers, resolution, and recaps, while discussion, voting, and last words stay at the table.
+For in-person gatherings of 7 to 12 friends. Let the organizer play too: the website handles secret actions, public narration, timers, resolution, and recaps, while discussion, voting, and last words stay at the table.
 
 Each player uses their own browser. The host's phone also provides public narration. Organizational permissions do not reveal other players' roles, and an eliminated host can continue moderating.
 
