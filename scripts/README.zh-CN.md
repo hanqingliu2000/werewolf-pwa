@@ -86,6 +86,13 @@ python3.12 -m venv .local-generation/voxcpm2-venv
 
 准确提示词为：“中年男性，标准普通话，像日常说话一样平静自然。音色松弛，语速均匀，重音轻，语调起伏小，句尾平稳收住。” 新首句建立自己的合成音参考；模型、种子规则、公开台词和倍速处理不变。页面逐句比较新克制版与指纹核验过的原VoxCPM2，不是Qwen。旧试听不修改；新版本仍待试听，不代表已获准替换。
 
+第三组去掉全部主持、情绪及演绎要求，完整音色描述仅为：“偏年轻的男性声音，标准普通话。” 这是最简音色设计，不是模型内置的具名默认说话人；页面将新年轻男声与第二组克制版对照，之前两组均不修改：
+
+```sh
+.local-generation/voxcpm2-venv/bin/python scripts/audition-voxcpm2.py --name voxcpm2-young-03 --style young --compare-to voxcpm2-calm-02
+.local-generation/voxcpm2-venv/bin/python -m http.server 3034 --bind 127.0.0.1 --directory .local-generation/auditions/voxcpm2-young-03
+```
+
 ## 安全检查
 
 Gitleaks全历史扫描及发布文件检查见[安全说明](../SECURITY.zh-CN.md)。扫描器、结果、凭据、音频原始文件和模型缓存不提交，不作为GitHub Release附件。

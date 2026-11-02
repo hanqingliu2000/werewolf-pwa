@@ -42,6 +42,18 @@ class AuditionTests(unittest.TestCase):
         self.assertEqual(audition.STYLES["original"], audition.STYLE)
         self.assertEqual(audition.STYLES["restrained"], "中年男性，标准普通话，像日常说话一样平静自然。音色松弛，语速均匀，重音轻，语调起伏小，句尾平稳收住。")
 
+    def test_young_prompt_contains_only_voice_and_language(self):
+        self.assertEqual(audition.STYLES["young"], "偏年轻的男性声音，标准普通话。")
+
+    def test_young_comparison_page(self):
+        with tempfile.TemporaryDirectory() as folder:
+            audition.make_page(Path(folder), {"night_start": "天黑，请闭眼。"},
+                               comparison_label="之前克制版", comparison_bank="previous", voice_label="VoxCPM2 年轻男声")
+            page = (Path(folder) / "index.html").read_text()
+            self.assertIn("VoxCPM2 年轻男声 / 之前克制版", page)
+            self.assertIn('src="previous/1.5/night_start.mp3"', page)
+            self.assertIn('src="voxcpm2/1.5/night_start.mp3"', page)
+
     def test_restrained_comparison_labels_and_paths(self):
         with tempfile.TemporaryDirectory() as folder:
             audition.make_page(Path(folder), {"night_start": "天黑，请闭眼。"},

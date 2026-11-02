@@ -20,6 +20,7 @@ STYLE = "成年男性，标准普通话，音色温和清晰，平静自然的�
 STYLES = {
     "original": STYLE,
     "restrained": "中年男性，标准普通话，像日常说话一样平静自然。音色松弛，语速均匀，重音轻，语调起伏小，句尾平稳收住。",
+    "young": "偏年轻的男性声音，标准普通话。",
 }
 PARAMETERS = {"inference_timesteps": 10, "cfg_value": 2.0, "max_tokens": 600}
 
@@ -193,10 +194,13 @@ def main():
             manifest["clips"][key]["rates"][rate] = {"sha256": digest(output), "bytes": output.stat().st_size}
         write_json(manifest_path, manifest)
         print(json.dumps({"clip": key, **{k: manifest["clips"][key][k] for k in ("durationSeconds", "generationSeconds")}}), flush=True)
+    comparison_label = "现有 Qwen3-TTS"
+    if previous_manifest:
+        comparison_label = "之前克制版" if previous_manifest["settings"]["instruction"] == STYLES["restrained"] else "之前版本"
     make_page(destination, {key: clips[key] for key in CLIPS if key in manifest["clips"]},
-              comparison_label="之前版本" if previous_directory else "现有 Qwen3-TTS",
+              comparison_label=comparison_label,
               comparison_bank="previous" if previous_directory else "qwen3",
-              voice_label="VoxCPM2 克制版" if args.style == "restrained" else "VoxCPM2")
+              voice_label={"original": "VoxCPM2", "restrained": "VoxCPM2 克制版", "young": "VoxCPM2 年轻男声"}[args.style])
     print(json.dumps({"audition": str(destination), "clips": len(manifest["clips"]),
                       "peakMemoryGB": round(mx.get_peak_memory() / 1e9, 2), "published": False}), flush=True)
 

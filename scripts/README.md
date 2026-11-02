@@ -86,6 +86,13 @@ For the less expressive second audition, keep the original prompt/seed defaults 
 
 The exact voice instruction is: “中年男性，标准普通话，像日常说话一样平静自然。音色松弛，语速均匀，重音轻，语调起伏小，句尾平稳收住。” The new first line creates its own synthetic reference; the model, seed schedule, public text, and speed processing stay unchanged. Each row compares the new restrained VoxCPM2 clip against the fingerprint-verified original VoxCPM2 clip, not Qwen. The old audition remains unchanged. This is still a listening candidate, not an approved replacement.
 
+The third audition removes all hosting, emotion, and delivery instructions. Its complete voice description is “偏年轻的男性声音，标准普通话。” This is minimal voice design, not a named built-in speaker. It compares the new young male voice against the second, restrained audition without changing either earlier set:
+
+```sh
+.local-generation/voxcpm2-venv/bin/python scripts/audition-voxcpm2.py --name voxcpm2-young-03 --style young --compare-to voxcpm2-calm-02
+.local-generation/voxcpm2-venv/bin/python -m http.server 3034 --bind 127.0.0.1 --directory .local-generation/auditions/voxcpm2-young-03
+```
+
 ## Security Checks
 
 See the [security policy](../SECURITY.md) for full-history Gitleaks and release-file checks. Do not commit scanners, reports, credentials, source audio, or model caches, or attach them to GitHub Releases.
