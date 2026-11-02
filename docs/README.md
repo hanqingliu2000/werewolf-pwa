@@ -22,5 +22,6 @@ English is the default at the original paths. Each document has a `.zh-CN.md` co
 | [Deployment and Operations](19-cloud-deployment.md) | Configuration, release, cleanup, rollback, and summaries |
 | [Security Report](security-prod1.0.md) | First-release findings and limitations |
 | [prod1.0 Release Notes](../releases/prod1.0.md) | First formal release and actual acceptance |
+| [prod1.0.1 Release Notes](../releases/prod1.0.1.md) | Seven-player support, Qwen pacing, and patch acceptance |
 
 See the [design system](../design-system/werewolf-web/MASTER.md) and [audio tooling](../scripts/README.md). Historical stage documents, including stages 10-33, are available from the pre-cleanup archive tag; their acceptance results are not automatically current.

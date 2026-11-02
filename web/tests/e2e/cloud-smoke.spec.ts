@@ -4,6 +4,85 @@ import { preset } from "../../src/game/config";
 import script from "../../src/narration/script.json" with { type: "json" };
 import type { PublicRoom, PrivateRoom, Operation } from "../../src/ui/contracts";
 
+test("seven-player patch: browser enrollment, recovery, Qwen voice and first action", async ({ browser, baseURL }, info) => {
+  const contexts: BrowserContext[] = [];
+  const errors: string[] = [];
+  let room = "";
+  const headers = info.project.use.extraHTTPHeaders ?? {};
+  async function view(): Promise<PublicRoom> {
+    const response = await contexts[0]!.request.get(`/api/v2/rooms/${room}`);
+    expect(response.ok()).toBe(true); return response.json();
+  }
+  try {
+    const pages = [];
+    for (let i = 0; i < 7; i++) {
+      const context = await browser.newContext({ baseURL, extraHTTPHeaders: headers, viewport: { width: 390, height: 844 } });
+      contexts.push(context);
+      const page = await context.newPage(); pages.push(page);
+      page.on("pageerror", error => errors.push(error.message));
+    }
+    const host = pages[0]!;
+    await host.goto("/");
+    await host.getByLabel("你的昵称").fill("Cloud QA seven host");
+    await host.getByRole("button", { name: "7 人", exact: true }).click();
+    await host.getByRole("button", { name: "创建房间", exact: true }).last().click();
+    await host.waitForURL(/\/r\/[A-F0-9]{8}$/); room = host.url().split("/").at(-1)!;
+    writeFileSync(info.outputPath("created-room-ids.json"), JSON.stringify({ rooms: [room], origin: baseURL }), { mode: 0o600 });
+    for (let i = 1; i < 7; i++) {
+      const page = pages[i]!;
+      await page.goto(`/join?room=${room}`);
+      await page.getByLabel("你的昵称").fill(`Cloud QA seven ${i + 1}`);
+      await page.getByRole("button", { name: "加入房间", exact: true }).last().click();
+      await page.waitForURL(new RegExp(`/r/${room}$`));
+    }
+    for (const page of pages) {
+      await expect(page.getByRole("button", { name: "准备好了", exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "准备好了", exact: true }).click();
+      await expect(page.getByRole("button", { name: "取消准备", exact: true })).toBeVisible();
+    }
+    expect((await view()).players).toHaveLength(7);
+    await pages[6]!.reload();
+    await expect(pages[6]!.getByRole("button", { name: "取消准备", exact: true })).toBeVisible();
+    await host.getByRole("button", { name: "主持控制", exact: true }).click();
+    const control = host.getByRole("dialog", { name: "主持控制" });
+    await control.getByRole("button", { name: "语音", exact: true }).click();
+    await expect(control.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 60_000 });
+    expect((await view()).narration.version).toBe(script.version);
+    await control.getByRole("button", { name: "试音（可选）", exact: true }).click();
+    await expect(control.locator(".voice-controls .section-heading [role=status]")).toHaveText("声音就绪", { timeout: 30_000 });
+    await control.getByRole("button", { name: "开始发牌", exact: true }).click();
+    await host.keyboard.press("Escape");
+    await expect.poll(async () => (await view()).phase).toBe("reveal");
+    await expect.poll(async () => (await view()).narration.pending, { timeout: 45_000 }).toBeNull();
+    await host.getByRole("button", { name: "主持控制", exact: true }).click();
+    await control.getByRole("button", { name: "开始首夜", exact: true }).click();
+    await host.keyboard.press("Escape");
+    await expect.poll(async () => (await view()).phase, { timeout: 60_000 }).toBe("night_action");
+    const current = await view();
+    expect(current.nightRole).toBe("werewolf");
+    expect(current.window!.deadline - current.window!.openedAt).toBe(30_000);
+    let wolf = -1;
+    for (let i = 0; i < 7; i++) {
+      const response = await contexts[i]!.request.get(`/api/v2/rooms/${room}/private`);
+      expect(response.ok()).toBe(true);
+      if ((await response.json() as PrivateRoom).role === "werewolf") wolf = i;
+    }
+    expect(wolf).toBeGreaterThanOrEqual(0);
+    await expect(pages[wolf]!.getByRole("dialog", { name: "本人私密视角" })).toBeVisible();
+    await pages[wolf]!.screenshot({ path: info.outputPath("seven-first-action.png") });
+    await host.keyboard.press("Escape");
+    await host.getByRole("button", { name: "主持控制", exact: true }).click();
+    await control.getByRole("button", { name: "中止本局", exact: true }).click();
+    await control.getByRole("button", { name: "确认中止", exact: true }).click();
+    await expect.poll(async () => (await view()).aborted).toBe(true);
+    expect(errors).toEqual([]);
+    console.log("Seven-player patch passed: seven independent browser sessions, readiness and refresh recovery, Qwen trial, dealing, automatic action panel, full 30-second wolf clock; deliberately aborted before a complete game.");
+  } finally {
+    if (room) writeFileSync(info.outputPath("created-room-ids.json"), JSON.stringify({ rooms: [room], origin: baseURL }), { mode: 0o600 });
+    for (const context of contexts) await context.close();
+  }
+});
+
 test("cloud smoke: optional trial, silent timeout waits and split wolf votes", async ({ browser, baseURL }, info) => {
   test.setTimeout(240_000);
   const contexts: BrowserContext[] = []; const errors: string[] = []; let room = "";

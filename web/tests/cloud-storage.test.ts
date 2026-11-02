@@ -46,7 +46,7 @@ beforeAll(async () => {
     await db.query(`INSERT INTO ${schema}.game_usage VALUES ('legacy-game',$1,NULL,10000,10000,10,'completed')`, [legacyIds[i]]);
     previous.push((await db.query(`SELECT row_to_json(r) AS room, row_to_json(g) AS game FROM ${schema}.room_usage r JOIN ${schema}.game_usage g ON g.room_usage_id = r.id`)).rows);
   }
-  await db.exec(readFileSync(new URL("../../supabase/migrations/20261102015235_seven_player_rooms.sql", import.meta.url), "utf8"));
+  await db.exec(readFileSync(new URL("../../supabase/migrations/20261102025117_seven_player_rooms.sql", import.meta.url), "utf8"));
   migratedSummaries = [];
   for (const [i, schema] of ["werewolf_preview", "werewolf_prod"].entries()) {
     const after = (await db.query(`SELECT row_to_json(r) AS room, row_to_json(g) AS game FROM ${schema}.room_usage r JOIN ${schema}.game_usage g ON g.room_usage_id = r.id`)).rows;

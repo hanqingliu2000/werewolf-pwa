@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-prod1.0, package 1.0.0. See the [repository README](../README.md) for setup and product details, [rules](../docs/02-rules-and-decisions.md) for gameplay, and [deployment guide](../docs/19-cloud-deployment.md) for environments and production release.
+prod1.0.1, package 1.0.1. See the [repository README](../README.md) for setup and product details, [rules](../docs/02-rules-and-decisions.md) for gameplay, and [deployment guide](../docs/19-cloud-deployment.md) for environments and production release.
 
 Repository documentation is bilingual with English as the default. The app UI, game flow, and narration remain Chinese.
 

@@ -8,17 +8,17 @@ A free, Chinese-language Werewolf assistant for in-person gatherings of 7-12 fri
 
 The app handles role assignment, secret night actions, Chinese voice narration, resolution, and recaps. Discussion, elections, voting, and last words stay around your table. This is an in-person game assistant, not an online matchmaking or voice-chat platform.
 
-**[Play Now](https://werewolf-web-v2.vercel.app/)** | [Listen to the Host](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html)
+**[Play Now](https://werewolf-web-v2.vercel.app/)** | [Listen to the Host](https://werewolf-web-v2.vercel.app/audio/host-zh-v8/index.html)
 
-**Release status:** seven-player support and V8 prompt pacing are verified in the current source and local preview. The live site still uses the previously deployed 8-12-player build with V7 audio; cloud migration and explicit production promotion are pending.
+**Release status:** prod1.0.1 packages seven-player support and corrected Qwen V8 prompt pacing. Cloud migration is complete; candidate acceptance and production promotion are in progress. VoxCPM2 remains an unselected local experiment and is not used by the game.
 
 **Documentation is available in English and Simplified Chinese. The interface, game flow, and voice narration remain in Chinese.** English documentation does not add an English gameplay mode.
 
 Built for friend groups, campus clubs, and small tabletop gatherings. The developer has hosted real 9- and 10-player games with friends, with no obvious player-side usability issues reported. First-time hosting by an independent organizer still needs validation. Share real-world feedback through [Issues](https://github.com/hanqingliu2000/werewolf-pwa/issues).
 
-**First formal release: prod1.0** | Package `1.0.0` | Rules `werewolf-web-v1` | Source Audio `host-zh-v8`
+**Current patch: prod1.0.1** | Package `1.0.1` | Rules `werewolf-web-v1` | Audio `host-zh-v8`
 
-[Live App](https://werewolf-web-v2.vercel.app/) | [Voice Samples](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) | [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0) | [Release Notes](releases/prod1.0.md) | [Documentation](docs/README.md) | [Security](SECURITY.md)
+[Live App](https://werewolf-web-v2.vercel.app/) | [Voice Samples](https://werewolf-web-v2.vercel.app/audio/host-zh-v8/index.html) | [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0.1) | [Release Notes](releases/prod1.0.1.md) | [Documentation](docs/README.md) | [Security](SECURITY.md)
 
 ## Contents
 

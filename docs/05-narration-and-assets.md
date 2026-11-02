@@ -35,6 +35,8 @@ System interruptions trigger bounded automatic recovery with valid-cue checks; a
 
 ## Updating Assets
 
+For prod1.0.1 the maintainer selected the pace-adjusted Qwen V8 bank instead of the VoxCPM2 auditions. Those auditions remain private and unselected; no inference service is kept running. Real-phone listening acceptance remains incomplete.
+
 Generate only public lines. Keep model caches, source WAVs, and audition reports in ignored directories. Changing published files requires a new audio version: stage, audition, check signal/ASR results, generate speed variants, verify all fingerprints, then publish local assets. See the [audio tools](../scripts/README.md) for commands.
 
 ASR and acoustic measurements assist review; they do not replace human listening, pronunciation checks, or real-phone speaker acceptance.

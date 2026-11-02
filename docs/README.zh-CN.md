@@ -22,5 +22,6 @@
 | [部署与维护](19-cloud-deployment.zh-CN.md) | 配置、发布、清理和回退 |
 | [安全报告](security-prod1.0.zh-CN.md) | 首发检查的历史结果与边界 |
 | [prod1.0发布说明](../releases/prod1.0.zh-CN.md) | 首次正式发布与实际验收 |
+| [prod1.0.1发布说明](../releases/prod1.0.1.zh-CN.md) | 7人支持、Qwen节奏修复和补丁验收 |
 
 当前设计系统见[MASTER](../design-system/werewolf-web/MASTER.zh-CN.md)，语音生成见[工具说明](../scripts/README.zh-CN.md)。原阶段10至33等资料从清理前归档标签查看，不把历史验收自动当成本次结果。

@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-prod1.0，包版本1.0.0。完整介绍与安装见[仓库README](../README.zh-CN.md)，规则见[游戏规则](../docs/02-rules-and-decisions.zh-CN.md)，环境与正式发布见[部署说明](../docs/19-cloud-deployment.zh-CN.md)。
+prod1.0.1，包版本1.0.1。完整介绍与安装见[仓库README](../README.zh-CN.md)，规则见[游戏规则](../docs/02-rules-and-decisions.zh-CN.md)，环境与正式发布见[部署说明](../docs/19-cloud-deployment.zh-CN.md)。
 
 仓库文档中英双语，默认英语；应用界面、游戏流程和语音仍使用中文。
 

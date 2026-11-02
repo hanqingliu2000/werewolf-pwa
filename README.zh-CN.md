@@ -8,17 +8,17 @@
 
 系统负责发牌、夜间秘密行动、中文语音播报、结算与复盘。面对面的推理、竞选、投票和遗言依然留在桌边，不是线上语音匹配平台。
 
-**[直接开始一局 →](https://werewolf-web-v2.vercel.app/)** · [先听听主持声音](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html)
+**[直接开始一局 →](https://werewolf-web-v2.vercel.app/)** · [先听听主持声音](https://werewolf-web-v2.vercel.app/audio/host-zh-v8/index.html)
 
-**发布状态：**7人支持及V8提示语速已在当前源码和本地预览完成验证。正式站仍为此前部署的8至12人、V7语音版本，尚待云端迁移及明确的正式发布。
+**发布状态：**prod1.0.1包含7人支持和校准节奏后的Qwen V8语音。云端迁移已完成，候选验收与正式发布正在进行。VoxCPM2只保留为未采用的本地实验，游戏不使用该模型。
 
 **文档提供英语和简体中文版本，默认展示英语。应用界面、游戏流程和语音播报仍使用中文，不新增英语游戏模式。**
 
 适合朋友聚会、校园社团和小型桌游活动。开发者已带朋友实测9人和10人局，玩家未反馈明显操作障碍；非开发者首次独立组织一局的体验仍待验证。欢迎通过 [Issues](https://github.com/hanqingliu2000/werewolf-pwa/issues) 分享真实对局反馈。
 
-**首次正式发布：prod1.0** · 应用包 `1.0.0` · 规则标识 `werewolf-web-v1` · 源码音频 `host-zh-v8`
+**当前补丁：prod1.0.1** · 应用包 `1.0.1` · 规则标识 `werewolf-web-v1` · 音频 `host-zh-v8`
 
-[进入正式站](https://werewolf-web-v2.vercel.app/) · [当前语音试听](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) · [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0) · [发布说明](releases/prod1.0.zh-CN.md) · [文档目录](docs/README.zh-CN.md) · [安全策略](SECURITY.zh-CN.md)
+[进入正式站](https://werewolf-web-v2.vercel.app/) · [当前语音试听](https://werewolf-web-v2.vercel.app/audio/host-zh-v8/index.html) · [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0.1) · [发布说明](releases/prod1.0.1.zh-CN.md) · [文档目录](docs/README.zh-CN.md) · [安全策略](SECURITY.zh-CN.md)
 
 ## 目录
 
