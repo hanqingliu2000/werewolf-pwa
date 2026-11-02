@@ -54,6 +54,29 @@ python3.12 -m venv .local-generation/venv
 
 1.5/2倍使用FFmpeg atempo预生成，播放器节点保持原生速度1；行动时间不缩减。文件为24kHz、单声道、96kbps MP3，目标响度-18LUFS，峰值-1.5dB。
 
+## VoxCPM2 本地试听
+
+这是独立实验，不是已选定的游戏声音，不修改当前声音库、播报配置或正式站。[MLX模型](https://huggingface.co/mlx-community/VoxCPM2-bf16)权重使用Apache-2.0，固定revision为 `a7fb80d9056983135a54ca3f71fcc5a637ccddf5`，下载约5GB，生成需要本机Metal/GPU权限。
+
+使用独立的Python3.12环境，不升级现有Qwen环境：
+
+```sh
+python3.12 -m venv .local-generation/voxcpm2-venv
+.local-generation/voxcpm2-venv/bin/python -m pip install -r scripts/voxcpm2-lock.txt
+.local-generation/voxcpm2-venv/bin/python scripts/audition-voxcpm2.py --download
+.local-generation/voxcpm2-venv/bin/python scripts/test-audition-voxcpm2.py
+```
+
+后续运行默认离线。首句由模型直接设计音色，其余七句用该合成音作为音色参考，不使用真人录音。两组声音采用相同公开文本与响度目标，预生成保音调的原速、1.5倍、2倍版本；页面默认1.5倍。48kHz原始WAV、24kHz MP3对照、运行参数与试听页均留在被忽略的 `.local-generation/auditions/voxcpm2-pilot-01/`。修改种子或配置必须换新的 `--name`。
+
+仅开放该试听目录，不能开放私有父目录或模型缓存：
+
+```sh
+.local-generation/voxcpm2-venv/bin/python -m http.server 3032 --bind 127.0.0.1 --directory .local-generation/auditions/voxcpm2-pilot-01
+```
+
+打开 `http://127.0.0.1:3032/`。音色选择、自然度和多音字仍待人工试听；有效波形或ASR识别不等于听感验收，不涉及云端推理服务。
+
 ## 安全检查
 
 Gitleaks全历史扫描及发布文件检查见[安全说明](../SECURITY.zh-CN.md)。扫描器、结果、凭据、音频原始文件和模型缓存不提交，不作为GitHub Release附件。

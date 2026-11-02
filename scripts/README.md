@@ -54,6 +54,29 @@ Auditions use a separate private directory and cannot combine with reuse or publ
 
 FFmpeg atempo pre-generates 1.5x/2x clips, while player nodes keep a native rate of 1. Action time is unchanged. Files are 24 kHz, mono, 96 kbps MP3, targeting -18 LUFS and -1.5 dB peak.
 
+## VoxCPM2 Local Audition
+
+This is an isolated experiment, not the selected game voice. It does not modify the active bank, narration configuration, or production site. The [MLX model](https://huggingface.co/mlx-community/VoxCPM2-bf16) uses Apache-2.0 weights, pinned to revision `a7fb80d9056983135a54ca3f71fcc5a637ccddf5` (about 5 GB). Generation requires local Metal/GPU access.
+
+Use a separate Python 3.12 environment; do not upgrade the existing Qwen environment:
+
+```sh
+python3.12 -m venv .local-generation/voxcpm2-venv
+.local-generation/voxcpm2-venv/bin/python -m pip install -r scripts/voxcpm2-lock.txt
+.local-generation/voxcpm2-venv/bin/python scripts/audition-voxcpm2.py --download
+.local-generation/voxcpm2-venv/bin/python scripts/test-audition-voxcpm2.py
+```
+
+Later runs default to offline. The first self-generated line anchors the other seven voices; no human reference recording is used. Both voice banks have the same public text and loudness target, with pre-generated, pitch-preserving 1x/1.5x/2x files. The page defaults to 1.5x. Raw 48 kHz WAVs, 24 kHz MP3 comparisons, runtime provenance, and the listening page stay under ignored `.local-generation/auditions/voxcpm2-pilot-01/`. A different seed or configuration needs a new `--name`.
+
+Serve only that audition folder, never the private parent or model cache:
+
+```sh
+.local-generation/voxcpm2-venv/bin/python -m http.server 3032 --bind 127.0.0.1 --directory .local-generation/auditions/voxcpm2-pilot-01
+```
+
+Open `http://127.0.0.1:3032/`. Listening acceptance, polyphonic pronunciation, and voice selection remain manual; valid audio and ASR are not evidence of naturalness. No cloud inference service is involved.
+
 ## Security Checks
 
 See the [security policy](../SECURITY.md) for full-history Gitleaks and release-file checks. Do not commit scanners, reports, credentials, source audio, or model caches, or attach them to GitHub Releases.
