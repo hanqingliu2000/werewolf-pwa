@@ -77,6 +77,15 @@ Serve only that audition folder, never the private parent or model cache:
 
 Open `http://127.0.0.1:3032/`. Listening acceptance, polyphonic pronunciation, and voice selection remain manual; valid audio and ASR are not evidence of naturalness. No cloud inference service is involved.
 
+For the less expressive second audition, keep the original prompt/seed defaults intact and use:
+
+```sh
+.local-generation/voxcpm2-venv/bin/python scripts/audition-voxcpm2.py --name voxcpm2-calm-02 --style restrained --compare-to voxcpm2-pilot-01
+.local-generation/voxcpm2-venv/bin/python -m http.server 3033 --bind 127.0.0.1 --directory .local-generation/auditions/voxcpm2-calm-02
+```
+
+The exact voice instruction is: “中年男性，标准普通话，像日常说话一样平静自然。音色松弛，语速均匀，重音轻，语调起伏小，句尾平稳收住。” The new first line creates its own synthetic reference; the model, seed schedule, public text, and speed processing stay unchanged. Each row compares the new restrained VoxCPM2 clip against the fingerprint-verified original VoxCPM2 clip, not Qwen. The old audition remains unchanged. This is still a listening candidate, not an approved replacement.
+
 ## Security Checks
 
 See the [security policy](../SECURITY.md) for full-history Gitleaks and release-file checks. Do not commit scanners, reports, credentials, source audio, or model caches, or attach them to GitHub Releases.

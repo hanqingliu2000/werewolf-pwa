@@ -77,6 +77,15 @@ python3.12 -m venv .local-generation/voxcpm2-venv
 
 打开 `http://127.0.0.1:3032/`。音色选择、自然度和多音字仍待人工试听；有效波形或ASR识别不等于听感验收，不涉及云端推理服务。
 
+第二组使用更克制的提示词，保留原提示词和随机种子默认值不变：
+
+```sh
+.local-generation/voxcpm2-venv/bin/python scripts/audition-voxcpm2.py --name voxcpm2-calm-02 --style restrained --compare-to voxcpm2-pilot-01
+.local-generation/voxcpm2-venv/bin/python -m http.server 3033 --bind 127.0.0.1 --directory .local-generation/auditions/voxcpm2-calm-02
+```
+
+准确提示词为：“中年男性，标准普通话，像日常说话一样平静自然。音色松弛，语速均匀，重音轻，语调起伏小，句尾平稳收住。” 新首句建立自己的合成音参考；模型、种子规则、公开台词和倍速处理不变。页面逐句比较新克制版与指纹核验过的原VoxCPM2，不是Qwen。旧试听不修改；新版本仍待试听，不代表已获准替换。
+
 ## 安全检查
 
 Gitleaks全历史扫描及发布文件检查见[安全说明](../SECURITY.zh-CN.md)。扫描器、结果、凭据、音频原始文件和模型缓存不提交，不作为GitHub Release附件。
