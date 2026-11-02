@@ -32,7 +32,7 @@ Smoke tests and default browser configurations launch isolated local services. D
 
 - `src/game/`: the single rules, phases, random dealing, and command core.
 - `src/server/`: sessions, permissions, deduplication, public/private/host views, SQLite/PG storage, and private usage summaries.
-- `src/narration/`: V7 scripts, asset fingerprints, and the public Web Audio player.
+- `src/narration/`: V8 scripts, asset fingerprints, and the public Web Audio player.
 - `src/ui/`: responsive pages, private panels, foreground synchronization, and recovery.
 - `tests/`: rules, contracts, permissions, audio, and browser checks.
 

@@ -31,6 +31,8 @@ A separate interactive, visible Chromium walkthrough completed a fresh seven-pla
 
 ## Security Gate
 
+The complete-game records above used V7 audio. V8 prompt pacing is a later asset-only change; do not present those games as a new V8 complete-game acceptance.
+
 Scan Git history and release candidates for credentials, audit locked dependencies, and check private-table RLS/permissions, client bundles, and deployment packages. Record residual risks and unverified scope in the security report. No warnings is not proof of absolute security.
 
 ## Priorities

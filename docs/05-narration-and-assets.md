@@ -8,7 +8,7 @@ Baseline: prod1.0, October 13, 2026.
 
 - Script: `web/src/narration/script.json`.
 - Generation parameters: `web/src/narration/voice.json`.
-- Published bank: `web/public/audio/host-zh-v7/`, with 48 original-speed MP3s and 96 pitch-preserving 1.5x/2x MP3s.
+- Published bank: `web/public/audio/host-zh-v8/`, with 48 original-speed MP3s and 96 pitch-preserving 1.5x/2x MP3s.
 - Eight original WebP images in `web/public/art/`: scene, card back, and six role portraits.
 - Local Noto Serif SC font and OFL in `web/public/fonts/`.
 - Each asset directory's `manifest.json` records fingerprints and provenance.
@@ -24,6 +24,8 @@ Configured roles retain the full eyes-open/action/eyes-closed sequence even afte
 The first night adds three clips: eyes-closed nominations, eyes-open election speeches, and transition to results. Pronounce 警长 as `jǐng zhǎng`; retain the pronunciation hint in generation instructions.
 
 ## Playback and Timing
+
+V8 preserves all V7 text and the approved voice. Only the five action-prompt originals are pace-corrected with pitch-preserving time stretching, matching the median spoken-span pace of 13 existing narration clips (about 2.83 Chinese characters/second before global speed). The other 43 originals are byte-identical. Both 1.5x and 2x variants derive from the corrected originals; do not use per-clip player-speed exceptions or padding to disguise fast speech. The manifest records the source hashes, factors, and measured spans. User audition and phone listening remain pending; isolated Seer/Witch ASR homophone ambiguities match the V7 baseline and are not proof of pronunciation correctness.
 
 Default playback is 1.5x, with optional 2x. FFmpeg atempo pre-processes the faster files, while Web Audio nodes retain a native playback rate of 1, preserving pitch. Speed changes take effect on the next clip.
 

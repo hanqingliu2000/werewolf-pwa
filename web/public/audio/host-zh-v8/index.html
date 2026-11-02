@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>警长竞选与保音调试听</title>
+  <title>操作提示语速试听</title>
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; letter-spacing: 0; }
@@ -23,7 +23,7 @@
 </head>
 <body><main>
   <header><img src="/art/cardback.webp" alt="" width="60" height="80"><h1>播报试听</h1></header>
-  <section><label for="clip">片段</label><select id="clip" disabled></select><label for="rate">语速</label><select id="rate"><option value="1">1×</option><option value="1.5" selected>1.5×</option><option value="2">2×</option></select><audio id="player" controls preload="none" aria-label="当前片段" src="rates/1.5/guard_action.mp3"></audio><p id="caption" role="status">正在加载</p></section>
+  <section><label for="clip">片段</label><select id="clip" disabled></select><label for="rate">语速</label><select id="rate"><option value="1">1×</option><option value="1.5" selected>1.5×</option><option value="2">2×</option></select><audio id="player" controls preload="none" aria-label="当前片段" src="rates/1.5/werewolf_action.mp3"></audio><p id="caption" role="status">正在加载</p></section>
   <a href="/">返回狼人杀</a>
 </main>
 <script>
@@ -36,7 +36,7 @@
   player.addEventListener("loadedmetadata", () => { player.playbackRate = 1; });
   fetch("manifest.json").then((response) => { if (!response.ok) throw new Error(); return response.json(); }).then((manifest) => {
     for (const id of Object.keys(manifest.clips)) { const option = document.createElement("option"); option.value = id; option.textContent = labels[id] || `${id.slice(5)} 号玩家`; select.append(option); }
-    select.value = "guard_action"; select.disabled = false; caption.textContent = manifest.clips.guard_action.text;
+    select.value = "werewolf_action"; select.disabled = false; caption.textContent = manifest.clips.werewolf_action.text;
     select.addEventListener("change", () => { update(); caption.textContent = manifest.clips[select.value].text; });
   }).catch(() => { caption.setAttribute("role", "alert"); caption.textContent = "声音资源未能加载"; });
 </script>

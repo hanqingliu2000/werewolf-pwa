@@ -10,13 +10,13 @@
 
 **[直接开始一局 →](https://werewolf-web-v2.vercel.app/)** · [先听听主持声音](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html)
 
-**发布状态：**7人支持已在当前源码和本地预览完成验证。正式站仍为此前部署的8至12人版本，尚待云端迁移及明确的正式发布。
+**发布状态：**7人支持及V8提示语速已在当前源码和本地预览完成验证。正式站仍为此前部署的8至12人、V7语音版本，尚待云端迁移及明确的正式发布。
 
 **文档提供英语和简体中文版本，默认展示英语。应用界面、游戏流程和语音播报仍使用中文，不新增英语游戏模式。**
 
 适合朋友聚会、校园社团和小型桌游活动。开发者已带朋友实测9人和10人局，玩家未反馈明显操作障碍；非开发者首次独立组织一局的体验仍待验证。欢迎通过 [Issues](https://github.com/hanqingliu2000/werewolf-pwa/issues) 分享真实对局反馈。
 
-**首次正式发布：prod1.0** · 应用包 `1.0.0` · 规则标识 `werewolf-web-v1` · 音频 `host-zh-v7`
+**首次正式发布：prod1.0** · 应用包 `1.0.0` · 规则标识 `werewolf-web-v1` · 源码音频 `host-zh-v8`
 
 [进入正式站](https://werewolf-web-v2.vercel.app/) · [当前语音试听](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) · [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0) · [发布说明](releases/prod1.0.zh-CN.md) · [文档目录](docs/README.zh-CN.md) · [安全策略](SECURITY.zh-CN.md)
 
@@ -210,7 +210,7 @@ npm run test:ui
 
 ## 素材与语音
 
-当前V7有48段原速及96段保音调倍速音频，网页仅加载公开静态文件，不运行模型、不实时上传对局内容。八张WebP含入口场景、统一牌背和六角色立绘；字体本地加载。
+当前V8有48段原速及96段保音调倍速音频，网页仅加载公开静态文件，不运行模型、不实时上传对局内容。八张WebP含入口场景、统一牌背和六角色立绘；字体本地加载。
 
 音频与美术清单记录文本、来源及SHA-256。已发布声音不可覆盖；改动需新版本、试听、指纹和播放验收。[素材说明](docs/05-narration-and-assets.zh-CN.md)、[音频工具](scripts/README.zh-CN.md)、[美术来源](web/public/art/README.zh-CN.md)。
 

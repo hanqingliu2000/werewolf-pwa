@@ -20,7 +20,7 @@
 
 - 产品包：`1.0.0`，正式标签：`prod1.0`。
 - 规则配置标识：`werewolf-web-v1`。
-- 音频：`host-zh-v7`。
+- 音频：`host-zh-v8`。
 - 房间持久化结构：`schemaVersion: 1`。
 - API：`/api/v2`。
 

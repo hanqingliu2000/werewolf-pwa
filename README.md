@@ -10,13 +10,13 @@ The app handles role assignment, secret night actions, Chinese voice narration, 
 
 **[Play Now](https://werewolf-web-v2.vercel.app/)** | [Listen to the Host](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html)
 
-**Release status:** seven-player support is verified in the current source and local preview. The live site still uses the previously deployed 8-12-player build; cloud migration and explicit production promotion are pending.
+**Release status:** seven-player support and V8 prompt pacing are verified in the current source and local preview. The live site still uses the previously deployed 8-12-player build with V7 audio; cloud migration and explicit production promotion are pending.
 
 **Documentation is available in English and Simplified Chinese. The interface, game flow, and voice narration remain in Chinese.** English documentation does not add an English gameplay mode.
 
 Built for friend groups, campus clubs, and small tabletop gatherings. The developer has hosted real 9- and 10-player games with friends, with no obvious player-side usability issues reported. First-time hosting by an independent organizer still needs validation. Share real-world feedback through [Issues](https://github.com/hanqingliu2000/werewolf-pwa/issues).
 
-**First formal release: prod1.0** | Package `1.0.0` | Rules `werewolf-web-v1` | Audio `host-zh-v7`
+**First formal release: prod1.0** | Package `1.0.0` | Rules `werewolf-web-v1` | Source Audio `host-zh-v8`
 
 [Live App](https://werewolf-web-v2.vercel.app/) | [Voice Samples](https://werewolf-web-v2.vercel.app/audio/host-zh-v7/index.html) | [GitHub Release](https://github.com/hanqingliu2000/werewolf-pwa/releases/tag/prod1.0) | [Release Notes](releases/prod1.0.md) | [Documentation](docs/README.md) | [Security](SECURITY.md)
 
@@ -210,7 +210,7 @@ See the historical [prod1.0 security report](docs/security-prod1.0.md) for scope
 
 ## Artwork and Audio
 
-V7 contains 48 original-speed and 96 pitch-preserving speed variants. The app loads public static files: no runtime model and no live upload of game content. Eight WebP files cover the entry scene, shared cardback, and six roles; fonts load locally.
+V8 contains 48 original-speed and 96 pitch-preserving speed variants. The app loads public static files: no runtime model and no live upload of game content. Eight WebP files cover the entry scene, shared cardback, and six roles; fonts load locally.
 
 Manifests record text, provenance, and SHA-256. Published audio is immutable; changes require a new version, audition, fingerprints, and playback acceptance. See [asset policy](docs/05-narration-and-assets.md), [audio tools](scripts/README.md), and [artwork provenance](web/public/art/README.md).
 

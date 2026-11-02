@@ -6,6 +6,21 @@ import script from "../src/narration/script.json";
 import voice from "../src/narration/voice.json";
 
 describe("new static narration bank", () => {
+  it("matches action prompts to the approved narration pace before applying either global speed", () => {
+    const manifest = JSON.parse(readFileSync(resolve(`public/audio/${script.version}/manifest.json`), "utf8"));
+    const pace = manifest.paceNormalization;
+    expect(pace).toMatchObject({ sourceBank: "host-zh-v7", preservesPitch: true, method: "spoken-span reference median" });
+    expect(pace.targetCharactersPerSecond).toBeGreaterThan(2.5);
+    expect(pace.targetCharactersPerSecond).toBeLessThan(3.2);
+    expect(Object.keys(pace.actions).sort()).toEqual(["guard_action", "hunter_action", "seer_action", "werewolf_action", "witch_action"]);
+    for (const [id, entry] of Object.entries(pace.actions) as [string, { sourceSha256: string; tempo: number; before: { charactersPerSecond: number }; after: { charactersPerSecond: number } }][]) {
+      expect(entry.tempo).toBeGreaterThanOrEqual(0.5); expect(entry.tempo).toBeLessThanOrEqual(1);
+      expect(entry.after.charactersPerSecond / pace.targetCharactersPerSecond).toBeGreaterThan(0.92);
+      expect(entry.after.charactersPerSecond / pace.targetCharactersPerSecond).toBeLessThan(1.08);
+      expect(manifest.clips[id]).toMatchObject({ postProcessing: { method: "FFmpeg atempo", preservesPitch: true, tempo: entry.tempo } });
+      expect(manifest.clips[id].sha256).not.toBe(entry.sourceSha256);
+    }
+  });
   it("retains explicit sheriff pronunciation guidance in the active bank", () => {
     const root = resolve(`public/audio/${script.version}`);
     const manifest = JSON.parse(readFileSync(resolve(root, "manifest.json"), "utf8"));

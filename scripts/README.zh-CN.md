@@ -20,6 +20,8 @@ node --test scripts/ui-review/review.test.mjs
 
 ## 离线语音生成
 
+只调整节奏时，`normalize-action-audio.py --source-bank host-zh-v8 --analyze` 可只读测量当前声音库。先提升script/voice版本，再以仍在发布目录中的上一版为来源运行校准，暂存新版本；核验改动片段、生成两种倍速后，按下列命令发布。V8来源为提交 `7b141bb` 的V7，不更换声音模型。已发布版本不可覆盖，替代版本核验后才从当前公开目录退役旧版本。
+
 现有部署直接使用已提交的MP3，开发网页不需要模型。重新生成需要macOS ARM64、Python3.12与MLX/Metal；模型缓存、WAV及审听报告只在被忽略的 `.local-generation/`。
 
 ```sh
@@ -27,7 +29,7 @@ python3.12 -m venv .local-generation/venv
 .local-generation/venv/bin/python -m pip install -r scripts/audio-lock.txt
 ```
 
-台词位于 `web/src/narration/script.json`，参数位于 `voice.json`。当前V7有48段原速、96段保音调倍速。Qwen3-TTS CustomVoice、Uncle_Fu，模型revision与参数都由voice.json固定。没有真人克隆或网页实时模型。
+台词位于 `web/src/narration/script.json`，参数位于 `voice.json`。当前V8有48段原速、96段保音调倍速。Qwen3-TTS CustomVoice、Uncle_Fu，模型revision与参数都由voice.json固定。没有真人克隆或网页实时模型。
 
 已发布版本不可覆盖。调整声音时先提升script/voice版本；`--reuse` 只接受仍保留且同模型/参数、同文本、已有指纹核验的旧银行。历史银行已移除，不再硬编码它们。
 

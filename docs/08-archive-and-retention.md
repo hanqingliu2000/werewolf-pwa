@@ -14,7 +14,7 @@ These tags preserve history; they are neither formal releases nor endorsements o
 ## Removed from the Current Tree
 
 - Old audio, branding sketches, and reference copy in `materials/`.
-- V1 through V6 and calm-pilot banks under `web/public/audio/`; only V7 is active.
+- V1 through V6 and calm-pilot banks under `web/public/audio/`; V7 was active at prod1.0; V8 is now active. The V7 pacing source is recoverable at commit `7b141bb`.
 - Early voice experiment script `generate-calm-pilot.py`.
 - 23 obsolete stage plans/acceptance logs that no longer belong in maintained development guidance.
 - Asset comparison tests requiring deleted banks, outdated audition hints, and invalid review actions.

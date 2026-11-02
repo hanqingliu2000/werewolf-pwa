@@ -1,5 +1,5 @@
 {
-  "version": "host-zh-v7",
+  "version": "host-zh-v8",
   "rulesVersion": "werewolf-web-v1",
   "language": "Chinese",
   "speaker": "Uncle_Fu",
@@ -31,6 +31,7 @@
   "review": {
     "styleSelection": "neutral pilot approved by user",
     "signalAndAsr": "local signal and ASR review passed",
+    "paceListening": "pending user audition",
     "humanPhoneListening": "pending"
   },
   "normalization": {
@@ -138,9 +139,9 @@
     },
     "werewolf_action": {
       "text": "请选择击杀目标。",
-      "sha256": "fe027f687ef3d8a8d7427bcc525dc81869157f5088fcaa8a408e79d1d9d000d3",
-      "bytes": 21068,
-      "durationSeconds": 1.68,
+      "sha256": "0344ad26b4b4addcdb8d092d2527bffd93ee253b81d43dc533b9d9daf66540ba",
+      "bytes": 32876,
+      "durationSeconds": 2.6527083333333334,
       "sourceSampleRate": 24000,
       "seed": 2026100808,
       "generation": {
@@ -150,7 +151,12 @@
         "topP": 1,
         "repetitionPenalty": 1.05
       },
-      "generationSeconds": 1.42
+      "generationSeconds": 1.42,
+      "postProcessing": {
+        "method": "FFmpeg atempo",
+        "tempo": 0.6266846361185984,
+        "preservesPitch": true
+      }
     },
     "werewolf_close": {
       "text": "狼人请闭眼。",
@@ -218,9 +224,9 @@
     },
     "seer_action": {
       "text": "请选择查验目标。",
-      "sha256": "362a854dcb82da4e4a0495f80a95b3cda3a48947c74d4deb0ff96ad68103720c",
-      "bytes": 23948,
-      "durationSeconds": 1.92,
+      "sha256": "5a769824b529af8bfd8c097d92584a555d64dc9d1da7fc15f6925a0e114402cc",
+      "bytes": 32876,
+      "durationSeconds": 2.66025,
       "sourceSampleRate": 24000,
       "seed": 2026100814,
       "generation": {
@@ -230,7 +236,12 @@
         "topP": 1,
         "repetitionPenalty": 1.05
       },
-      "generationSeconds": 1.71
+      "generationSeconds": 1.71,
+      "postProcessing": {
+        "method": "FFmpeg atempo",
+        "tempo": 0.7196765498652291,
+        "preservesPitch": true
+      }
     },
     "seer_close": {
       "text": "预言家请闭眼。",
@@ -380,9 +391,9 @@
     },
     "hunter_action": {
       "text": "请选择开枪目标。",
-      "sha256": "3c477037f87cf2a509029f752c16344fe54f537a74c2ba54f4df3d1a7dfa4691",
-      "bytes": 30860,
-      "durationSeconds": 2.48,
+      "sha256": "29a8a97a90964210b54cbef8a8a9e5718f6cf07b298a8ef9b4cce63498ddb664",
+      "bytes": 32012,
+      "durationSeconds": 2.5817083333333333,
       "sourceSampleRate": 24000,
       "seed": 2026100821,
       "generation": {
@@ -392,7 +403,12 @@
         "topP": 1,
         "repetitionPenalty": 1.05
       },
-      "generationSeconds": 1.94
+      "generationSeconds": 1.94,
+      "postProcessing": {
+        "method": "FFmpeg atempo",
+        "tempo": 0.9582210242587601,
+        "preservesPitch": true
+      }
     },
     "hunter_shot": {
       "text": "猎人开枪，出局的玩家是：",
@@ -780,9 +796,9 @@
     },
     "guard_action": {
       "text": "请选择守护目标。",
-      "sha256": "9367edfc6ba25869504dac15b4e33432b9bc5f688d478c8b838d8da40115b1c0",
-      "bytes": 27980,
-      "durationSeconds": 2.24,
+      "sha256": "42bdbdff1c270349b124b892d9ac84aa8a6c939e622fde9416355357e568e1ed",
+      "bytes": 32300,
+      "durationSeconds": 2.608375,
       "sourceSampleRate": 24000,
       "seed": 2026102805,
       "generation": {
@@ -792,13 +808,18 @@
         "topP": 1,
         "repetitionPenalty": 1.05
       },
-      "generationSeconds": 3.27
+      "generationSeconds": 3.27,
+      "postProcessing": {
+        "method": "FFmpeg atempo",
+        "tempo": 0.853099730458221,
+        "preservesPitch": true
+      }
     },
     "witch_action": {
       "text": "请选择药剂。",
-      "sha256": "73a304615843f87f8beba013245322d6794f23b0ec2addbe5c8a08fcd3dd4c88",
-      "bytes": 16460,
-      "durationSeconds": 1.28,
+      "sha256": "86ad1e8d6265531900fb699b9e006478d80ca00d1e992d3df90df5865b619ab8",
+      "bytes": 25388,
+      "durationSeconds": 2.0216666666666665,
       "sourceSampleRate": 24000,
       "seed": 2026102811,
       "generation": {
@@ -808,7 +829,105 @@
         "topP": 1,
         "repetitionPenalty": 1.05
       },
-      "generationSeconds": 1.39
+      "generationSeconds": 1.39,
+      "postProcessing": {
+        "method": "FFmpeg atempo",
+        "tempo": 0.6283018867924529,
+        "preservesPitch": true
+      }
+    }
+  },
+  "paceNormalization": {
+    "sourceBank": "host-zh-v7",
+    "method": "spoken-span reference median",
+    "referenceClipIds": [
+      "guard_open",
+      "guard_close",
+      "werewolf_open",
+      "werewolf_close",
+      "witch_open",
+      "witch_close",
+      "seer_open",
+      "seer_close",
+      "night_start",
+      "dawn",
+      "day",
+      "sheriff_hands",
+      "sheriff_speech"
+    ],
+    "targetCharactersPerSecond": 2.830188679245283,
+    "preservesPitch": true,
+    "actions": {
+      "guard_action": {
+        "sourceSha256": "9367edfc6ba25869504dac15b4e33432b9bc5f688d478c8b838d8da40115b1c0",
+        "tempo": 0.853099730458221,
+        "before": {
+          "durationSeconds": 2.24,
+          "spokenSpanSeconds": 2.11,
+          "charactersPerSecond": 3.3175355450236967
+        },
+        "after": {
+          "durationSeconds": 2.608375,
+          "spokenSpanSeconds": 2.48,
+          "charactersPerSecond": 2.8225806451612905
+        }
+      },
+      "werewolf_action": {
+        "sourceSha256": "fe027f687ef3d8a8d7427bcc525dc81869157f5088fcaa8a408e79d1d9d000d3",
+        "tempo": 0.6266846361185984,
+        "before": {
+          "durationSeconds": 1.68,
+          "spokenSpanSeconds": 1.55,
+          "charactersPerSecond": 4.516129032258064
+        },
+        "after": {
+          "durationSeconds": 2.6527083333333334,
+          "spokenSpanSeconds": 2.49,
+          "charactersPerSecond": 2.8112449799196786
+        }
+      },
+      "witch_action": {
+        "sourceSha256": "73a304615843f87f8beba013245322d6794f23b0ec2addbe5c8a08fcd3dd4c88",
+        "tempo": 0.6283018867924529,
+        "before": {
+          "durationSeconds": 1.28,
+          "spokenSpanSeconds": 1.11,
+          "charactersPerSecond": 4.504504504504504
+        },
+        "after": {
+          "durationSeconds": 2.0216666666666665,
+          "spokenSpanSeconds": 1.77,
+          "charactersPerSecond": 2.824858757062147
+        }
+      },
+      "seer_action": {
+        "sourceSha256": "362a854dcb82da4e4a0495f80a95b3cda3a48947c74d4deb0ff96ad68103720c",
+        "tempo": 0.7196765498652291,
+        "before": {
+          "durationSeconds": 1.92,
+          "spokenSpanSeconds": 1.78,
+          "charactersPerSecond": 3.932584269662921
+        },
+        "after": {
+          "durationSeconds": 2.66025,
+          "spokenSpanSeconds": 2.45,
+          "charactersPerSecond": 2.8571428571428568
+        }
+      },
+      "hunter_action": {
+        "sourceSha256": "3c477037f87cf2a509029f752c16344fe54f537a74c2ba54f4df3d1a7dfa4691",
+        "tempo": 0.9582210242587601,
+        "before": {
+          "durationSeconds": 2.48,
+          "spokenSpanSeconds": 2.37,
+          "charactersPerSecond": 2.9535864978902953
+        },
+        "after": {
+          "durationSeconds": 2.5817083333333333,
+          "spokenSpanSeconds": 2.48,
+          "charactersPerSecond": 2.8225806451612905
+        }
+      }
     }
   },
   "rates": {
@@ -851,9 +970,9 @@
       },
       "werewolf_action": {
         "text": "请选择击杀目标。",
-        "sha256": "1ad85a3dc4c477e21ed34479789b677dd4f9c401870fdc946f110ba108146aff",
-        "bytes": 14444,
-        "durationSeconds": 1.1213333333333333
+        "sha256": "2ef5666da34e5ac80b65deca1e5c7181bee4d5b38725ad3e3dde3c79d65bf32d",
+        "bytes": 22220,
+        "durationSeconds": 1.7667916666666668
       },
       "werewolf_close": {
         "text": "狼人请闭眼。",
@@ -881,9 +1000,9 @@
       },
       "seer_action": {
         "text": "请选择查验目标。",
-        "sha256": "057aa599027bd641960bd8743013386b88dc6c9a667798ad66cc91187ec4374d",
-        "bytes": 16460,
-        "durationSeconds": 1.2815
+        "sha256": "333e6dd63eb993f2faa19b0d59c38e20de57f2043aba627ba48db403da94bb1e",
+        "bytes": 22220,
+        "durationSeconds": 1.7709166666666667
       },
       "seer_close": {
         "text": "预言家请闭眼。",
@@ -941,9 +1060,9 @@
       },
       "hunter_action": {
         "text": "请选择开枪目标。",
-        "sha256": "6054e58b59da93f8bc4fe9534e30c5dd2095b8c426b34e3955b53bf3bbe0f2ca",
-        "bytes": 20780,
-        "durationSeconds": 1.643625
+        "sha256": "2bdb8c75aacd6852a07f39e236571ec670518742e9c5e2a5806b0e9e3c7fc29e",
+        "bytes": 21644,
+        "durationSeconds": 1.7150416666666666
       },
       "hunter_shot": {
         "text": "猎人开枪，出局的玩家是：",
@@ -1091,15 +1210,15 @@
       },
       "guard_action": {
         "text": "请选择守护目标。",
-        "sha256": "8a024e67740f5a8dd56653f1174fdcddd36de7446773e10e62c7225b97be59c7",
-        "bytes": 19052,
-        "durationSeconds": 1.493
+        "sha256": "2e025286e4d20e91de1f76f4c59ecfbb3e31ef21f01cf745d00225cdc67f6363",
+        "bytes": 21932,
+        "durationSeconds": 1.7398333333333333
       },
       "witch_action": {
         "text": "请选择药剂。",
-        "sha256": "b94fe854d0a120180754101116bd15591d6dff9afb4b80e9cadd43966cdb6744",
-        "bytes": 11276,
-        "durationSeconds": 0.8551666666666666
+        "sha256": "cb2e412372aee971514a4dbbb22ab8ce1b58b4ed71be71c174959ae697dcb273",
+        "bytes": 17324,
+        "durationSeconds": 1.3472916666666668
       }
     },
     "2": {
@@ -1141,9 +1260,9 @@
       },
       "werewolf_action": {
         "text": "请选择击杀目标。",
-        "sha256": "1e9a30cd1ff9e081caaffe0b3e8eaceb9ed286ae20b1891dbc213ae7f4a39ac2",
-        "bytes": 10988,
-        "durationSeconds": 0.832
+        "sha256": "0e2705ced8fb00d9d85ee75e89a0bdeead5003f4f38b7d7e6ea22b90207c2cc2",
+        "bytes": 17036,
+        "durationSeconds": 1.339125
       },
       "werewolf_close": {
         "text": "狼人请闭眼。",
@@ -1171,9 +1290,9 @@
       },
       "seer_action": {
         "text": "请选择查验目标。",
-        "sha256": "53c8088823ca835bf0dd228f1276f03453c9e69b00b3900a91c2d87c980b87e3",
-        "bytes": 12428,
-        "durationSeconds": 0.9592083333333333
+        "sha256": "de3a5e8c8efa420a68751608b52c5ed43529a2e505d4b564351f4e710b675d20",
+        "bytes": 17036,
+        "durationSeconds": 1.325375
       },
       "seer_close": {
         "text": "预言家请闭眼。",
@@ -1231,9 +1350,9 @@
       },
       "hunter_action": {
         "text": "请选择开枪目标。",
-        "sha256": "ead18c82f36f55ebce45bd07a50a2a82878dc92847f06944e728aeb8de3c2860",
-        "bytes": 16172,
-        "durationSeconds": 1.2532083333333333
+        "sha256": "25928c090ff5ac145897199db4146fe5480d2ab962bebfac68b93787f310f5e9",
+        "bytes": 16460,
+        "durationSeconds": 1.2817916666666667
       },
       "hunter_shot": {
         "text": "猎人开枪，出局的玩家是：",
@@ -1381,15 +1500,15 @@
       },
       "guard_action": {
         "text": "请选择守护目标。",
-        "sha256": "d8c828a529974d605023f95d09476e7ebb736166a7472ba87b4b2b91562d3924",
-        "bytes": 14444,
-        "durationSeconds": 1.12425
+        "sha256": "b0f938ea299342d2d5dc250f38c4a1a470b9bdd2adf1c48dab8776dd80d16533",
+        "bytes": 16748,
+        "durationSeconds": 1.3017916666666667
       },
       "witch_action": {
         "text": "请选择药剂。",
-        "sha256": "2dd45750ec47c828895a901bb40f404b00df0b2d6762dc60a55e02c1b339c7ab",
-        "bytes": 8684,
-        "durationSeconds": 0.64
+        "sha256": "7b81577cebf138b854b829e6af1163bf82d2d8fe2f8493faa3e3cdcd77b278da",
+        "bytes": 13292,
+        "durationSeconds": 1.02
       }
     }
   },

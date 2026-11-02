@@ -20,7 +20,7 @@ Production accesses its private schema through the Supabase transaction pooler, 
 
 - Product package: `1.0.0`; release tag: `prod1.0`.
 - Rule configuration identifier: `werewolf-web-v1`.
-- Audio: `host-zh-v7`.
+- Audio: `host-zh-v8`.
 - Persisted room format: `schemaVersion: 1`.
 - API: `/api/v2`.
 

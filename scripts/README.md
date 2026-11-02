@@ -20,6 +20,8 @@ See the [temporary UI review guide](ui-review/README.md). Review requests never 
 
 ## Offline Audio Generation
 
+For a pace-only change, `normalize-action-audio.py --source-bank host-zh-v8 --analyze` measures the current bank without editing it. Increment script/voice versions first, then run the normalizer against the previous still-published bank to stage a new one; verify the changed clips, prepare both rates, and publish using the commands below. V8 used V7 from commit `7b141bb`, not a new voice model. Published versions remain immutable; the prior bank is retired from the current public tree only after replacement verification.
+
 Existing deployments use committed MP3s directly; developing the website requires no model. Regeneration requires macOS ARM64, Python 3.12, and MLX/Metal. Model caches, WAVs, and listening reports belong only in ignored `.local-generation/` storage.
 
 ```sh
@@ -27,7 +29,7 @@ python3.12 -m venv .local-generation/venv
 .local-generation/venv/bin/python -m pip install -r scripts/audio-lock.txt
 ```
 
-Lines live in `web/src/narration/script.json`, with parameters in `voice.json`. V7 contains 48 original-speed clips and 96 pitch-preserving speed variants. Qwen3-TTS CustomVoice with Uncle_Fu is pinned by model revision and parameters in voice.json. There is no human voice cloning or live model inference in the website.
+Lines live in `web/src/narration/script.json`, with parameters in `voice.json`. V8 contains 48 original-speed clips and 96 pitch-preserving speed variants. Qwen3-TTS CustomVoice with Uncle_Fu is pinned by model revision and parameters in voice.json. There is no human voice cloning or live model inference in the website.
 
 Published banks are immutable. Bump script/voice versions before changing the voice. `--reuse` accepts only retained, fingerprint-verified banks with matching model, parameters, and text. Removed historical banks are no longer hardcoded.
 

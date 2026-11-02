@@ -14,7 +14,7 @@ English is the default at the original paths. Each document has a `.zh-CN.md` co
 | [Game Rules](02-rules-and-decisions.md) | Six roles, victory, timing, and disclosure |
 | [Gameplay and Privacy](03-gameplay-and-privacy.md) | Full flow, views, recovery, and retention |
 | [Screens and Interaction](04-ux-and-screens.md) | Page map and private action design |
-| [Narration and Assets](05-narration-and-assets.md) | V7 and pitch-preserving playback |
+| [Narration and Assets](05-narration-and-assets.md) | V8 and pitch-preserving playback |
 | [Architecture](06-web-and-development.md) | Single rules core and compatibility boundaries |
 | [Validation and Follow-Up](07-validation-and-roadmap.md) | Layered testing and real-device work |
 | [Cleanup and Retention](08-archive-and-retention.md) | Removed materials and historical recovery |

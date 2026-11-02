@@ -10,7 +10,7 @@ Baseline: prod1.0, October 13, 2026. See the [design system](../design-system/we
 | `/join` | Room code, nickname, joining, and original-browser recovery |
 | `/r/[room]` | Lobby, shared public roster, personal private tasks, and host controls |
 | `/r/[room]/recap/[game]` | Roles and nightly recap, visible to that game's participants |
-| `/audio/host-zh-v7/index.html` | Current public narration samples at original speed, 1.5x, and 2x |
+| `/audio/host-zh-v8/index.html` | Current public narration samples at original speed, 1.5x, and 2x |
 
 ## Interaction Constraints
 

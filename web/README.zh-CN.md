@@ -32,7 +32,7 @@ smoke与默认浏览器配置启动隔离本地服务；不要带着正式Postgr
 
 - `src/game/`：唯一规则、阶段、随机发牌与命令核心。
 - `src/server/`：会话、权限、去重、公共/本人/房主视图、SQLite/PG保存及私有统计摘要。
-- `src/narration/`：当前V7脚本、素材指纹与公开Web Audio播放器。
+- `src/narration/`：当前V8脚本、素材指纹与公开Web Audio播放器。
 - `src/ui/`：真实响应式页面、私密面板、前台同步与恢复。
 - `tests/`：规则、契约、权限、音频与浏览器验证。
 

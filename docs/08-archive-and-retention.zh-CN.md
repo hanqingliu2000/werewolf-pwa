@@ -14,7 +14,7 @@
 ## 从当前版本移除
 
 - `materials/` 中旧音频、品牌草图和参考文案。
-- `web/public/audio/` 下V1至V6与calm-pilot；运行时仅V7。
+- `web/public/audio/` 下V1至V6与calm-pilot；首发时仅V7，当前运行时为V8；V7节奏校准来源可从提交 `7b141bb` 恢复。
 - 初期语调试验脚本 `generate-calm-pilot.py`。
 - 23份过时阶段计划/验收日志，不再混入当前开发说明。
 - 必须存在旧声音库才能运行的素材比较测试、过期试音提示和无效评审动作。
